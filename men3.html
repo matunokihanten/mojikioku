@@ -74,7 +74,7 @@
     <h1>担々麺作りゲーム</h1>
     <button id="start-button" onclick="startGame()">スタート</button>
     <div>
-        <label for="display-time">問題表示時間１～１００ (秒): </label>
+        <label for="display-time">問題表示時間 (秒): </label>
         <input type="number" id="display-time" min="1" max="10" value="4">
     </div>
     <div>
@@ -188,6 +188,7 @@
             const level = document.getElementById('level-select').value;
             let correctOrder = '';
             let allCorrect = true;
+            let emptyFields = false;
 
             for (let i = 0; i < currentLevel; i++) {
                 const menuInput = document.getElementById(`menu-input-${i}`).value;
@@ -195,6 +196,11 @@
                 const noodleInput = document.getElementById(`noodle-input-${i}`).value;
                 const sizeInput = document.getElementById(`size-input-${i}`).value;
                 const toppingInput = document.getElementById(`topping-input-${i}`).value;
+
+                if (!menuInput || !spicinessInput || !noodleInput || (level === '2' && (!sizeInput || !toppingInput))) {
+                    emptyFields = true;
+                    break;
+                }
 
                 if (level === '1') {
                     if (menuInput !== order[`menu`] || spicinessInput !== order[`spiciness`] || noodleInput !== order[`noodle`]) {
@@ -209,7 +215,9 @@
                 }
             }
 
-            if (allCorrect) {
+            if (emptyFields) {
+                resultDiv.textContent = 'すべてのフィールドに入力してください。';
+            } else if (allCorrect) {
                 correctCount++;
                 document.getElementById('score').textContent = `正解数: ${correctCount}`;
                 resultDiv.textContent = '正解です！次の問題へ進みます。';
