@@ -63,13 +63,18 @@
         .input-hidden {
             display: none;
         }
+        /* スタートボタンを3倍の大きさにする */
+        #start-button {
+            font-size: 3em;
+            padding: 20px 40px;
+        }
     </style>
 </head>
 <body>
     <h1>担々麺作りゲーム</h1>
-    <button onclick="startGame()">スタート</button>
+    <button id="start-button" onclick="startGame()">スタート</button>
     <div>
-        <label for="display-time">問題表示時間 (秒): </label>
+        <label for="display-time">問題表示時間１～１００ (秒): </label>
         <input type="number" id="display-time" min="1" max="10" value="4">
     </div>
     <div>
