@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>点滅する球</title>
+  <style>
+    .controls {
+      margin-top: 10px;
+    }
+    .speed-control {
+      margin-top: 10px;
+    }
+    .explanation {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="blinkingBall" width="500" height="500" style="border: 1px solid black;"></canvas>
+  <div class="controls">
+    <label for="colorSelect">色を選択:</label>
+    <select id="colorSelect">
+      <option value="red">赤</option>
+      <option value="yellow">黄</option>
+      <option value="blue">青</option>
+      <option value="green">緑</option>
+      <option value="purple">紫</option>
+      <option value="orange">オレンジ</option>
+    </select>
+    <div class="speed-control">
+      <label for="speedSlider">点滅速度: <span id="speedValue">2</span> Hz</label>
+      <input type="range" id="speedSlider" min="1" max="10" step="1" value="2">
+    </div>
+  </div>
+
+  <div class="explanation">
+    <h3>色の効果について</h3>
+    <ul>
+      <li><b>青色:</b> 鎮静効果があり、集中力や思考力を高める可能性があります。</li>
+      <li><b>緑色:</b> 安心感や調和をもたらし、ストレスを軽減する効果があると言われています。</li>
+      <li><b>赤色:</b> 興奮作用があり、注意力を高める可能性があります。</li>
+      <li><b>黄色:</b> 明るく、楽しい気分にさせ、脳を活性化させる効果があると言われています。</li>
+    </ul>
+    <h3>点滅速度について</h3>
+    <ul>
+      <li>点滅速度を調整することで、脳波に影響を与える可能性があります。</li>
+      <li>集中力を高めたい場合は、速めの点滅速度（例: 5～10 Hz）を試してみてください。</li>
+      <li>リラックスしたい場合は、遅めの点滅速度（例: 1～3 Hz）を試してみてください。</li>
+    </ul>
+    <p>※ 光過敏性発作を起こしやすい方は、点滅する光を避けてください。</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('blinkingBall');
+    const ctx = canvas.getContext('2d');
+    const colorSelect = document.getElementById('colorSelect');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+
+    let selectedColor = 'red';
+    let isVisible = true;
+    let blinkInterval;
+    let blinkSpeed = 500; // ミリ秒
+
+    function drawBall() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = getComplementaryColor(selectedColor);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (isVisible) {
+        ctx.beginPath();
+        ctx.arc(250, 250, 100, 0, Math.PI * 2);
+        ctx.fillStyle = selectedColor;
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    function blinkBall() {
+      isVisible = !isVisible;
+      drawBall();
+    }
+
+    function updateBlinkSpeed(speedInHz) {
+      clearInterval(blinkInterval);
+      const speedInMs = 1000 / speedInHz;
+      blinkInterval = setInterval(blinkBall, speedInMs);
+      speedValue.textContent = speedInHz + " Hz";
+    }
+
+    // 色選択の変更を監視
+    colorSelect.addEventListener('change', (e) => {
+      selectedColor = e.target.value;
+      isVisible = true;
+      drawBall();
+    });
+
+    // 速度スライダーの変更を監視
+    speedSlider.addEventListener('input', (e) => {
+      const speedInHz = parseInt(e.target.value);
+      updateBlinkSpeed(speedInHz);
+    });
+
+    // 初期設定
+    updateBlinkSpeed(2); // 初期値を2Hzに設定
+    drawBall();
+
+    function getComplementaryColor(color) {
+      switch (color) {
+        case 'red':
+          return 'cyan';
+        case 'yellow':
+          return 'blue';
+        case 'blue':
+          return 'yellow';
+        case 'green':
+          return 'magenta';
+        case 'purple':
+          return 'lime';
+        case 'orange':
+          return 'aqua';
+        default:
+          return 'white';
+      }
+    }
+  </script>
+</body>
+</html>
