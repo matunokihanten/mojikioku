@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神経衰弱ゲーム</title>
+    <style>
+        body {
+            text-align: center; /* body全体を中央寄せ */
+        }
+        .header {
+            display: flex;
+            justify-content: center; /* header内の要素を中央寄せ */
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #start-button {
+            margin-right: 20px; /* スタートボタンと回数表示の間隔 */
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4列に変更 */
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            width: 2cm; /* 横2センチ */
+            height: 2.4cm; /* 縦2.4センチ */
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8cm; /* 文字の大きさを1.8センチに設定 */
+            cursor: pointer;
+            user-select: none;
+        }
+        .hidden {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>神経衰弱ゲーム</h1>
+    <div class="header">
+        <button id="start-button">スタート</button>
+        <div id="flip-count">めくった回数: 0</div>
+    </div>
+    <div class="game-board" id="board"></div>
+
+    <script>
+        let firstCard = null;
+        let secondCard = null;
+        let flipCount = 0;
+        const cardValues = ['1', '1', '2', '2', '3', '3', '4', '4', '5', '5', 
+                            '6', '6', '7', '7', '8', '8', '9', '9', '10', '10']; // 20枚のカード（4×5=20）
+
+        const startButton = document.getElementById('start-button');
+        const flipCountDisplay = document.getElementById('flip-count');
+
+        startButton.addEventListener('click', startGame);
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = ''; // ボードをクリア
+            const shuffledValues = shuffle([...cardValues]);
+
+            shuffledValues.forEach(value => {
+                const card = document.createElement('div');
+                card.classList.add('card', 'hidden');
+                card.dataset.value = value;
+                
+                card.addEventListener('click', () => {
+                    if (card.classList.contains('hidden') && !secondCard) {
+                        card.classList.remove('hidden');
+                        card.textContent = value;
+                        flipCount++;
+                        updateFlipCount();
+
+                        if (!firstCard) {
+                            firstCard = card;
+                        } else {
+                            secondCard = card;
+                            checkMatch();
+                        }
+                    }
+                });
+
+                board.appendChild(card);
+            });
+        }
+
+        function checkMatch() {
+            if (firstCard.dataset.value === secondCard.dataset.value) {
+                firstCard = null;
+                secondCard = null;
+            } else {
+                setTimeout(() => {
+                    firstCard.classList.add("hidden");
+                    secondCard.classList.add("hidden");
+                    firstCard.textContent = "";
+                    secondCard.textContent = "";
+                    firstCard = null;
+                    secondCard = null;
+                }, 1000);
+            }
+        }
+
+        function updateFlipCount() {
+            flipCountDisplay.textContent = `めくった回数: ${flipCount}`;
+        }
+
+        function startGame() {
+            flipCount = 0;
+            updateFlipCount();
+            firstCard = null;
+            secondCard = null;
+            createBoard();
+        }
+
+        startGame(); // ページ読み込み時にゲームを開始
+    </script>
+</body>
+</html>
