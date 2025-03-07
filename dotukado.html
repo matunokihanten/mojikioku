@@ -50,17 +50,17 @@
     <div class="inputs">
         <div>
             <label for="dotSize">玉のサイズ:</label>
-            <input type="number" id="dotSize" value="20" min="10" max="100">
+            <input type="number" id="dotSize" value="60" min="10" max="100">
         </div>
         <div>
             <label for="maxDots">最大の玉の数:</label>
-            <input type="number" id="maxDots" value="20" min="1" max="50">
+            <input type="number" id="maxDots" value="10" min="1" max="50">
         </div>
         <div>
             <label for="backgroundColor">背景色:</label>
             <select id="backgroundColor">
                 <option value="white">白</option>
-                <option value="black">黒</option>
+                <option value="black" selected>黒</option>
                 <option value="blue">青</option>
             </select>
         </div>
@@ -115,16 +115,20 @@
             // ボタンを更新
             const buttons = document.querySelector('.buttons');
             buttons.innerHTML = "";
-            for (let i = 1; i <= 20; i++) {
-                if (i === 11) {
-                    const rowBreak = document.createElement("div");
-                    rowBreak.style.width = "100%";
-                    buttons.appendChild(rowBreak);
-                }
+            const maxDotsValue = parseInt(document.getElementById("maxDots").value);
+            const numColumns = 10; // 列数を10に設定
+            for (let i = 1; i <= maxDotsValue; i++) {
                 const button = document.createElement("button");
                 button.textContent = i;
                 button.onclick = () => checkAnswer(i, numDots);
                 buttons.appendChild(button);
+                
+                // 1行に10個のボタンを表示したら改行
+                if (i % numColumns === 0) {
+                    const rowBreak = document.createElement("div");
+                    rowBreak.style.width = "100%";
+                    buttons.appendChild(rowBreak);
+                }
             }
 
             document.getElementById("result").textContent = "";
