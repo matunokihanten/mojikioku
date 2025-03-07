@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ドッツカード</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: white;
+        }
+        #canvas {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+        .dot {
+            position: absolute;
+            background-color: red;
+            border-radius: 50%;
+        }
+        .inputs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .buttons button {
+            margin: 5px;
+            width: 40px;
+            height: 40px;
+        }
+        .row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="inputs">
+        <div>
+            <label for="dotSize">玉のサイズ:</label>
+            <input type="number" id="dotSize" value="20" min="10" max="100">
+        </div>
+        <div>
+            <label for="maxDots">最大の玉の数:</label>
+            <input type="number" id="maxDots" value="20" min="1" max="50">
+        </div>
+        <div>
+            <label for="backgroundColor">背景色:</label>
+            <select id="backgroundColor">
+                <option value="white">白</option>
+                <option value="black">黒</option>
+                <option value="blue">青</option>
+            </select>
+        </div>
+    </div>
+    <div id="canvas"></div>
+    <div class="buttons"></div>
+    <p id="result"></p>
+    <button onclick="drawDots()">スタート</button>
+
+    <script>
+        function drawDots() {
+            const canvas = document.getElementById("canvas");
+            const backgroundColor = document.getElementById("backgroundColor").value;
+            canvas.style.backgroundColor = backgroundColor;
+            canvas.innerHTML = ""; // キャンバスをクリア
+            const maxDots = parseInt(document.getElementById("maxDots").value);
+            const numDots = Math.floor(Math.random() * maxDots) + 1;
+            const dotSize = parseInt(document.getElementById("dotSize").value);
+            const dots = [];
+
+            for (let i = 0; i < numDots; i++) {
+                let x, y, overlap;
+                do {
+                    overlap = false;
+                    x = Math.random() * (canvas.clientWidth - dotSize);
+                    y = Math.random() * (canvas.clientHeight - dotSize);
+                    
+                    // 他の玉と重なるかチェック
+                    for (const dot of dots) {
+                        const dx = dot.x - x;
+                        const dy = dot.y - y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < dotSize) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+                } while (overlap);
+
+                dots.push({ x, y });
+
+                const dot = document.createElement("div");
+                dot.classList.add("dot");
+                dot.style.width = `${dotSize}px`;
+                dot.style.height = `${dotSize}px`;
+                dot.style.left = `${x}px`;
+                dot.style.top = `${y}px`;
+
+                canvas.appendChild(dot);
+            }
+
+            // ボタンを更新
+            const buttons = document.querySelector('.buttons');
+            buttons.innerHTML = "";
+            for (let i = 1; i <= 20; i++) {
+                if (i === 11) {
+                    const rowBreak = document.createElement("div");
+                    rowBreak.style.width = "100%";
+                    buttons.appendChild(rowBreak);
+                }
+                const button = document.createElement("button");
+                button.textContent = i;
+                button.onclick = () => checkAnswer(i, numDots);
+                buttons.appendChild(button);
+            }
+
+            document.getElementById("result").textContent = "";
+        }
+
+        function checkAnswer(selected, correct) {
+            const result = document.getElementById("result");
+            if (selected === correct) {
+                result.textContent = "正解！";
+            } else {
+                result.textContent = `不正解。正しい玉の数は ${correct} です。`;
+            }
+        }
+    </script>
+</body>
+</html>
