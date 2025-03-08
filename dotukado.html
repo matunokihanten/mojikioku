@@ -132,12 +132,16 @@
             }
 
             document.getElementById("result").textContent = "";
+
+            // checkAnswer関数内で使用するために、numDotsをdrawDots関数のスコープに保持
+            drawDots.numDots = numDots;
         }
 
         function checkAnswer(selected, correct) {
             const result = document.getElementById("result");
             if (selected === correct) {
                 result.textContent = "正解！";
+                setTimeout(drawDots, 1000); // 1秒後に次の問題へ
             } else {
                 result.textContent = `不正解。正しい玉の数は ${correct} です。`;
             }
