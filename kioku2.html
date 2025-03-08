@@ -46,9 +46,10 @@
     <div id="level">問題番号: 1</div>
     <label for="levelSelect">レベル選択:</label>
     <select id="levelSelect">
-        <option value="1">レベル1 (20漢字)</option>
-        <option value="2">レベル2 (50漢字)</option>
-        <option value="3">レベル3 (100漢字)</option>
+        <option value="1">レベル1 (10漢字)</option>
+        <option value="2">レベル2 (20漢字)</option>
+        <option value="3">レベル3 (50漢字)</option>
+        <option value="4">レベル4 (100漢字)</option>
     </select>
     <div id="number"></div>
     <button id="startButton">開始</button>
@@ -95,16 +96,19 @@
             const selectedLevel = parseInt(levelSelect.value);
             switch (selectedLevel) {
                 case 1:
-                    availableKanji = kanjiCharacters.slice(0, 20);
+                    availableKanji = kanjiCharacters.slice(0, 10);
                     break;
                 case 2:
-                    availableKanji = kanjiCharacters.slice(0, 50);
+                    availableKanji = kanjiCharacters.slice(0, 20);
                     break;
                 case 3:
+                    availableKanji = kanjiCharacters.slice(0, 50);
+                    break;
+                case 4:
                     availableKanji = kanjiCharacters.slice(0, 100);
                     break;
                 default:
-                    availableKanji = kanjiCharacters.slice(0, 20);
+                    availableKanji = kanjiCharacters.slice(0, 10);
             }
             
             nextLevel();
