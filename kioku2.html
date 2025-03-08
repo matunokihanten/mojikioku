@@ -44,6 +44,12 @@
 <body>
     <h1>漢字記憶ゲーム</h1>
     <div id="level">問題番号: 1</div>
+    <label for="levelSelect">レベル選択:</label>
+    <select id="levelSelect">
+        <option value="1">レベル1 (20漢字)</option>
+        <option value="2">レベル2 (50漢字)</option>
+        <option value="3">レベル3 (100漢字)</option>
+    </select>
     <div id="number"></div>
     <button id="startButton">開始</button>
     <input type="text" id="inputField" placeholder="漢字を入力してください" readonly>
@@ -58,6 +64,7 @@
         let currentLevel = 1;
         let currentKanjiSequence = '';
         let previousKanjiSequence = '';
+        let availableKanji = []; // 現在のレベルで利用可能な漢字の配列
 
         const kanjiCharacters = [
             '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万',
@@ -82,6 +89,24 @@
             currentKanjiSequence = '';
             previousKanjiSequence = '';
             document.getElementById('inputField').style.display = 'inline'; // 入力フィールドを表示
+            
+            // レベル選択に応じて利用可能な漢字を設定
+            const levelSelect = document.getElementById('levelSelect');
+            const selectedLevel = parseInt(levelSelect.value);
+            switch (selectedLevel) {
+                case 1:
+                    availableKanji = kanjiCharacters.slice(0, 20);
+                    break;
+                case 2:
+                    availableKanji = kanjiCharacters.slice(0, 50);
+                    break;
+                case 3:
+                    availableKanji = kanjiCharacters.slice(0, 100);
+                    break;
+                default:
+                    availableKanji = kanjiCharacters.slice(0, 20);
+            }
+            
             nextLevel();
         }
 
@@ -142,8 +167,8 @@
         function generateRandomKanji(level) {
             let result = '';
             for (let i = 0; i < level; i++) {
-                let randomIndex = Math.floor(Math.random() * kanjiCharacters.length);
-                result += kanjiCharacters[randomIndex];
+                let randomIndex = Math.floor(Math.random() * availableKanji.length);
+                result += availableKanji[randomIndex];
             }
             return result;
         }
@@ -151,7 +176,7 @@
         function displayKanjiButtons() {
             let kanjiContainer = document.getElementById('kanjiContainer');
             kanjiContainer.innerHTML = '';
-            for (let kanji of kanjiCharacters) {
+            for (let kanji of availableKanji) {
                 let button = document.createElement('button');
                 button.textContent = kanji;
                 button.className = 'kanjiButton';
@@ -163,7 +188,7 @@
         }
 
         // 初期表示時に漢字ボタンを表示
-        displayKanjiButtons();
+        //displayKanjiButtons();
     </script>
 </body>
 </html>
