@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字記憶ゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #numbers, #message {
+            font-size: 24px;
+            margin: 20px;
+        }
+        #inputArea {
+            margin-top: 20px;
+        }
+        .numberButton {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>数字記憶ゲーム</h1>
+    <div id="numbers"></div>
+    <div id="message"></div>
+    <div id="inputArea">
+        <input type="text" id="userInput" readonly placeholder="数字を入力してください" />
+        <div id="numberButtons">
+            <button class="numberButton" onclick="appendNumber(0)">0</button>
+            <button class="numberButton" onclick="appendNumber(1)">1</button>
+            <button class="numberButton" onclick="appendNumber(2)">2</button>
+            <button class="numberButton" onclick="appendNumber(3)">3</button>
+            <button class="numberButton" onclick="appendNumber(4)">4</button>
+            <button class="numberButton" onclick="appendNumber(5)">5</button>
+            <button class="numberButton" onclick="appendNumber(6)">6</button>
+            <button class="numberButton" onclick="appendNumber(7)">7</button>
+            <button class="numberButton" onclick="appendNumber(8)">8</button>
+            <button class="numberButton" onclick="appendNumber(9)">9</button>
+        </div>
+        <button onclick="clearInput()">クリア</button>
+    </div>
+    <div>
+        <label for="numberSize">数字の大きさ:</label>
+        <input type="number" id="numberSize" value="48" min="12" max="48">
+    </div>
+    <div>
+        <label for="initialLength">数字の桁数:</label>
+        <input type="number" id="initialLength" value="5" min="1" max="10">
+    </div>
+    <div>
+        <label for="initialDisplayTime">表示時間 (秒):</label>
+        <input type="number" id="initialDisplayTime" value="3" min="1" max="5">
+    </div>
+    <div>
+        <label>正解時に桁数を増やす:</label>
+        <input type="checkbox" id="increaseLength" checked>
+    </div>
+    <button onclick="startGame()">ゲームを開始</button>
+
+    <script>
+        let generatedNumbers = "";
+        let currentLength = 5; // 初期桁数
+        let score = 0;
+        let currentIndex = 0; // 現在入力中の桁
+        let displayTime = 3000; // 初期表示時間 (ミリ秒)
+
+        function startGame() {
+            // 初期化
+            currentIndex = 0;
+            document.getElementById("userInput").value = "";
+
+            // 設定値を取得
+            const numberSize = document.getElementById("numberSize").value;
+            currentLength = parseInt(document.getElementById("initialLength").value);
+            displayTime = parseInt(document.getElementById("initialDisplayTime").value) * 1000;
+
+            // ランダムな数字列を生成
+            const length = currentLength + score; // スコアに応じて桁数を増やす
+            generatedNumbers = "";
+            for (let i = 0; i < length; i++) {
+                generatedNumbers += Math.floor(Math.random() * 10); // 0から9のランダムな数字
+            }
+
+            // 数字を画面に表示
+            document.getElementById("numbers").textContent = generatedNumbers;
+            document.getElementById("message").textContent = "";
+
+            // 数字の大きさを設定
+            document.getElementById("numbers").style.fontSize = numberSize + "px";
+
+            // 数秒後に数字を非表示
+            setTimeout(() => {
+                document.getElementById("numbers").textContent = "記憶してください...";
+            }, displayTime); // displayTimeミリ秒後に非表示
+        }
+
+        function appendNumber(number) {
+            const userInput = document.getElementById("userInput");
+            userInput.value += number;
+
+            // 入力された数字が正しければ、次の桁へ
+            if (generatedNumbers[currentIndex] == number) {
+                currentIndex++;
+
+                // 全ての桁が正しく入力されたか確認
+                if (currentIndex == generatedNumbers.length) {
+                    document.getElementById("message").textContent = "正解です！よく覚えました！";
+                    if (document.getElementById("increaseLength").checked) {
+                        score++; // スコアを加算して桁数を増やす
+                    }
+                    setTimeout(startGame, 1000); // 1秒後に次のゲーム
+                }
+            }
+            //間違っていたら
+             else {
+                document.getElementById("message").textContent = `不正解です。正解は ${generatedNumbers} でした。もう一度挑戦しましょう。`;
+                score = 0; // スコアをリセット
+                currentLength = 5; // 桁数をリセット
+                currentIndex = 0;
+                displayTime = 3000; // 表示時間もリセット
+            }
+        }
+
+        function clearInput() {
+            document.getElementById("userInput").value = "";
+        }
+    </script>
+</body>
+</html>

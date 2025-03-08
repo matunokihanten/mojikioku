@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瞬間記憶ゲーム</title>
+    <style>
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .box {
+            width: 80px;
+            height: 80px;
+            background-color: lightgray;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .box.active {
+            background-color: red;
+        }
+        .box.tapped {
+            background-color: darkred; /* タップされた赤 */
+        }
+        .message {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>瞬間記憶ゲーム</h1>
+    <button onclick="startGame()">ゲーム開始</button>
+    <div class="message" id="message"></div>
+    <div class="container" id="gameContainer"></div>
+
+    <script>
+        let gridSize = 4; // グリッドのサイズ (4x4)
+        let displayTime = 2000; // 赤玉を表示する時間 (ミリ秒)
+        let activeIndex = []; // 赤玉の位置
+        let score = 0; // スコア
+        let answeredCount = 0; // タップされた赤玉の数
+
+        function createGrid() {
+            const gameContainer = document.getElementById('gameContainer');
+            gameContainer.innerHTML = ''; // リセット
+            gameContainer.style.gridTemplateColumns = `repeat(${gridSize}, 80px)`;
+
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const box = document.createElement('div');
+                box.classList.add('box');
+                box.setAttribute('data-index', i);
+                box.addEventListener('click', checkAnswer);
+                gameContainer.appendChild(box);
+            }
+        }
+
+        function startGame() {
+            answeredCount = 0; // タップされた数をリセット
+            createGrid();
+            activeIndex = generateRandomActive(); // ランダムな赤玉の位置を生成
+            showActiveBoxes();
+            document.getElementById('message').textContent = '';
+        }
+
+        function generateRandomActive() {
+            const count = Math.min(3 + Math.floor(score / 5), gridSize * gridSize); // スコアに応じて赤玉の数を増やす
+            const indices = [];
+            while (indices.length < count) {
+                const randomIndex = Math.floor(Math.random() * gridSize * gridSize);
+                if (!indices.includes(randomIndex)) {
+                    indices.push(randomIndex);
+                }
+            }
+            return indices;
+        }
+
+        function showActiveBoxes() {
+            const boxes = document.querySelectorAll('.box');
+            activeIndex.forEach(index => {
+                boxes[index].classList.add('active');
+            });
+
+            // 一定時間後に非表示にする
+            setTimeout(() => {
+                activeIndex.forEach(index => {
+                    boxes[index].classList.remove('active');
+                });
+            }, displayTime);
+        }
+
+        function checkAnswer(event) {
+            const clickedIndex = parseInt(event.target.getAttribute('data-index'));
+            const message = document.getElementById('message');
+            const box = event.target;
+
+            if (activeIndex.includes(clickedIndex) && !box.classList.contains('tapped')) {
+                // 正解の場合
+                score++;
+                answeredCount++;
+                box.classList.add('tapped'); // タップ済みのスタイルを適用
+                message.textContent = `正解！スコア: ${score}`;
+                message.style.color = 'green';
+
+                // 全ての赤玉をタップしたら次のラウンドへ
+                if (answeredCount === activeIndex.length) {
+                    message.textContent = `クリア！次のレベルへ スコア: ${score}`;
+                    setTimeout(() => {
+                        if (score % 5 === 0) {
+                            // 5の倍数スコアで難易度を上げる
+                            gridSize = Math.min(gridSize + 1, 6); // グリッドサイズを大きくする
+                            displayTime = Math.max(500, displayTime - 100); // 表示時間を短くする
+                            message.textContent = `難易度アップ！ グリッド: ${gridSize}x${gridSize}, 表示時間: ${displayTime}ms`;
+                        }
+                        startGame(); // 次のラウンドを開始
+                    }, 1000);
+                }
+            } else {
+                // 不正解の場合
+                message.textContent = `不正解！スコア: ${score}`;
+                message.style.color = 'red';
+                setTimeout(startGame, 1000); // 次のラウンドを開始
+            }
+        }
+    </script>
+</body>
+</html>
