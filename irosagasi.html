@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>色を探すゲーム</title>
+    <style>
+        .container {
+            display: grid;
+            grid-template-columns: repeat(6, 50px);
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .box {
+            width: 50px;
+            height: 50px;
+            background-color: rgb(255, 0, 0); /* デフォルトの赤 */
+            cursor: pointer;
+        }
+        .message {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>色を探すゲーム</h1>
+    <label for="colorSelect">基本色を選択:</label>
+    <select id="colorSelect">
+        <option value="red">赤</option>
+        <option value="blue">青</option>
+        <option value="yellow">黄</option>
+        <option value="purple">紫</option>
+        <option value="green">緑</option>
+        <option value="white">白</option>
+    </select>
+    <button onclick="startGame()">開始</button>
+
+    <div class="container" id="gameContainer"></div>
+    <div class="message" id="resultMessage"></div>
+    <div class="message" id="score">正解数: 0</div>
+
+    <script>
+        let correctCount = 0;
+        let colorDifference = 200; // 初期の色差
+
+        function startGame() {
+            correctCount = 0;
+            colorDifference = 200; // ゲーム開始時に色差をリセット
+            document.getElementById('score').textContent = `正解数: ${correctCount}`;
+
+            const colorSelect = document.getElementById('colorSelect');
+            const selectedColor = colorSelect.value;
+            const gameContainer = document.getElementById('gameContainer');
+            const resultMessage = document.getElementById('resultMessage');
+            
+            const boxCount = 36; // 36個のボックス
+            let baseColor;
+
+            // 選択された色に基づいて基本色を設定
+            switch (selectedColor) {
+                case 'red':
+                    baseColor = { r: 255, g: 0, b: 0 };
+                    break;
+                case 'blue':
+                    baseColor = { r: 0, g: 0, b: 255 };
+                    break;
+                case 'yellow':
+                    baseColor = { r: 255, g: 255, b: 0 };
+                    break;
+                case 'purple':
+                    baseColor = { r: 128, g: 0, b: 128 };
+                    break;
+                case 'green':
+                    baseColor = { r: 0, g: 255, b: 0 };
+                    break;
+                case 'white':
+                    baseColor = { r: 255, g: 255, b: 255 };
+                    break;
+                default:
+                    baseColor = { r: 255, g: 0, b: 0 }; // デフォルトは赤
+            }
+
+            function generateProblem() {
+                gameContainer.innerHTML = ''; // 前のゲームをリセット
+                resultMessage.textContent = ''; // メッセージをリセット
+
+                const targetColor = {
+                    r: Math.max(0, baseColor.r - colorDifference),
+                    g: Math.max(0, baseColor.g - colorDifference),
+                    b: Math.max(0, baseColor.b - colorDifference)
+                };
+
+                const targetIndex = Math.floor(Math.random() * boxCount); // 違う色の位置をランダムに決定
+
+                for (let i = 0; i < boxCount; i++) {
+                    const box = document.createElement('div');
+                    box.classList.add('box');
+
+                    if (i === targetIndex) {
+                        box.style.backgroundColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
+                        box.onclick = () => {
+                            resultMessage.textContent = '正解！';
+                            resultMessage.style.color = 'green';
+                            correctCount++;
+                            document.getElementById('score').textContent = `正解数: ${correctCount}`;
+                            colorDifference = Math.max(0, colorDifference - 5); // 正解するたびに色差を小さくする
+                            setTimeout(generateProblem, 1000); // 1秒後に次の問題を表示
+                        };
+                    } else {
+                        box.style.backgroundColor = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
+                        box.onclick = () => {
+                            resultMessage.textContent = '不正解！';
+                            resultMessage.style.color = 'red';
+                            setTimeout(generateProblem, 1000); // 1秒後に次の問題を表示
+                        };
+                    }
+
+                    gameContainer.appendChild(box);
+                }
+            }
+
+            generateProblem(); // 最初の問題を生成
+        }
+    </script>
+</body>
+</html>
