@@ -64,13 +64,21 @@
                 <option value="blue">青</option>
             </select>
         </div>
+        <div>
+            <label for="practiceInterval">練習の表示時間 (秒):</label>
+            <input type="number" id="practiceInterval" value="0.5" min="0.1" step="0.1">
+        </div>
     </div>
     <div id="canvas"></div>
     <div class="buttons"></div>
     <p id="result"></p>
     <button onclick="drawDots()">スタート</button>
+    <button onclick="practice()">練習</button>
+    <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
 
     <script>
+        let practiceTimeout;
+
         function drawDots() {
             const canvas = document.getElementById("canvas");
             const backgroundColor = document.getElementById("backgroundColor").value;
@@ -145,6 +153,70 @@
             } else {
                 result.textContent = `不正解。正しい玉の数は ${correct} です。`;
             }
+        }
+
+        function practice() {
+            const canvas = document.getElementById("canvas");
+            const dotSize = 20; // 練習時の玉のサイズを20に設定
+            let currentDot = 1;
+            const practiceInterval = parseFloat(document.getElementById("practiceInterval").value) * 1000;
+            document.getElementById("stopPracticeButton").style.display = "block";
+
+            function showDot(dotCount) {
+                canvas.innerHTML = ""; // キャンバスをクリア
+                for (let i = 0; i < dotCount; i++) {
+                    const dot = document.createElement("div");
+                    dot.classList.add("dot");
+                    dot.style.width = `${dotSize}px`;
+                    dot.style.height = `${dotSize}px`;
+
+                    // ランダムな位置に配置
+                    let x, y, overlap;
+                    do {
+                        overlap = false;
+                        x = Math.random() * (canvas.clientWidth - dotSize);
+                        y = Math.random() * (canvas.clientHeight - dotSize);
+
+                        // 他の玉と重ならないようにチェック (簡易版)
+                        const minDistance = dotSize * 1.2; // 玉同士の間隔を少し開ける
+                        for (let j = 0; j < canvas.children.length; j++) {
+                            const existingDot = canvas.children[j];
+                            const existingX = parseFloat(existingDot.style.left);
+                            const existingY = parseFloat(existingDot.style.top);
+                            const distance = Math.sqrt(Math.pow(x - existingX, 2) + Math.pow(y - existingY, 2));
+                            if (distance < minDistance) {
+                                overlap = true;
+                                break;
+                            }
+                        }
+                    } while (overlap);
+
+                    dot.style.left = `${x}px`;
+                    dot.style.top = `${y}px`;
+                    canvas.appendChild(dot);
+                }
+                document.getElementById("result").textContent = `玉の数: ${dotCount}`;
+            }
+
+            function nextDot() {
+                if (currentDot <= 100) {
+                    showDot(currentDot);
+                    currentDot++;
+                    practiceTimeout = setTimeout(nextDot, practiceInterval); // 指定された間隔で次のドットを表示
+                } else {
+                    stopPractice();
+                }
+            }
+
+            nextDot();
+        }
+
+        function stopPractice() {
+            clearTimeout(practiceTimeout);
+            const canvas = document.getElementById("canvas");
+            canvas.innerHTML = ""; // 練習が終わったらクリア
+            document.getElementById("result").textContent = "";
+            document.getElementById("stopPracticeButton").style.display = "none";
         }
     </script>
 </body>
