@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クリペリン検査アプリ - 改良版</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    #time-remaining {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    #fatigue-level {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+    #score {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .highlight {
+      color: green;
+      font-weight: bold;
+    }
+    #question {
+      font-size: 22px;
+      margin: 20px 0;
+    }
+    /* 入力表示エリア */
+    #answer-display {
+      font-size: 24px;
+      height: 40px;
+      margin: 10px auto;
+      border: 1px solid #ccc;
+      width: 200px;
+      text-align: center;
+      line-height: 40px;
+    }
+    /* 数値キーパッド */
+    #numpad {
+      margin: 20px auto;
+      width: 220px;
+    }
+    #numpad button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      margin: 5px;
+    }
+    #clear-btn {
+      width: 125px; /* クリアボタンの幅を調整 */
+    }
+  </style>
+</head>
+<body>
+  <h1>クリペリン検査アプリ - 改良版</h1>
+  <div id="time-remaining">残り時間: 60秒</div>
+  <div id="fatigue-level">疲労度: 低</div>
+  <div id="score">スコア: 0</div>
+  <p id="question"></p>
+  <!-- 入力した数字を表示する領域 -->
+  <div id="answer-display"></div>
+  <!-- 0～9の数字ボタン＋「クリア」「OK」ボタン -->
+  <div id="numpad">
+    <button class="num-btn" data-num="1">1</button>
+    <button class="num-btn" data-num="2">2</button>
+    <button class="num-btn" data-num="3">3</button><br>
+    <button class="num-btn" data-num="4">4</button>
+    <button class="num-btn" data-num="5">5</button>
+    <button class="num-btn" data-num="6">6</button><br>
+    <button class="num-btn" data-num="7">7</button>
+    <button class="num-btn" data-num="8">8</button>
+    <button class="num-btn" data-num="9">9</button><br>
+    <button id="clear-btn">クリア</button>
+    <button class="num-btn" data-num="0">0</button>
+    <button id="ok-btn">OK</button>
+  </div>
+  <button id="start-btn">スタート</button>
+  <button id="reset-btn">リセット</button>
+  <p id="result"></p>
+
+  <script>
+    let currentAnswer;
+    let score = 0;
+    let consecutiveCorrect = 0; // 連続正解数
+    let timeLeft = 60;          // 初期制限時間
+    let level = 1;              // 初期レベル
+    let timer;
+    let currentInput = "";
+
+    const timeRemainingElement = document.getElementById('time-remaining');
+    const fatigueLevelElement = document.getElementById('fatigue-level');
+    const questionElement = document.getElementById('question');
+    const answerDisplay = document.getElementById('answer-display');
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const resultElement = document.getElementById('result');
+    const scoreElement = document.getElementById('score');
+    const numBtns = document.querySelectorAll('.num-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const okBtn = document.getElementById('ok-btn');
+
+    function updateTimerDisplay() {
+      timeRemainingElement.textContent = `残り時間: ${timeLeft}秒`;
+    }
+
+    function updateFatigueLevel() {
+      fatigueLevelElement.style.color = '';
+      if (score <= 5) {
+        fatigueLevelElement.textContent = `疲労度: 低`;
+        fatigueLevelElement.className = 'highlight';
+        fatigueLevelElement.style.color = 'green';
+      } else if (score <= 10) {
+        fatigueLevelElement.textContent = `疲労度: 中`;
+        fatigueLevelElement.className = 'highlight';
+        fatigueLevelElement.style.color = 'orange';
+      } else {
+        fatigueLevelElement.textContent = `疲労度: 高`;
+        fatigueLevelElement.className = 'highlight';
+        fatigueLevelElement.style.color = 'red';
+      }
+    }
+
+    function updateScoreDisplay() {
+      scoreElement.textContent = `スコア: ${score}`;
+    }
+
+    function updateAnswerDisplay() {
+      answerDisplay.textContent = currentInput;
+    }
+
+    function generateQuestion() {
+      let num1, num2, operator;
+      do {
+        num1 = Math.floor(Math.random() * 10 * level);
+        num2 = Math.floor(Math.random() * 10 * level);
+        if (level === 1) {
+          operator = '+';
+          currentAnswer = num1 + num2;
+        } else if (level === 2) {
+          operator = '-';
+          currentAnswer = num1 - num2;
+        } else {
+          operator = '×';
+          currentAnswer = num1 * num2;
+        }
+      } while (currentAnswer >= 100 || currentAnswer < 0);
+      questionElement.textContent = `${num1} ${operator} ${num2} = ?`;
+    }
+
+    function checkLevelUp() {
+      if (score === 5) {
+        level = 2;
+      } else if (score === 10) {
+        level = 3;
+      }
+    }
+
+    function processAnswer() {
+      const userAnswer = parseInt(currentInput, 10);
+      if (!isNaN(userAnswer) && userAnswer === currentAnswer) {
+        score++;
+        consecutiveCorrect++;
+        checkLevelUp();
+        generateQuestion();
+        updateFatigueLevel();
+        updateScoreDisplay();
+        // 連続正解ボーナス
+        if (consecutiveCorrect % 3 === 0) {
+          score += 2;
+          updateScoreDisplay();
+        }
+        currentInput = "";
+        updateAnswerDisplay();
+      } else {
+        consecutiveCorrect = 0;
+        currentInput = "";
+        updateAnswerDisplay();
+      }
+    }
+
+    function startTest() {
+      if (timer) clearInterval(timer);
+      score = 0;
+      consecutiveCorrect = 0;
+      level = 1;
+      timeLeft = 60;
+      resultElement.textContent = '';
+      generateQuestion();
+      updateTimerDisplay();
+      updateFatigueLevel();
+      updateScoreDisplay();
+      currentInput = "";
+      updateAnswerDisplay();
+      // 有効化
+      numBtns.forEach(btn => btn.disabled = false);
+      clearBtn.disabled = false;
+      okBtn.disabled = false;
+
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          questionElement.textContent = '終了！';
+          resultElement.textContent = `最終スコア: ${score}`;
+          // 無効化
+          numBtns.forEach(btn => btn.disabled = true);
+          clearBtn.disabled = true;
+          okBtn.disabled = true;
+        }
+      }, 1000);
+    }
+
+    numBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentInput += btn.getAttribute('data-num');
+        updateAnswerDisplay();
+        const userAnswer = parseInt(currentInput, 10);
+        if (!isNaN(userAnswer) && userAnswer === currentAnswer) {
+          processAnswer();
+        }
+      });
+    });
+
+    clearBtn.addEventListener('click', () => {
+      currentInput = "";
+      updateAnswerDisplay();
+    });
+
+    okBtn.addEventListener('click', () => {
+      processAnswer();
+    });
+
+    startBtn.addEventListener('click', startTest);
+
+    resetBtn.addEventListener('click', () => {
+      clearInterval(timer);
+      score = 0;
+      consecutiveCorrect = 0;
+      level = 1;
+      timeLeft = 60;
+      updateTimerDisplay();
+      updateFatigueLevel();
+      updateScoreDisplay();
+      fatigueLevelElement.style.color = 'green';
+      questionElement.textContent = '';
+      resultElement.textContent = '';
+      currentInput = "";
+      updateAnswerDisplay();
+      numBtns.forEach(btn => btn.disabled = true);
+      clearBtn.disabled = true;
+      okBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
