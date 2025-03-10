@@ -13,6 +13,7 @@
             background-color: red;
             border-radius: 50%;
             position: absolute;
+            cursor: pointer; /* Add cursor style to indicate it's clickable */
         }
         #controls {
             position: fixed;
@@ -21,6 +22,16 @@
             background-color: rgba(255, 255, 255, 0.8);
             padding: 10px;
             border-radius: 5px;
+            z-index: 100; /* Ensure controls are above the balls */
+        }
+        #ballCount {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100; /* Ensure ball count is above the balls */
         }
     </style>
 </head>
@@ -36,6 +47,9 @@
         <input type="range" id="size" min="10" max="50" value="20">
         <span id="sizeValue">20</span>
     </div>
+    <div id="ballCount">
+        Balls Left: <span id="ballsLeft">20</span>
+    </div>
     <script>
         let numBalls = 20;
         let speed = 2;
@@ -50,6 +64,11 @@
         const numBallsValue = document.getElementById('numBallsValue');
         const speedValue = document.getElementById('speedValue');
         const sizeValue = document.getElementById('sizeValue');
+        const ballsLeft = document.getElementById('ballsLeft');
+
+        function updateBallCount() {
+            ballsLeft.textContent = balls.length;
+        }
 
         function createBalls() {
             balls.forEach(ball => ball.remove());
@@ -63,13 +82,21 @@
                 ball.style.top = `${Math.random() * (maxY - size)}px`;
                 ball.dx = (Math.random() * 2 - 1) * speed;
                 ball.dy = (Math.random() * 2 - 1) * speed;
+                ball.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent default touch behavior
+                    ball.remove();
+                    balls = balls.filter(b => b !== ball);
+                    updateBallCount();
+                }, { passive: false }); // Passive false is needed for preventDefault to work
                 ball.addEventListener('click', () => {
                     ball.remove();
                     balls = balls.filter(b => b !== ball);
+                    updateBallCount();
                 });
                 document.body.appendChild(ball);
                 balls.push(ball);
             }
+            updateBallCount();
         }
 
         function moveBalls() {
