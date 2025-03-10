@@ -63,6 +63,10 @@
                 ball.style.top = `${Math.random() * (maxY - size)}px`;
                 ball.dx = (Math.random() * 2 - 1) * speed;
                 ball.dy = (Math.random() * 2 - 1) * speed;
+                ball.addEventListener('click', () => {
+                    ball.remove();
+                    balls = balls.filter(b => b !== ball);
+                });
                 document.body.appendChild(ball);
                 balls.push(ball);
             }
