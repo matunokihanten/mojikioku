@@ -34,9 +34,9 @@
 </head>
 <body>
     <h1>瞬間記憶ゲーム</h1>
-    <button onclick="startGame()">ゲーム開始</button>
-    <div class="message" id="message"></div>
+    <button onclick="resetGame()">ゲーム開始</button>
     <div class="container" id="gameContainer"></div>
+    <div class="message" id="message"></div> <!-- 正解の文字を表示する場所 -->
 
     <script>
         let gridSize = 4; // グリッドのサイズ (4x4)
@@ -65,6 +65,13 @@
             activeIndex = generateRandomActive(); // ランダムな赤玉の位置を生成
             showActiveBoxes();
             document.getElementById('message').textContent = '';
+        }
+
+        function resetGame() {
+            gridSize = 4; // 初期レベルに戻す
+            displayTime = 2000; // 初期表示時間に戻す
+            score = 0; // スコアをリセット
+            startGame();
         }
 
         function generateRandomActive() {
