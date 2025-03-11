@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ステレオグラムゲーム</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ステレオグラムゲーム</h1>
+    <canvas id="stereogramCanvas" width="400" height="400"></canvas>
+    <div class="message" id="message">ステレオグラムに隠された数字を見つけてください。</div>
+    <input type="number" id="answer" placeholder="ここに数字を入力">
+    <button onclick="checkAnswer()">答え合わせ</button>
+    <button onclick="generateStereogram()">新しいステレオグラムを生成</button>
+
+    <script>
+        const canvas = document.getElementById("stereogramCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // キャンバスのサイズ設定
+        const width = canvas.width;
+        const height = canvas.height;
+
+        let hiddenNumber; // 隠された数字を保存する変数
+
+        // ランダムドットパターン生成
+        function createRandomDots() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const brightness = Math.random() * 255;
+                data[i] = brightness; // R
+                data[i + 1] = brightness; // G
+                data[i + 2] = brightness; // B
+                data[i + 3] = 255; // Alpha
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // 奥行きマップ（数字の形状に基づく例）
+        function createDepthMap() {
+            ctx.fillStyle = "black";
+            ctx.font = "100px Arial";
+        }
+
+        // ステレオグラム生成
+        function generateStereogram() {
+            ctx.clearRect(0, 0, width, height); // キャンバスをクリア
+            createRandomDots();
+
+            // 隠された数字をランダムに生成
+            hiddenNumber = Math.floor(Math.random() * 10); // 0から9までの乱数
+            createDepthMap();
+            document.getElementById("message").textContent = "ステレオグラムに隠された数字を見つけてください。";
+        }
+
+        // 答えをチェックする関数
+        function checkAnswer() {
+            const answer = document.getElementById("answer").value;
+            if (answer == hiddenNumber) {
+                document.getElementById("message").textContent = "正解！";
+                generateStereogram(); // 正解したら新しいステレオグラムを生成
+            } else {
+                document.getElementById("message").textContent = "不正解。もう一度試してください。";
+            }
+        }
+
+        generateStereogram();
+    </script>
+</body>
+</html>
