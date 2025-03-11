@@ -1,87 +1,134 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ステレオグラムゲーム</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        canvas {
-            border: 1px solid black;
-            margin-bottom: 20px;
-        }
-        .message {
-            font-size: 24px;
-            margin-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>ステレオグラム数字当てゲーム</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    canvas {
+      border: 1px solid #000;
+      margin-bottom: 10px;
+    }
+    input, button {
+      font-size: 1rem;
+      padding: 5px;
+    }
+  </style>
 </head>
 <body>
-    <h1>ステレオグラムゲーム</h1>
-    <canvas id="stereogramCanvas" width="400" height="400"></canvas>
-    <div class="message" id="message">ステレオグラムに隠された数字を見つけてください。</div>
-    <input type="number" id="answer" placeholder="ここに数字を入力">
-    <button onclick="checkAnswer()">答え合わせ</button>
-    <button onclick="generateStereogram()">新しいステレオグラムを生成</button>
+  <h1>ステレオグラム数字当てゲーム</h1>
+  <canvas id="stereoCanvas" width="400" height="300"></canvas>
+  <br>
+  <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1">
+  <button id="submitGuess">回答する</button>
+  <p id="result"></p>
 
-    <script>
-        const canvas = document.getElementById("stereogramCanvas");
-        const ctx = canvas.getContext("2d");
+  <script>
+    // キャンバスとコンテキストの取得
+    const canvas = document.getElementById('stereoCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
-        // キャンバスのサイズ設定
-        const width = canvas.width;
-        const height = canvas.height;
+    // 0～9 の中から隠し数字をランダムに選定
+    const hiddenDigit = Math.floor(Math.random() * 10);
+    console.log('隠し数字（デバッグ用）: ' + hiddenDigit);
 
-        let hiddenNumber; // 隠された数字を保存する変数
+    // 深度マップを作成（2次元配列、ピクセルごとの深度 [0～1]）
+    // 背景は 0、隠し数字部分は 0.3 に設定
+    const depthMap = [];
+    for (let y = 0; y < canvasHeight; y++) {
+      depthMap[y] = [];
+      for (let x = 0; x < canvasWidth; x++) {
+        depthMap[y][x] = 0; // 背景：深度 0
+      }
+    }
 
-        // ランダムドットパターン生成
-        function createRandomDots() {
-            const imageData = ctx.createImageData(width, height);
-            const data = imageData.data;
+    // オフスクリーンキャンバスに隠し数字を描画して、マスクとして利用
+    const digitCanvas = document.createElement('canvas');
+    digitCanvas.width = canvasWidth;
+    digitCanvas.height = canvasHeight;
+    const dctx = digitCanvas.getContext('2d');
 
-            for (let i = 0; i < data.length; i += 4) {
-                const brightness = Math.random() * 255;
-                data[i] = brightness; // R
-                data[i + 1] = brightness; // G
-                data[i + 2] = brightness; // B
-                data[i + 3] = 255; // Alpha
-            }
+    // 背景は黒、数字は白で描く
+    dctx.fillStyle = 'black';
+    dctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    dctx.fillStyle = 'white';
+    // フォントサイズ・配置はキャンバスサイズに合わせ調整
+    dctx.font = '150px sans-serif';
+    dctx.textAlign = 'center';
+    dctx.textBaseline = 'middle';
+    dctx.fillText(hiddenDigit, canvasWidth / 2, canvasHeight / 2);
 
-            ctx.putImageData(imageData, 0, 0);
+    // 描画した数字のピクセル情報から深度マップを更新
+    const digitData = dctx.getImageData(0, 0, canvasWidth, canvasHeight);
+    for (let y = 0; y < canvasHeight; y++) {
+      for (let x = 0; x < canvasWidth; x++) {
+        const idx = (y * canvasWidth + x) * 4;
+        // alpha が一定以上なら数字の部分として扱う
+        if (digitData.data[idx + 3] > 128) {
+          depthMap[y][x] = 0.3;
         }
+      }
+    }
 
-        
+    // ステレオグラム生成用パラメータ
+    const eyeSeparation = 60; // 最大シフト幅（目の間隔に相当）
+    // ※この例ではシンプルな線形マッピングを利用
 
-        // ステレオグラム生成
-        function generateStereogram() {
-            ctx.clearRect(0, 0, width, height); // キャンバスをクリア
-            createRandomDots();
+    // ステレオグラム画像データを生成
+    const stereoImage = ctx.createImageData(canvasWidth, canvasHeight);
 
-            // 隠された数字をランダムに生成
-            hiddenNumber = Math.floor(Math.random() * 10); // 0から9までの乱数
-            createDepthMap();
-            document.getElementById("message").textContent = "ステレオグラムに隠された数字を見つけてください。";
+    // 各行ごとにランダムドットパターンを生成し、深度情報に基づきシフト
+    for (let y = 0; y < canvasHeight; y++) {
+      // 行ごとのグレースケール値を格納する配列を作成
+      let row = new Array(canvasWidth);
+      // 最初にすべてのピクセルにランダムなグレースケール値を設定
+      for (let x = 0; x < canvasWidth; x++) {
+        row[x] = Math.floor(Math.random() * 256);
+      }
+      // 各ピクセルごとに深度に基づいてシフトさせる
+      for (let x = 0; x < canvasWidth; x++) {
+        const depth = depthMap[y][x];
+        // シンプルなシフト計算：数字部分なら右方向にずらす
+        // シフト量＝深度×eyeSeparation（四捨五入）
+        const shift = Math.round(eyeSeparation * depth);
+        if (shift > 0 && x - shift >= 0) {
+          row[x] = row[x - shift];
         }
+      }
+      // 計算済みの行データを最終画像データに反映
+      for (let x = 0; x < canvasWidth; x++) {
+        const idx = (y * canvasWidth + x) * 4;
+        const color = row[x];
+        stereoImage.data[idx] = color;     // R
+        stereoImage.data[idx + 1] = color; // G
+        stereoImage.data[idx + 2] = color; // B
+        stereoImage.data[idx + 3] = 255;   // α
+      }
+    }
 
-        // 答えをチェックする関数
-        function checkAnswer() {
-            const answer = document.getElementById("answer").value;
-            if (answer == hiddenNumber) {
-                document.getElementById("message").textContent = "正解！";
-                generateStereogram(); // 正解したら新しいステレオグラムを生成
-            } else {
-                document.getElementById("message").textContent = `不正解。正解は ${hiddenNumber} でした。`;
-            }
-        }
+    // キャンバスにステレオグラムを描画
+    ctx.putImageData(stereoImage, 0, 0);
 
-        generateStereogram();
-    </script>
+    // ユーザーの回答チェック
+    document.getElementById('submitGuess').addEventListener('click', function () {
+      const userGuess = document.getElementById('guess').value.trim();
+      const resultEl = document.getElementById('result');
+      if (userGuess === "") {
+        resultEl.textContent = "まずは数字を入力してください。";
+        return;
+      }
+      if (parseInt(userGuess) === hiddenDigit) {
+        resultEl.textContent = "正解！よく見抜きました！";
+      } else {
+        resultEl.textContent = "残念… 不正解です。もう一度チャレンジしてください。";
+      }
+    });
+  </script>
 </body>
 </html>
