@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>担々麺作りゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f2f2f2;
+        }
+        .button-group {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .button-group button {
+            padding: 15px; /* ボタンのpaddingを大きく */
+            margin: 5px;
+            cursor: pointer;
+            width: calc(50% - 10px); /* 2列にする */
+            box-sizing: border-box;
+            font-size: 18px; /* フォントサイズを大きく */
+        }
+        #ticket {
+            font-size: 18px;
+            margin: 20px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            white-space: pre-line;
+        }
+        #spiciness-buttons button {
+            background-color: red;
+            color: white;
+        }
+        #noodle-buttons button {
+            background-color: green;
+            color: white;
+        }
+        #menu-buttons button[data-menu*="黒"] {
+            background-color: brown;
+            color: white;
+        }
+        #result {
+            font-size: 18px;
+            margin: 20px;
+            color: red;
+        }
+        #submit-button {
+            display: block;
+            margin: 20px auto;
+        }
+        #size-buttons button {
+            background-color: yellow;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1>担々麺作りゲーム</h1>
+    <button onclick="startGame()">スタート</button>
+    <div>
+        <label for="display-time">問題表示時間 (秒): </label>
+        <input type="number" id="display-time" min="1" max="10" value="4">
+    </div>
+    <div>
+        <label for="level-select">レベル選択: </label>
+        <select id="level-select">
+            <option value="1">レベル1</option>
+            <option value="2">レベル2</option>
+        </select>
+    </div>
+    <div id="ticket" style="display: none;">伝票がここに表示されます</div>
+    <div class="button-group" id="menu-buttons" style="display: none;">
+        <button data-menu="担々麺" onclick="selectOption('menu', '担々麺')">担々麺</button>
+        <button data-menu="きのこ入り担々麺" onclick="selectOption('menu', 'きのこ入り担々麺')">きのこ入り担々麺</button>
+        <button data-menu="ねぎ担々麺" onclick="selectOption('menu', 'ねぎ担々麺')">ねぎ担々麺</button>
+        <button data-menu="叉焼入り担々麺" onclick="selectOption('menu', '叉焼入り担々麺')">叉焼入り担々麺</button>
+        <button data-menu="もやし入り担々麺" onclick="selectOption('menu', 'もやし入り担々麺')">もやし入り担々麺</button>
+        <button data-menu="ﾄﾝｶﾂ入り担々麺" onclick="selectOption('menu', 'ﾄﾝｶﾂ入り担々麺')">ﾄﾝｶﾂ入り担々麺</button>
+        <button data-menu="豚角煮入り担々麺" onclick="selectOption('menu', '豚角煮入り担々麺')">豚角煮入り担々麺</button>
+        <button data-menu="黒担々麺" onclick="selectOption('menu', '黒担々麺')">黒担々麺</button>
+        <button data-menu="黒きのこ担々麺" onclick="selectOption('menu', '黒きのこ担々麺')">黒きのこ担々麺</button>
+        <button data-menu="黒ねぎ担々麺" onclick="selectOption('menu', '黒ねぎ担々麺')">黒ねぎ担々麺</button>
+        <button data-menu="黒叉焼担々麺" onclick="selectOption('menu', '黒叉焼入り担々麺')">黒叉焼入り担々麺</button>
+        <button data-menu="黒もやし担々麺" onclick="selectOption('menu', '黒もやし入り担々麺')">黒もやし入り担々麺</button>
+        <button data-menu="黒ﾄﾝｶﾂ担々麺" onclick="selectOption('menu', '黒ﾄﾝｶﾂ入り担々麺')">黒ﾄﾝｶﾂ入り担々麺</button>
+        <button data-menu="黒角煮担々麺" onclick="selectOption('menu', '黒角煮入り担々麺')">黒角煮入り担々麺</button>
+    </div>
+    <div class="button-group" id="spiciness-buttons" style="display: none;">
+        <button onclick="selectOption('spiciness', 'ちょい辛')">ちょい辛</button>
+        <button onclick="selectOption('spiciness', '並辛')">並辛</button>
+        <button onclick="selectOption('spiciness', '大辛')">大辛</button>
+        <button onclick="selectOption('spiciness', '激辛')">激辛</button>
+    </div>
+    <div class="button-group" id="noodle-buttons" style="display: none;">
+        <button onclick="selectOption('noodle', '普通')">普通</button>
+        <button onclick="selectOption('noodle', '硬め')">硬め</button>
+        <button onclick="selectOption('noodle', '柔らかめ')">柔らかめ</button>
+    </div>
+     <div class="button-group" id="size-buttons" style="display: none;">
+        <button onclick="selectOption('size', '並盛')">並盛</button>
+        <button onclick="selectOption('size', '大盛')">大盛</button>
+    </div>
+    <div class="button-group" id="topping-buttons" style="display: none;">
+        <button onclick="selectOption('topping', '九条ねぎ')">九条ねぎ</button>
+        <button onclick="selectOption('topping', '白ねぎ')">白ねぎ</button>
+        <button onclick="selectOption('topping', 'なまたまご')">なまたまご</button>
+        <button onclick="selectOption('topping', 'ゆでもやし')">ゆでもやし</button>
+        <button onclick="selectOption('topping', 'とんかつ')">とんかつ</button>
+        <button onclick="selectOption('topping', 'きのこ')">きのこ</button>
+        <button onclick="selectOption('topping', 'ﾁｬｰｼｭｰ')">ﾁｬｰｼｭｰ</button>
+        <button onclick="selectOption('topping', 'ゆでほうれん草')">ゆでほうれん草</button>
+        <button onclick="selectOption('topping', '味噌ひき肉')">味噌ひき肉</button>
+        <button onclick="selectOption('topping', 'ゆでちんげん')">ゆでちんげん</button>
+        <button onclick="selectOption('topping', 'わかめ')">わかめ</button>
+        <button onclick="selectOption('topping', 'メンマ')">メンマ</button>
+        <button onclick="selectOption('topping', 'にんにく')">にんにく</button>
+        <button onclick="selectOption('topping', '玉子焼き')">玉子焼き</button>
+    </div>
+    <div class="button-group" id="input-fields" style="display: none;">
+        <div>
+            <input type="text" id="menu-input-0" placeholder="メニューを入力">
+            <input type="text" id="spiciness-input-0" placeholder="辛さを入力">
+            <input type="text" id="noodle-input-0" placeholder="麺の硬さを入力">
+             <input type="text" id="size-input-0" placeholder="麺の量を入力" style="display: none;">
+            <input type="text" id="topping-input-0" placeholder="トッピングを入力" style="display: none;">
+        </div>
+    </div>
+    <button onclick="submitOrder()" style="display: none;" id="submit-button">完了</button>
+    <div id="result"></div>
+    <div id="score">正解数: 0</div>
+
+    <script>
+        let currentLevel = 1;
+        let correctCount = 0;
+        const order = {};
+        const menuItems = ['担々麺', 'きのこ入り担々麺', 'ねぎ担々麺', '叉焼入り担々麺', 'もやし入り担々麺', 'ﾄﾝｶﾂ入り担々麺', '豚角煮入り担々麺', '黒担々麺', '黒きのこ担々麺', '黒ねぎ担々麺', '黒叉焼担々麺', '黒もやし担々麺', '黒ﾄﾝｶﾂ担々麺', '黒角煮担々麺'];
+        const spicinessLevels = ['ちょい辛', '並辛', '大辛', '激辛'];
+        const noodleHardness = ['普通', '硬め', '柔らかめ'];
+         const noodleSize = ['並盛', '大盛'];
+        const toppingItems = ['九条ねぎ', '白ねぎ', 'なまたまご', 'ゆでもやし', 'とんかつ', 'きのこ', 'ﾁｬｰｼｭｰ', 'ゆでほうれん草', '味噌ひき肉', 'ゆでちんげん', 'わかめ', 'メンマ', 'にんにく', '玉子焼き'];
+
+        function startGame() {
+            correctCount = 0; // 正解数を0に戻す
+            document.getElementById('score').textContent = `正解数: ${correctCount}`;
+            document.getElementById('ticket').style.display = 'block';
+            document.getElementById('menu-buttons').style.display = 'flex';
+            document.getElementById('spiciness-buttons').style.display = 'flex';
+            document.getElementById('noodle-buttons').style.display = 'flex';
+             document.getElementById('size-buttons').style.display = 'none';
+            document.getElementById('topping-buttons').style.display = 'none';
+            document.getElementById('input-fields').style.display = 'flex';
+            document.getElementById('submit-button').style.display = 'block';
+            clearFields();
+            showTicket();
+        }
+
+        function selectOption(category, option) {
+            order[category] = option;
+            console.log(order);
+
+            if (category === 'menu') {
+                document.getElementById('menu-input-0').value = option;
+            } else if (category === 'spiciness') {
+                document.getElementById('spiciness-input-0').value = option;
+            } else if (category === 'noodle') {
+                document.getElementById('noodle-input-0').value = option;
+            }
+             else if (category === 'size') {
+                document.getElementById('size-input-0').value = option;
+            }
+             else if (category === 'topping') {
+                    order['topping'] = option;
+                    document.getElementById('topping-input-0').value = option;
+            }
+        }
+
+        function submitOrder() {
+            const resultDiv = document.getElementById('result');
+            let allCorrect = true;
+            const level = document.getElementById('level-select').value;
+
+            for (let i = 0; i < currentLevel; i++) {
+                const menuInput = document.getElementById(`menu-input-${i}`).value;
+                const spicinessInput = document.getElementById(`spiciness-input-${i}`).value;
+                const noodleInput = document.getElementById(`noodle-input-${i}`).value;
+
+                if (level === '1') {
+                    if (menuInput && spicinessInput && noodleInput) {
+                        if (order[`menu-${i}`] !== menuInput || order[`spiciness-${i}`] !== spicinessInput || order[`noodle-${i}`] !== noodleInput) {
+                            allCorrect = false;
+                            break;
+                        }
+                    } else {
+                        allCorrect = false;
+                        break;
+                    }
+                } else if (level === '2') {
+                     const sizeInput = document.getElementById(`size-input-${i}`).value;
+                    const toppingInput = document.getElementById(`topping-input-${i}`).value;
+                    if (menuInput && spicinessInput && noodleInput && sizeInput && toppingInput) {
+                        if (order[`menu-${i}`] !== menuInput || order[`spiciness-${i}`] !== spicinessInput || order[`noodle-${i}`] !== noodleInput || order[`size-${i}`] !== sizeInput || order[`topping-${i}`] !== toppingInput) {
+                            allCorrect = false;
+                            break;
+                        }
+                    } else {
+                        allCorrect = false;
+                        break;
+                    }
+                }
+            }
+
+            if (allCorrect) {
+                correctCount++;
+                document.getElementById('score').textContent = `正解数: ${correctCount}`;
+                resultDiv.textContent = '正解です！次の問題へ進みます。';
+                nextLevel();
+            } else {
+                let correctOrder = '';
+                const level = document.getElementById('level-select').value;
+                for (let i = 0; i < currentLevel; i++) {
+                    if (level === '1') {
+                        correctOrder += `${order[`menu-${i}`]} (${order[`spiciness-${i}`]}) (${order[`noodle-${i}`]})\n`;
+                    } else {
+                         correctOrder += `${order[`menu-${i}`]} (${order[`spiciness-${i}`]}) (${order[`noodle-${i}`]}) (${order[`size-${i}`]}) (${order[`topping-${i}`]})\n`;
+                    }
+                }
+                resultDiv.textContent = `不正解です！\n正解は:\n${correctOrder}`;
+                document.getElementById('submit-button').style.display = 'none'; // 完了ボタンを非表示にする
+            }
+        }
+
+        function nextLevel() {
+            currentLevel = 1; // 次の問題は1品だけにする
+            clearFields();
+            showTicket();
+        }
+
+        function showTicket() {
+            const ticket = document.getElementById('ticket');
+            let ticketText = '';
+            const level = document.getElementById('level-select').value;
+
+            document.getElementById('size-buttons').style.display = 'none';
+            document.getElementById('topping-buttons').style.display = 'none';
+
+            // レベル1の場合、麺の量とトッピングの入力を非表示にする
+            const sizeInput = document.getElementById('size-input-0');
+            const toppingInput = document.getElementById('topping-input-0');
+            if (level === '1') {
+                sizeInput.style.display = 'none';
+                toppingInput.style.display = 'none';
+            } else {
+                sizeInput.style.display = 'inline-block';
+                toppingInput.style.display = 'inline-block';
+            }
+
+            for (let i = 0; i < currentLevel; i++) {
+                let randomMenu = menuItems[Math.floor(Math.random() * menuItems.length)];
+                let randomSpiciness = spicinessLevels[Math.floor(Math.random() * spicinessLevels.length)];
+                let randomNoodle = noodleHardness[Math.floor(Math.random() * noodleHardness.length)];
+
+                order[`menu-${i}`] = randomMenu;
+                order[`spiciness-${i}`] = randomSpiciness;
+                order[`noodle-${i}`] = randomNoodle;
+
+                if (level === '1') {
+                    ticketText += `${randomMenu} (${randomSpiciness}) (${randomNoodle})\n`;
+                } else if (level === '2') {
+                    document.getElementById('size-buttons').style.display = 'flex';
+                    document.getElementById('topping-buttons').style.display = 'flex';
+                    let randomSize = noodleSize[Math.floor(Math.random() * noodleSize.length)];
+                    let randomTopping = toppingItems[Math.floor(Math.random() * toppingItems.length)];
+
+                    order[`size-${i}`] = randomSize;
+                    order[`topping-${i}`] = randomTopping;
+
+                    ticketText += `${randomMenu} (${randomSpiciness}) (${randomNoodle}) (${randomSize}) (${randomTopping})\n`;
+                }
+            }
+            ticket.textContent = ticketText.trim();
+
+            const displayTime = document.getElementById('display-time').value * 1000;
+            setTimeout(() => {
+                ticket.textContent = '';
+            }, displayTime); // 選択した秒数後に伝票を消す
+        }
+
+        function clearFields() {
+            const inputs = document.querySelectorAll('#input-fields input');
+            inputs.forEach(input => input.value = '');
+        }
+    </script>
+</body>
+</html>
