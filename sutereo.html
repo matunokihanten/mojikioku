@@ -57,11 +57,7 @@
             ctx.putImageData(imageData, 0, 0);
         }
 
-        // 奥行きマップ（数字の形状に基づく例）
-        function createDepthMap() {
-            ctx.fillStyle = "black";
-            ctx.font = "100px Arial";
-        }
+        
 
         // ステレオグラム生成
         function generateStereogram() {
@@ -81,7 +77,7 @@
                 document.getElementById("message").textContent = "正解！";
                 generateStereogram(); // 正解したら新しいステレオグラムを生成
             } else {
-                document.getElementById("message").textContent = "不正解。もう一度試してください。";
+                document.getElementById("message").textContent = `不正解。正解は ${hiddenNumber} でした。`;
             }
         }
 
