@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ステレオグラム数字当てゲーム – 数字変更ボタン追加</title>
+  <title>ステレオグラム数字当てゲーム – 改良版</title>
   <style>
     body {
       font-family: sans-serif;
@@ -26,7 +26,7 @@
 <body>
   <h1>ステレオグラム数字当てゲーム</h1>
   <p id="instructions">
-    画面をリラックスして、目の焦点を少し奥に合わせると数字が浮かび上がるはずです。
+    リラックスして、目の焦点を少し奥に合わせると数字が浮かび上がるはずです。
   </p>
   <canvas id="stereoCanvas" width="400" height="300"></canvas>
   <br>
@@ -42,43 +42,35 @@
     const canvasHeight = canvas.height;
     const resultEl = document.getElementById('result');
 
-    // グローバル変数 hiddenDigit で現在の隠し数字を保持
     let hiddenDigit;
 
-    // ステレオグラム生成と描画を行う関数
     function generateStereogram() {
-      // 以前の結果はクリア
       resultEl.textContent = "";
 
-      // 0～9 の中から新たな隠し数字をランダムに選定
       hiddenDigit = Math.floor(Math.random() * 10);
       console.log('隠し数字（デバッグ用）: ' + hiddenDigit);
 
-      // 深度マップの作成（背景は 0、数字部分は 0.3 に設定）
       const depthMap = [];
       for (let y = 0; y < canvasHeight; y++) {
         depthMap[y] = [];
         for (let x = 0; x < canvasWidth; x++) {
-          depthMap[y][x] = 0; // 背景の深度は 0
+          depthMap[y][x] = 0;
         }
       }
 
-      // オフスクリーンキャンバスに隠し数字を描画してマスクに利用
       const digitCanvas = document.createElement('canvas');
       digitCanvas.width = canvasWidth;
       digitCanvas.height = canvasHeight;
       const dctx = digitCanvas.getContext('2d');
 
-      // 黒背景に白で隠し数字を描く
       dctx.fillStyle = 'black';
       dctx.fillRect(0, 0, canvasWidth, canvasHeight);
       dctx.fillStyle = 'white';
-      dctx.font = '150px sans-serif';
+      dctx.font = '250px sans-serif';
       dctx.textAlign = 'center';
       dctx.textBaseline = 'middle';
       dctx.fillText(hiddenDigit, canvasWidth / 2, canvasHeight / 2);
 
-      // 描画した数字のピクセル情報を基に、深度マップを更新（白い部分を深度 0.3 とする）
       const digitData = dctx.getImageData(0, 0, canvasWidth, canvasHeight);
       for (let y = 0; y < canvasHeight; y++) {
         for (let x = 0; x < canvasWidth; x++) {
@@ -93,22 +85,15 @@
         }
       }
 
-      // ステレオグラム生成用パラメータ
-      const eyeSeparation = 60; // 基準パターンの幅（シフト量の基準になる）
-
-      // キャンバス全体のステレオ画像データを作成
+      const eyeSeparation = 60;
       const stereoImage = ctx.createImageData(canvasWidth, canvasHeight);
 
-      // 各行ごとにパターンを生成
       for (let y = 0; y < canvasHeight; y++) {
         let row = new Array(canvasWidth);
-        // 最初の "基準領域" をランダムに生成
         for (let x = 0; x < eyeSeparation; x++) {
           row[x] = Math.floor(Math.random() * 256);
         }
-        // 基準領域以降の部分は、深度情報に基づきパターンをコピー
         for (let x = eyeSeparation; x < canvasWidth; x++) {
-          // 深度に応じたシフト量を計算（数字部分は右にずらす）
           const shift = Math.round(eyeSeparation * depthMap[y][x]);
           const srcIndex = x - eyeSeparation + shift;
           if (srcIndex < 0 || srcIndex >= x) {
@@ -117,7 +102,6 @@
             row[x] = row[srcIndex];
           }
         }
-        // 生成した行パターンを画像データに反映
         for (let x = 0; x < canvasWidth; x++) {
           const idx = (y * canvasWidth + x) * 4;
           const color = row[x];
@@ -128,14 +112,11 @@
         }
       }
 
-      // ステレオグラム画像をキャンバスに描画
       ctx.putImageData(stereoImage, 0, 0);
     }
 
-    // 初回描画
     generateStereogram();
 
-    // 回答ボタンの処理
     document.getElementById('submitGuess').addEventListener('click', function () {
       const userGuess = document.getElementById('guess').value.trim();
       if (userGuess === "") {
@@ -144,12 +125,13 @@
       }
       if (parseInt(userGuess) === hiddenDigit) {
         resultEl.textContent = "正解！よく見抜きました！";
+        generateStereogram();
       } else {
-        resultEl.textContent = "残念… 不正解です。もう一度チャレンジしてください。";
+        resultEl.textContent = `残念… 不正解です。正解は ${hiddenDigit} でした。`;
+        generateStereogram();
       }
     });
 
-    // 「数字変更」ボタン押下時の処理で、新たなステレオグラムを生成する
     document.getElementById('changeNumber').addEventListener('click', function () {
       generateStereogram();
       document.getElementById('guess').value = "";
