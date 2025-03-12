@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ステレオグラム数字当てゲーム – レベル選択付き</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    canvas {
+      border: 1px solid #000;
+      margin-bottom: 10px;
+    }
+    input, button, select {
+      font-size: 1rem;
+      padding: 5px;
+      margin: 5px;
+    }
+    #instructions {
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>ステレオグラム 数字当てゲーム</h1>
+  <label for="levelSelect">レベル選択: </label>
+  <select id="levelSelect">
+    <option value="1">レベル1 (1桁: 0～9)</option>
+    <option value="2">レベル2 (2桁: 10～99)</option>
+  </select>
+  <p id="instructions">
+    リラックスして、目の焦点を少し奥に合わせると、隠された数字が浮かび上がるはずです。
+  </p>
+  <canvas id="stereoCanvas" width="400" height="300"></canvas>
+  <br>
+  <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1">
+  <button id="submitGuess">回答する</button>
+  <button id="changeNumber">数字変更</button>
+  <p id="result"></p>
+
+  <script>
+    const canvas = document.getElementById('stereoCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const resultEl = document.getElementById('result');
+    const guessInput = document.getElementById('guess');
+    const levelSelect = document.getElementById('levelSelect');
+
+    let hiddenDigit;
+
+    // レベルに応じた隠し数字を生成し、ステレオグラムを描画する関数
+    function generateStereogram() {
+      resultEl.textContent = "";  // 結果表示を初期化
+      const currentLevel = parseInt(levelSelect.value, 10);
+      
+      // レベルに応じた隠し数字の生成
+      if (currentLevel === 1) {
+        hiddenDigit = Math.floor(Math.random() * 10);
+      } else {
+        hiddenDigit = Math.floor(Math.random() * 90) + 10;
+      }
+      console.log('隠し数字（デバッグ用）:', hiddenDigit);
+
+      // 深度マップ作成（背景は 0、数字部分は 0.3）
+      const depthMap = [];
+      for (let y = 0; y < canvasHeight; y++) {
+        depthMap[y] = [];
+        for (let x = 0; x < canvasWidth; x++) {
+          depthMap[y][x] = 0;
+        }
+      }
+
+      // オフスクリーンキャンバスで隠し数字を描画（黒背景に白）
+      const digitCanvas = document.createElement('canvas');
+      digitCanvas.width = canvasWidth;
+      digitCanvas.height = canvasHeight;
+      const dctx = digitCanvas.getContext('2d');
+
+      dctx.fillStyle = 'black';
+      dctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      dctx.fillStyle = 'white';
+      // 数字のサイズは250px（どちらのレベルも同じサイズですが、数字の桁数が異なります）
+      dctx.font = '250px sans-serif';
+      dctx.textAlign = 'center';
+      dctx.textBaseline = 'middle';
+      dctx.fillText(hiddenDigit, canvasWidth / 2, canvasHeight / 2);
+
+      // 隠し数字部分のピクセル情報から深度マップを更新（白い部分なら深度 0.3）
+      const digitData = dctx.getImageData(0, 0, canvasWidth, canvasHeight);
+      for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+          const idx = (y * canvasWidth + x) * 4;
+          if (
+            digitData.data[idx] > 200 &&
+            digitData.data[idx + 1] > 200 &&
+            digitData.data[idx + 2] > 200
+          ) {
+            depthMap[y][x] = 0.3;
+          }
+        }
+      }
+
+      // ステレオグラム生成のためのパラメータ
+      const eyeSeparation = 60;
+      const stereoImage = ctx.createImageData(canvasWidth, canvasHeight);
+
+      // 各行ごとにドットパターンを生成し、深度情報に基づいてシフトを適用
+      for (let y = 0; y < canvasHeight; y++) {
+        let row = new Array(canvasWidth);
+        // 先頭 eyeSeparation 分はランダムで基準パターンを生成
+        for (let x = 0; x < eyeSeparation; x++) {
+          row[x] = Math.floor(Math.random() * 256);
+        }
+        // 残り部分は深度マップを参考にシフトしてコピー
+        for (let x = eyeSeparation; x < canvasWidth; x++) {
+          const shift = Math.round(eyeSeparation * depthMap[y][x]);
+          const srcIndex = x - eyeSeparation + shift;
+          if (srcIndex < 0 || srcIndex >= x) {
+            row[x] = Math.floor(Math.random() * 256);
+          } else {
+            row[x] = row[srcIndex];
+          }
+        }
+        // 生成した行パターンを画像データへ反映
+        for (let x = 0; x < canvasWidth; x++) {
+          const idx = (y * canvasWidth + x) * 4;
+          const color = row[x];
+          stereoImage.data[idx] = color;
+          stereoImage.data[idx + 1] = color;
+          stereoImage.data[idx + 2] = color;
+          stereoImage.data[idx + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(stereoImage, 0, 0);
+    }
+
+    // レベル選択変更時の処理：入力欄のプレースホルダーと桁数を更新し、新たな問題を生成
+    levelSelect.addEventListener('change', function () {
+      const currentLevel = parseInt(levelSelect.value, 10);
+      if (currentLevel === 1) {
+        guessInput.placeholder = "0～9 の数字を入力";
+        guessInput.maxLength = "1";
+      } else {
+        guessInput.placeholder = "10～99 の数字を入力";
+        guessInput.maxLength = "2";
+      }
+      generateStereogram();
+    });
+
+    // 初回問題生成
+    generateStereogram();
+
+    // 「回答する」ボタンの処理
+    document.getElementById('submitGuess').addEventListener('click', function () {
+      const userGuess = guessInput.value.trim();
+      if (userGuess === "") {
+        resultEl.textContent = "まずは数字を入力してください。";
+        return;
+      }
+      if (parseInt(userGuess, 10) === hiddenDigit) {
+        resultEl.textContent = "正解！";
+        // 正解の場合は1秒後に次の問題へ
+        setTimeout(() => {
+          guessInput.value = "";
+          generateStereogram();
+        }, 1000);
+      } else {
+        resultEl.textContent = `不正解！ 正解は ${hiddenDigit} でした。`;
+        // 不正解の場合は2秒後に次の問題へ
+        setTimeout(() => {
+          guessInput.value = "";
+          generateStereogram();
+        }, 2000);
+      }
+    });
+
+    // 「数字変更」ボタン押下時、新たな問題を生成
+    document.getElementById('changeNumber').addEventListener('click', function () {
+      generateStereogram();
+      guessInput.value = "";
+    });
+  </script>
+</body>
+</html>
