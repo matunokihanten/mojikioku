@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>動くステレオグラム - 拡張版</title>
+  <style>
+    body {
+      background-color: #eee;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    canvas {
+      border: 1px solid #333;
+      margin: 20px auto;
+      display: block;
+    }
+    #controls {
+      text-align: center;
+      margin: 20px;
+    }
+    #controls input[type="range"] {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>動くステレオグラム - 拡張版</h1>
+  <p>
+    目の焦点を調整すると、下の隠し形状内に3D効果が現れるかもしれません。<br>
+    下記のコントロールで効果の強さや形状の大きさを変更したり、新しい背景を生成できます。
+  </p>
+  <canvas id="stereoCanvas" width="600" height="600"></canvas>
+
+  <div id="controls">
+    <div>
+      <label for="amplitudeSlider">ディスプレイスメント強度：</label>
+      <input type="range" id="amplitudeSlider" min="0" max="50" value="15">
+      <span id="amplitudeValue">15</span> px
+    </div>
+    <div>
+      <label for="shapeRadiusSlider">形状半径：</label>
+      <input type="range" id="shapeRadiusSlider" min="20" max="150" value="80">
+      <span id="shapeRadiusValue">80</span> px
+    </div>
+    <div>
+      <label for="outlineCheckbox">赤いアウトライン表示：</label>
+      <input type="checkbox" id="outlineCheckbox" checked>
+    </div>
+    <div style="margin-top: 10px;">
+      <button id="regenerateButton">新しい背景を生成</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const canvas = document.getElementById('stereoCanvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+    
+      // オフスクリーンキャンバスでランダムドットパターンを生成する
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = width;
+      offCanvas.height = height;
+      const offCtx = offCanvas.getContext('2d');
+      
+      function generateRandomDots() {
+        const imageData = offCtx.createImageData(width, height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const shade = Math.floor(Math.random() * 256);
+          data[i] = shade;       // R
+          data[i + 1] = shade;   // G
+          data[i + 2] = shade;   // B
+          data[i + 3] = 255;     // A
+        }
+        offCtx.putImageData(imageData, 0, 0);
+      }
+      
+      generateRandomDots();
+      
+      let startTime = null;
+      let amplitude = 15;      // デフォルトのシフト幅（ピクセル）
+      let shapeRadius = 80;    // 隠し形状（円）の半径
+      let showOutline = true;  // 赤いアウトラインの表示
+      
+      // DOM要素からコントロールの取得
+      const amplitudeSlider = document.getElementById('amplitudeSlider');
+      const amplitudeValue = document.getElementById('amplitudeValue');
+      const shapeRadiusSlider = document.getElementById('shapeRadiusSlider');
+      const shapeRadiusValue = document.getElementById('shapeRadiusValue');
+      const outlineCheckbox = document.getElementById('outlineCheckbox');
+      const regenerateButton = document.getElementById('regenerateButton');
+      
+      amplitudeSlider.addEventListener('input', () => {
+        amplitude = parseInt(amplitudeSlider.value, 10);
+        amplitudeValue.textContent = amplitude;
+      });
+      
+      shapeRadiusSlider.addEventListener('input', () => {
+        shapeRadius = parseInt(shapeRadiusSlider.value, 10);
+        shapeRadiusValue.textContent = shapeRadius;
+      });
+      
+      outlineCheckbox.addEventListener('change', () => {
+        showOutline = outlineCheckbox.checked;
+      });
+      
+      regenerateButton.addEventListener('click', () => {
+        generateRandomDots();
+      });
+      
+      function animate(time) {
+        if (!startTime) startTime = time;
+        const elapsed = time - startTime;
+        
+        // 隠し形状内の背景画像をずらすためのディスプレイスメント（周期的に変化）
+        const displacement = amplitude * Math.sin(elapsed / 500);
+        
+        // 隠し形状の中心位置を時間とともに動かす（画面中央を起点に円軌道を描く）
+        const cx = width / 2 + 100 * Math.cos(elapsed / 2000);
+        const cy = height / 2 + 100 * Math.sin(elapsed / 2000);
+        
+        // キャンバス全体をクリアし、背景画像（ランダムドット）を描画
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(offCanvas, 0, 0);
+        
+        // クリッピング処理：隠し形状（円）領域を形成
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, shapeRadius, 0, 2 * Math.PI);
+        ctx.clip();
+        
+        // クリッピング領域内で、背景画像を水平にずらして再描画
+        ctx.drawImage(offCanvas, displacement, 0);
+        ctx.restore();
+        
+        // オプションで、隠し形状のアウトラインを表示
+        if (showOutline) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, shapeRadius, 0, 2 * Math.PI);
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        
+        requestAnimationFrame(animate);
+      }
+      
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
