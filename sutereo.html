@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ステレオグラム 数字当てゲーム – 拡張版</title>
+  <title>ステレオグラム数字当てゲーム – 数字変更ボタン追加</title>
   <style>
     body {
       font-family: sans-serif;
@@ -13,125 +13,102 @@
       border: 1px solid #000;
       margin-bottom: 10px;
     }
-    button {
-      font-size: 1.2rem;
-      padding: 10px;
+    input, button {
+      font-size: 1rem;
+      padding: 5px;
       margin: 5px;
-      width: 45px;
-      height: 45px;
-    }
-    #digitButtons {
-      margin-bottom: 10px;
     }
     #instructions {
       color: #555;
-      margin-bottom: 10px;
-    }
-    #streakDisplay {
-      font-size: 1.2rem;
-      font-weight: bold;
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>ステレオグラム 数字当てゲーム</h1>
+  <h1>ステレオグラム数字当てゲーム</h1>
   <p id="instructions">
-    リラックスして、目の焦点を奥に合わせると、浮かび上がる数字が見えてくるかもしれません。<br>
-    下のボタンからその数字を推測してください。
+    画面をリラックスして、目の焦点を少し奥に合わせると数字が浮かび上がるはずです。
   </p>
   <canvas id="stereoCanvas" width="400" height="300"></canvas>
-  <div id="digitButtons">
-    <!-- 0 から 9 のボタン -->
-    <button data-digit="0">0</button>
-    <button data-digit="1">1</button>
-    <button data-digit="2">2</button>
-    <button data-digit="3">3</button>
-    <button data-digit="4">4</button>
-    <button data-digit="5">5</button>
-    <button data-digit="6">6</button>
-    <button data-digit="7">7</button>
-    <button data-digit="8">8</button>
-    <button data-digit="9">9</button>
-  </div>
+  <br>
+  <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1">
+  <button id="submitGuess">回答する</button>
+  <button id="changeNumber">数字変更</button>
   <p id="result"></p>
-  <p id="streakDisplay">連続正解数: 0</p>
 
   <script>
     const canvas = document.getElementById('stereoCanvas');
     const ctx = canvas.getContext('2d');
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
-    
     const resultEl = document.getElementById('result');
-    const streakDisplay = document.getElementById('streakDisplay');
-    const digitButtons = document.querySelectorAll('#digitButtons button');
-    
-    let hiddenDigit;  // 現在の隠し数字
-    let streakCount = 0; // 連続正解数
 
-    // ステレオグラム生成関数
+    // グローバル変数 hiddenDigit で現在の隠し数字を保持
+    let hiddenDigit;
+
+    // ステレオグラム生成と描画を行う関数
     function generateStereogram() {
-      // 表示メッセージのクリア
+      // 以前の結果はクリア
       resultEl.textContent = "";
-      // ボタンをすべて有効化
-      digitButtons.forEach(button => button.disabled = false);
-  
-      // 0～9の中から新しい隠し数字をランダム生成
+
+      // 0～9 の中から新たな隠し数字をランダムに選定
       hiddenDigit = Math.floor(Math.random() * 10);
-      console.log('隠し数字 (デバッグ用): ' + hiddenDigit);
-  
-      // 深度マップ（2次元配列）の作成
+      console.log('隠し数字（デバッグ用）: ' + hiddenDigit);
+
+      // 深度マップの作成（背景は 0、数字部分は 0.3 に設定）
       const depthMap = [];
       for (let y = 0; y < canvasHeight; y++) {
         depthMap[y] = [];
         for (let x = 0; x < canvasWidth; x++) {
-          depthMap[y][x] = 0;  // 背景は深度 0
+          depthMap[y][x] = 0; // 背景の深度は 0
         }
       }
-  
-      // オフスクリーンキャンバスに隠し数字を描画して、深度マップを生成
+
+      // オフスクリーンキャンバスに隠し数字を描画してマスクに利用
       const digitCanvas = document.createElement('canvas');
       digitCanvas.width = canvasWidth;
       digitCanvas.height = canvasHeight;
       const dctx = digitCanvas.getContext('2d');
-  
-      // 黒背景に白で描く
+
+      // 黒背景に白で隠し数字を描く
       dctx.fillStyle = 'black';
       dctx.fillRect(0, 0, canvasWidth, canvasHeight);
       dctx.fillStyle = 'white';
-      // 数字のサイズを大きく（200px）して描画
-      dctx.font = '200px sans-serif';
+      dctx.font = '150px sans-serif';
       dctx.textAlign = 'center';
       dctx.textBaseline = 'middle';
       dctx.fillText(hiddenDigit, canvasWidth / 2, canvasHeight / 2);
-  
-      // 描画されたピクセル情報をもとに、数字部分の深度を更新（白い部分）
+
+      // 描画した数字のピクセル情報を基に、深度マップを更新（白い部分を深度 0.3 とする）
       const digitData = dctx.getImageData(0, 0, canvasWidth, canvasHeight);
       for (let y = 0; y < canvasHeight; y++) {
         for (let x = 0; x < canvasWidth; x++) {
           const idx = (y * canvasWidth + x) * 4;
-          if (digitData.data[idx] > 200 &&
-              digitData.data[idx + 1] > 200 &&
-              digitData.data[idx + 2] > 200) {
+          if (
+            digitData.data[idx] > 200 &&
+            digitData.data[idx + 1] > 200 &&
+            digitData.data[idx + 2] > 200
+          ) {
             depthMap[y][x] = 0.3;
           }
         }
       }
-  
+
       // ステレオグラム生成用パラメータ
-      const eyeSeparation = 60;
+      const eyeSeparation = 60; // 基準パターンの幅（シフト量の基準になる）
+
+      // キャンバス全体のステレオ画像データを作成
       const stereoImage = ctx.createImageData(canvasWidth, canvasHeight);
-  
-      // 各行ごとにランダムドットパターンを生成し、深度情報に基づきシフトを適用
+
+      // 各行ごとにパターンを生成
       for (let y = 0; y < canvasHeight; y++) {
         let row = new Array(canvasWidth);
-        // 基準パターンを生成（先頭 eyeSeparation 分）
+        // 最初の "基準領域" をランダムに生成
         for (let x = 0; x < eyeSeparation; x++) {
           row[x] = Math.floor(Math.random() * 256);
         }
-        // 残り部分はシフトしてコピー
+        // 基準領域以降の部分は、深度情報に基づきパターンをコピー
         for (let x = eyeSeparation; x < canvasWidth; x++) {
+          // 深度に応じたシフト量を計算（数字部分は右にずらす）
           const shift = Math.round(eyeSeparation * depthMap[y][x]);
           const srcIndex = x - eyeSeparation + shift;
           if (srcIndex < 0 || srcIndex >= x) {
@@ -140,48 +117,43 @@
             row[x] = row[srcIndex];
           }
         }
-        // 画像データに反映
+        // 生成した行パターンを画像データに反映
         for (let x = 0; x < canvasWidth; x++) {
           const idx = (y * canvasWidth + x) * 4;
           const color = row[x];
-          stereoImage.data[idx]     = color;
+          stereoImage.data[idx] = color;
           stereoImage.data[idx + 1] = color;
           stereoImage.data[idx + 2] = color;
           stereoImage.data[idx + 3] = 255;
         }
       }
-  
+
+      // ステレオグラム画像をキャンバスに描画
       ctx.putImageData(stereoImage, 0, 0);
     }
-  
-    // 各数字ボタンにイベントリスナーを追加
-    digitButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        // すべてのボタンを一時的に無効化して重複入力を防止
-        digitButtons.forEach(btn => btn.disabled = true);
-        const userGuess = parseInt(button.getAttribute('data-digit'), 10);
-        if (userGuess === hiddenDigit) {
-          streakCount++;
-          resultEl.textContent = "正解！ 連続正解数: " + streakCount;
-          streakDisplay.textContent = "連続正解数: " + streakCount;
-          // 正解なら短いタイマー後に新たな問題へ
-          setTimeout(() => {
-            generateStereogram();
-          }, 1000);
-        } else {
-          streakCount = 0;
-          streakDisplay.textContent = "連続正解数: " + streakCount;
-          resultEl.textContent = "不正解！ 正解は " + hiddenDigit + " でした。";
-          // 不正解の場合は少し長めの待ち時間後に次の問題へ
-          setTimeout(() => {
-            generateStereogram();
-          }, 2000);
-        }
-      });
-    });
-  
-    // 初回問題の生成
+
+    // 初回描画
     generateStereogram();
+
+    // 回答ボタンの処理
+    document.getElementById('submitGuess').addEventListener('click', function () {
+      const userGuess = document.getElementById('guess').value.trim();
+      if (userGuess === "") {
+        resultEl.textContent = "まずは数字を入力してください。";
+        return;
+      }
+      if (parseInt(userGuess) === hiddenDigit) {
+        resultEl.textContent = "正解！よく見抜きました！";
+      } else {
+        resultEl.textContent = "残念… 不正解です。もう一度チャレンジしてください。";
+      }
+    });
+
+    // 「数字変更」ボタン押下時の処理で、新たなステレオグラムを生成する
+    document.getElementById('changeNumber').addEventListener('click', function () {
+      generateStereogram();
+      document.getElementById('guess').value = "";
+    });
   </script>
 </body>
 </html>
