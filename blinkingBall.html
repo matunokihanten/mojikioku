@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>全20種のアニメーション統合サンプル（スマホ向けボタン配置）</title>
+  <title>刺激的な20種アニメーション＋音声統合サンプル</title>
   <style>
     body {
       font-family: sans-serif;
@@ -16,12 +16,11 @@
     canvas {
       display: block;
       margin: 20px auto;
-      background: #222;
+      background: #000;
       border: 1px solid #fff;
       max-width: 100%;
       height: auto;
     }
-    /* ボタンコンテナをグリッド表示に変更 */
     .button-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -70,42 +69,75 @@
   </div>
 
   <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    // 現在のモードとモード開始時刻
+    const canvas   = document.getElementById('canvas');
+    const ctx      = canvas.getContext('2d');
     let currentMode = "wakeUp";
     let modeStartTime = performance.now();
 
-    // ユーティリティ：補色を返す関数（必要に応じて利用）
+    // 各モードに対応する音源（ファイルは「sounds」フォルダ内に配置）
+    const sounds = {
+      wakeUp:           new Audio('sounds/wakeUp.mp3'),
+      calm:             new Audio('sounds/calm.mp3'),
+      meditation:       new Audio('sounds/meditation.mp3'),
+      selfSuggestion:   new Audio('sounds/selfSuggestion.mp3'),
+      concentration:    new Audio('sounds/concentration.mp3'),
+      energyBoost:      new Audio('sounds/energyBoost.mp3'),
+      relax:            new Audio('sounds/relax.mp3'),
+      happy:            new Audio('sounds/happy.mp3'),
+      creativity:       new Audio('sounds/creativity.mp3'),
+      courage:          new Audio('sounds/courage.mp3'),
+      gratitude:        new Audio('sounds/gratitude.mp3'),
+      sparkle:          new Audio('sounds/sparkle.mp3'),
+      chakra:           new Audio('sounds/chakra.mp3'),
+      inspiration:      new Audio('sounds/inspiration.mp3'),
+      party:            new Audio('sounds/party.mp3'),
+      coolDown:         new Audio('sounds/coolDown.mp3'),
+      selfDiscovery:    new Audio('sounds/selfDiscovery.mp3'),
+      balance:          new Audio('sounds/balance.mp3'),
+      focus:            new Audio('sounds/focus.mp3'),
+      brainActivation:  new Audio('sounds/brainActivation.mp3')
+    };
+
+    // 補色ユーティリティ（必要に応じて利用）
     function getComplementaryColor(color) {
       switch(color) {
-        case 'red': return 'cyan';
-        case 'blue': return 'orange';
-        case 'green': return 'magenta';
+        case 'red':    return 'cyan';
+        case 'blue':   return 'orange';
+        case 'green':  return 'magenta';
         case 'yellow': return 'purple';
         case 'purple': return 'lime';
         case 'orange': return 'blue';
-        default: return '#fff';
+        default:       return '#fff';
       }
     }
 
-    // モード切替時に呼び出して開始時刻をリセット
+    // モード切替時は開始時刻をリセットし、対応する音を再生
     function setMode(mode) {
       currentMode = mode;
       modeStartTime = performance.now();
+      playSoundForMode(mode);
     }
 
-    // アニメーションループ
+    function playSoundForMode(mode) {
+      // 再生中の音があれば一旦停止し、先頭に戻す
+      for (let key in sounds) {
+        sounds[key].pause();
+        sounds[key].currentTime = 0;
+      }
+      if (sounds[mode]) {
+        sounds[mode].play();
+      }
+    }
+
+    // ★ 刺激的なエフェクトを各モードで実装 ★
     function animate(timestamp) {
-      const elapsed = timestamp - modeStartTime; // モード開始からの経過時間
+      const elapsed = timestamp - modeStartTime;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 各モードごとの描画処理
       switch(currentMode) {
         case "wakeUp": {
-          // 目が覚める: 高速点滅（約10 Hz）、赤い玉、背景はシアン
-          const period = 100;
+          // 目が覚める: 高速点滅＋中央から放射線
+          const period = 100; // 約10Hz
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "cyan";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -116,70 +148,96 @@
             ctx.fill();
             ctx.closePath();
           }
+          // 放射線パターン
+          ctx.strokeStyle = "rgba(255,255,255,0.3)";
+          for(let i = 0; i < 16; i++) {
+            const angle = i * (Math.PI/8) + (elapsed/200);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, canvas.height/2);
+            ctx.lineTo(canvas.width/2 + 200 * Math.cos(angle), canvas.height/2 + 200 * Math.sin(angle));
+            ctx.stroke();
+          }
           break;
         }
         case "calm": {
-          // 落ち着く: ゆっくり (1 Hz) 点滅、青い玉、背景はライトブルー
+          // 落ち着く: ゆっくり1Hzの点滅＋ぼかしエフェクト
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
-          ctx.fillStyle = "lightblue";
+          ctx.fillStyle = "rgba(173,216,230,0.8)"; // ライトブルー
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
+            ctx.save();
+            ctx.filter = "blur(4px)";
             ctx.beginPath();
             ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
             ctx.fillStyle = "blue";
             ctx.fill();
             ctx.closePath();
+            ctx.restore();
           }
           break;
         }
         case "meditation": {
-          // 瞑想: 非常にゆっくりフェード（0.5 Hz）、紫の玉をアルファで描画
-          const frequency = 0.5;
+          // 瞑想: ゆっくりフェードする紫の玉＋同心円の波紋効果
+          const frequency = 0.5; // 0.5 Hz
           const alpha = 0.5 + 0.5 * Math.sin(2 * Math.PI * frequency * elapsed / 1000);
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // 中央のぼんやりした玉
           ctx.beginPath();
           ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(128, 0, 128, " + alpha + ")";
+          ctx.fillStyle = "rgba(128, 0, 128,"+alpha+")";
           ctx.fill();
+          ctx.closePath();
+          // 波紋エフェクト
+          let rippleRadius = 80 + (elapsed/10)%50;
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, rippleRadius, 0, Math.PI*2);
+          ctx.strokeStyle = "rgba(255,255,255,0.2)";
+          ctx.lineWidth = 3;
+          ctx.stroke();
           ctx.closePath();
           break;
         }
         case "selfSuggestion": {
-          // 自己暗示: 玉の点滅＋内側に縮むエフェクトとメッセージ
+          // 自己暗示: 点滅する玉＋内側に縮む黒い円と流れるメッセージ
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "#444";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
             ctx.fillStyle = "magenta";
             ctx.fill();
             ctx.closePath();
           }
+          // 吸い込まれるように内側へ縮む＋螺旋状エフェクト
           const collapseDuration = 3000;
           const collapseElapsed = elapsed % collapseDuration;
-          const startRadius = Math.max(canvas.width, canvas.height) / 2;
+          const startRadius = Math.max(canvas.width, canvas.height) / 1.5;
           const currentRadius = startRadius * (1 - collapseElapsed / collapseDuration);
           const overlayOpacity = collapseElapsed / collapseDuration;
+          ctx.save();
+          ctx.translate(canvas.width/2, canvas.height/2);
+          ctx.rotate(elapsed/1000);
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, currentRadius, 0, Math.PI * 2);
+          ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
           ctx.fillStyle = "rgba(0,0,0," + overlayOpacity + ")";
           ctx.fill();
           ctx.closePath();
+          ctx.restore();
           ctx.font = "36px sans-serif";
           ctx.fillStyle = "white";
           ctx.textAlign = "center";
-          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2);
+          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2 + 10);
           break;
         }
         case "concentration": {
-          // 集中: 中速 (5 Hz) 点滅、緑の玉＋外側のリング効果
+          // 集中: 5Hz点滅＋外側のリングが波打つ効果
           const period = 200;
           const phase = (elapsed % period) < (period / 2);
-          ctx.fillStyle = "#222";
+          ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
             ctx.beginPath();
@@ -189,15 +247,15 @@
             ctx.closePath();
           }
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, 100 + 10 * Math.sin(elapsed / 100), 0, Math.PI * 2);
+          ctx.arc(canvas.width/2, canvas.height/2, 100 + 15 * Math.sin(elapsed / 80), 0, Math.PI * 2);
           ctx.strokeStyle = "white";
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 5;
           ctx.stroke();
           ctx.closePath();
           break;
         }
         case "energyBoost": {
-          // エネルギーアップ: 高速 (15 Hz) 点滅、黄色の玉
+          // エネルギーアップ: 超高速（15Hz以下）の点滅＋星のようなブレ効果
           const period = 1000 / 15;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -209,25 +267,42 @@
             ctx.fill();
             ctx.closePath();
           }
-          break;
-        }
-        case "relax": {
-          // リラックス: ゆっくり (1 Hz) 点滅、柔らかい緑、背景は淡い緑
-          const period = 1000;
-          const phase = (elapsed % period) < (period / 2);
-          ctx.fillStyle = "#a0d6a0";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          if (phase) {
+          // 小さな星をランダムに散らばらせる
+          for(let i = 0; i < 30; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const r = Math.random() * 2 + 1;
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
-            ctx.fillStyle = "green";
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = "white";
             ctx.fill();
             ctx.closePath();
           }
           break;
         }
+        case "relax": {
+          // リラックス: ゆっくり1Hz点滅＋背景に水面のようなゆらぎ
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          let grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 50, canvas.width/2, canvas.height/2, 300);
+          grad.addColorStop(0, "#a0d6a0");
+          grad.addColorStop(1, "#70a070");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.save();
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "green";
+            ctx.fill();
+            ctx.closePath();
+            ctx.restore();
+          }
+          break;
+        }
         case "happy": {
-          // 幸せ: 約3 Hz 点滅、暖色系（ピンク）で表現
+          // 幸せ: 約3Hz点滅＋ランダムに跳ねる花火エフェクト
           const period = 333;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "lightpink";
@@ -239,15 +314,27 @@
             ctx.fill();
             ctx.closePath();
           }
+          // 花火エフェクト
+          for(let i = 0; i < 10; i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const dist = Math.random() * 150;
+            const x = canvas.width/2 + dist * Math.cos(angle);
+            const y = canvas.height/2 + dist * Math.sin(angle);
+            ctx.beginPath();
+            ctx.arc(x, y, Math.random()*4, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(" + (200+Math.random()*55) + ", " + (Math.random()*100) + ", " + (Math.random()*100) + ", 0.8)";
+            ctx.fill();
+            ctx.closePath();
+          }
           break;
         }
         case "creativity": {
-          // 創造性: 2 Hz 点滅、球の色が時間とともに変化
+          // 創造性: 2Hz点滅＋色相が時間とともに変わる球＋スパイラルライン
           const period = 500;
           const phase = (elapsed % period) < (period / 2);
           const hue = (elapsed / 10) % 360;
           const dynamicColor = "hsl(" + hue + ",80%,50%)";
-          ctx.fillStyle = "#222";
+          ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
             ctx.beginPath();
@@ -256,32 +343,49 @@
             ctx.fill();
             ctx.closePath();
           }
+          // スパイラルライン
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for(let i = 0; i < 360; i += 10) {
+            let rad = i * Math.PI / 180;
+            let r = 80 + 40 * Math.sin(rad + elapsed/200);
+            let x = canvas.width/2 + r * Math.cos(rad);
+            let y = canvas.height/2 + r * Math.sin(rad);
+            if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          ctx.closePath();
           break;
         }
         case "courage": {
-          // 勇気: 高速 (10 Hz) 点滅、強い赤系（crimson）
+          // 勇気: 10Hzで点滅＋画面が微かに震えるシェイク効果
           const period = 100;
           const phase = (elapsed % period) < (period / 2);
+          const shake = 5 * Math.sin(elapsed / 10);
           ctx.fillStyle = "#400";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
+            ctx.save();
+            ctx.translate(shake, shake);
             ctx.beginPath();
             ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
             ctx.fillStyle = "crimson";
             ctx.fill();
             ctx.closePath();
+            ctx.restore();
           }
           break;
         }
         case "gratitude": {
-          // 感謝: ゆっくり (1 Hz) 点滅、ラベンダー色＋「ありがとう」テキスト
+          // 感謝: ゆっくり1Hz点滅＋淡いラベンダー背景＆流れるメッセージ
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
-          ctx.fillStyle = "#eee";
+          ctx.fillStyle = "#f0e6fa";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           if (phase) {
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
             ctx.fillStyle = "lavender";
             ctx.fill();
             ctx.closePath();
@@ -293,7 +397,7 @@
           break;
         }
         case "sparkle": {
-          // スパークル: 約3 Hz 点滅＋画面全体に小さな白い星を描画
+          // スパークル: 約3Hz点滅＋固定星パーティクル＆輝きのランダム変化
           const period = 333;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -305,61 +409,72 @@
             ctx.fill();
             ctx.closePath();
           }
-          for (let i = 0; i < 20; i++) {
+          for (let i = 0; i < 30; i++) {
             const x = Math.random() * canvas.width;
             const y = Math.random() * canvas.height;
-            const r = Math.random() * 3;
+            const r = Math.random() * 2 + 1;
+            const a = Math.random();
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI*2);
-            ctx.fillStyle = "white";
+            ctx.fillStyle = "rgba(255,255,255," + a + ")";
             ctx.fill();
             ctx.closePath();
           }
           break;
         }
         case "chakra": {
-          // チャクラ調整: 中心周りに7色の小球（パルス効果付き）
-          ctx.fillStyle = "#222";
+          // チャクラ調整: 中心周りに7色の小球がゆっくり回転＋脈打つエフェクト
+          ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const chakraColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
           const centerX = canvas.width/2, centerY = canvas.height/2;
           const circleRadius = 30;
           const pulse = 10 * Math.sin(elapsed/500);
           for (let i = 0; i < 7; i++) {
-            const angle = (i / 7) * 2 * Math.PI;
+            const angle = (i / 7) * 2 * Math.PI + elapsed/2000;
             const x = centerX + 150 * Math.cos(angle);
             const y = centerY + 150 * Math.sin(angle);
             ctx.beginPath();
-            ctx.arc(x, y, circleRadius + pulse, 0, Math.PI * 2);
+            ctx.arc(x, y, circleRadius + pulse, 0, Math.PI*2);
             ctx.fillStyle = chakraColors[i];
             ctx.fill();
             ctx.closePath();
           }
           ctx.beginPath();
-          ctx.arc(centerX, centerY, 60, 0, Math.PI * 2);
+          ctx.arc(centerX, centerY, 60, 0, Math.PI*2);
           ctx.fillStyle = "white";
           ctx.fill();
           ctx.closePath();
           break;
         }
         case "inspiration": {
-          // インスピレーション: サンライズ風グラデーション＋ゆっくりフェードする玉
+          // インスピレーション: サンライズ風グラデーション＋放射する太陽光線
           const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
           grad.addColorStop(0, "orange");
           grad.addColorStop(1, "yellow");
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const period = 2000;
-          const alpha = 0.5 + 0.5 * Math.sin(2 * Math.PI * (elapsed / period));
+          const alpha = 0.5 + 0.5 * Math.sin(2*Math.PI * (elapsed/period));
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,165,0," + alpha + ")";
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
+          ctx.fillStyle = "rgba(255,140,0," + alpha + ")";
           ctx.fill();
           ctx.closePath();
+          for(let i = 0; i < 20; i++){
+            let angle = i * (Math.PI/10) + elapsed/300;
+            ctx.strokeStyle = "rgba(255,140,0,0.2)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2, canvas.height/2);
+            ctx.lineTo(canvas.width/2 + 250 * Math.cos(angle), canvas.height/2 + 250 * Math.sin(angle));
+            ctx.stroke();
+            ctx.closePath();
+          }
           break;
         }
         case "party": {
-          // パーティー: 非常に高速 (約20 Hz) 点滅＋毎回ランダムな色
+          // パーティー: 約20Hz高速点滅＋カラフルなコンフェッティ（落下パーティクル）追加
           const period = 1000 / 20;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -367,37 +482,56 @@
           if (phase) {
             const randColor = 'hsl(' + (Math.random()*360) + ',100%,50%)';
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
             ctx.fillStyle = randColor;
+            ctx.fill();
+            ctx.closePath();
+          }
+          for(let i = 0; i < 40; i++){
+            const x = Math.random() * canvas.width;
+            const y = (Math.random() * canvas.height + elapsed/5) % canvas.height;
+            const r = Math.random()*3+1;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = 'hsl(' + (Math.random()*360) + ',80%,60%)';
             ctx.fill();
             ctx.closePath();
           }
           break;
         }
         case "coolDown": {
-          // クールダウン: 冷たいブルー調、1 Hz 点滅
+          // クールダウン: 冷たいブルーのグラデーション＋ゆったり点滅＆波打つライン
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
-          ctx.fillStyle = "navy";
+          let grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 50, canvas.width/2, canvas.height/2, 300);
+          grad.addColorStop(0, "#223344");
+          grad.addColorStop(1, "#000");
+          ctx.fillStyle = grad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          if (phase) {
+          if(phase){
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
             ctx.fillStyle = "cyan";
             ctx.fill();
             ctx.closePath();
           }
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 150 + 10 * Math.sin(elapsed/300), 0, Math.PI*2);
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.closePath();
           break;
         }
         case "selfDiscovery": {
-          // 自己発見: グレーの玉＋拡散するリップル＋メッセージ
-          ctx.fillStyle = "#222";
+          // 自己発見: グレーの玉＋大きなリップルと揺れるテキスト
+          ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
           if (phase) {
             ctx.beginPath();
-            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
             ctx.fillStyle = "grey";
             ctx.fill();
             ctx.closePath();
@@ -407,7 +541,7 @@
           const rippleRadius = 80 + (rippleElapsed / rippleDuration) * 200;
           const rippleAlpha = 1 - (rippleElapsed / rippleDuration);
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, rippleRadius, 0, Math.PI * 2);
+          ctx.arc(canvas.width/2, canvas.height/2, rippleRadius, 0, Math.PI*2);
           ctx.strokeStyle = "rgba(255,255,255," + rippleAlpha + ")";
           ctx.lineWidth = 5;
           ctx.stroke();
@@ -415,55 +549,55 @@
           ctx.font = "32px sans-serif";
           ctx.fillStyle = "white";
           ctx.textAlign = "center";
-          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2 + 10);
+          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2 + 10 + 5 * Math.sin(elapsed/300));
           break;
         }
         case "balance": {
-          // バランス: 対称に脈打つ玉＋同心円
-          ctx.fillStyle = "#333";
+          // バランス: 対称性が感じられるパルス＋内外の同心円
+          ctx.fillStyle = "#222";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          const pulse = 10 * Math.sin(elapsed / 200);
+          const pulse = 15 * Math.sin(elapsed/150);
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
           ctx.fillStyle = "white";
           ctx.fill();
           ctx.closePath();
           ctx.beginPath();
           ctx.arc(canvas.width/2, canvas.height/2, 100 + pulse, 0, Math.PI * 2);
           ctx.strokeStyle = "yellow";
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 5;
           ctx.stroke();
           ctx.closePath();
           ctx.beginPath();
           ctx.arc(canvas.width/2, canvas.height/2, 120 - pulse, 0, Math.PI * 2);
           ctx.strokeStyle = "orange";
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 5;
           ctx.stroke();
           ctx.closePath();
           break;
         }
         case "focus": {
-          // フォーカス: 中心明るく、周囲暗い（ビネット効果）
+          // フォーカス: 中心は非常に明るく、周囲はディープなビネット効果
           const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 10, canvas.width/2, canvas.height/2, 300);
           gradient.addColorStop(0, "white");
           gradient.addColorStop(1, "black");
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.beginPath();
-          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
           ctx.fillStyle = "white";
           ctx.fill();
           ctx.closePath();
           break;
         }
         case "brainActivation": {
-          // 脳活性化: 非常に高速（約25 Hz）点滅＋ランダムな色
+          // 脳活性化: 約25Hzの超高速点滅＋背景ランダムカラーのストロボ効果
           const period = 1000 / 25;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          if (phase) {
-            const randColor = 'hsl(' + (Math.random() * 360) + ',100%,50%)';
+          if(phase){
+            const randColor = 'hsl(' + (Math.random()*360) + ',100%,50%)';
             ctx.beginPath();
             ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
             ctx.fillStyle = randColor;
@@ -473,25 +607,26 @@
           break;
         }
         default: {
-          // デフォルト: 2 Hz 点滅、赤い玉
+          // デフォルト: 2Hz、赤い玉＋補色背景
           const period = 500;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = getComplementaryColor("red");
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          if (phase) {
+          if(phase){
             ctx.beginPath();
             ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
             ctx.fillStyle = "red";
             ctx.fill();
             ctx.closePath();
           }
+          break;
         }
       }
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
 
-    // 各ボタンにイベントリスナー設定
+    // 各ボタンにイベントリスナーを設定
     document.getElementById("btnWakeUp").addEventListener("click", () => { setMode("wakeUp"); });
     document.getElementById("btnCalm").addEventListener("click", () => { setMode("calm"); });
     document.getElementById("btnMeditation").addEventListener("click", () => { setMode("meditation"); });
