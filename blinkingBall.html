@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>全20種のアニメーション統合サンプル</title>
+  <title>全20種のアニメーション統合サンプル（スマホ向けボタン配置）</title>
   <style>
     body {
       font-family: sans-serif;
@@ -18,18 +18,29 @@
       margin: 20px auto;
       background: #222;
       border: 1px solid #fff;
+      max-width: 100%;
+      height: auto;
     }
+    /* ボタンコンテナをグリッド表示に変更 */
     .button-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 5px;
-      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      padding: 10px;
+      margin: 0 10px 20px;
     }
     .button-container button {
-      padding: 10px;
-      font-size: 14px;
+      padding: 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #555;
+      color: #fff;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+    .button-container button:active {
+      background: #777;
     }
   </style>
 </head>
@@ -66,7 +77,7 @@
     let currentMode = "wakeUp";
     let modeStartTime = performance.now();
 
-    // ユーティリティ：補色を返す（必要に応じて利用）
+    // ユーティリティ：補色を返す関数（必要に応じて利用）
     function getComplementaryColor(color) {
       switch(color) {
         case 'red': return 'cyan';
@@ -79,7 +90,7 @@
       }
     }
 
-    // モード切替時に呼び出し、開始時刻をリセット
+    // モード切替時に呼び出して開始時刻をリセット
     function setMode(mode) {
       currentMode = mode;
       modeStartTime = performance.now();
@@ -87,13 +98,13 @@
 
     // アニメーションループ
     function animate(timestamp) {
-      const elapsed = timestamp - modeStartTime; // モード開始からの経過時間（ミリ秒）
+      const elapsed = timestamp - modeStartTime; // モード開始からの経過時間
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // 各モードごとの描画処理
       switch(currentMode) {
         case "wakeUp": {
-          // 目が覚めるボタン: 高速点滅（約10 Hz）、赤い玉、背景はシアン
+          // 目が覚める: 高速点滅（約10 Hz）、赤い玉、背景はシアン
           const period = 100;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "cyan";
@@ -108,7 +119,7 @@
           break;
         }
         case "calm": {
-          // 落ち着くボタン: ゆっくり (1 Hz) 点滅、青い玉、背景はライトブルー
+          // 落ち着く: ゆっくり (1 Hz) 点滅、青い玉、背景はライトブルー
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "lightblue";
@@ -123,7 +134,7 @@
           break;
         }
         case "meditation": {
-          // 瞑想ボタン: 非常にゆっくりフェード（0.5 Hz）、紫の玉をアルファで描画
+          // 瞑想: 非常にゆっくりフェード（0.5 Hz）、紫の玉をアルファで描画
           const frequency = 0.5;
           const alpha = 0.5 + 0.5 * Math.sin(2 * Math.PI * frequency * elapsed / 1000);
           ctx.fillStyle = "black";
@@ -136,7 +147,7 @@
           break;
         }
         case "selfSuggestion": {
-          // 自己暗示ボタン: 下部にシンプルな玉（点滅）を描画し、その上に内側に縮むエフェクト＋メッセージをオーバーレイ
+          // 自己暗示: 玉の点滅＋内側に縮むエフェクトとメッセージ
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "#444";
@@ -165,7 +176,7 @@
           break;
         }
         case "concentration": {
-          // 集中ボタン: 中速（5 Hz）点滅、緑の玉＋外側のリング効果
+          // 集中: 中速 (5 Hz) 点滅、緑の玉＋外側のリング効果
           const period = 200;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "#222";
@@ -186,7 +197,7 @@
           break;
         }
         case "energyBoost": {
-          // エネルギーアップ: 高速（15 Hz）点滅、黄色の玉
+          // エネルギーアップ: 高速 (15 Hz) 点滅、黄色の玉
           const period = 1000 / 15;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -216,7 +227,7 @@
           break;
         }
         case "happy": {
-          // 幸せ: 約3 Hz の点滅、暖色系（ピンク）で表現
+          // 幸せ: 約3 Hz 点滅、暖色系（ピンク）で表現
           const period = 333;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "lightpink";
@@ -231,7 +242,7 @@
           break;
         }
         case "creativity": {
-          // 創造性: 2 Hz 点滅、球の色が時間とともに色相を変化
+          // 創造性: 2 Hz 点滅、球の色が時間とともに変化
           const period = 500;
           const phase = (elapsed % period) < (period / 2);
           const hue = (elapsed / 10) % 360;
@@ -248,7 +259,7 @@
           break;
         }
         case "courage": {
-          // 勇気: 高速（10 Hz）点滅、強い赤系（crimson）で表現
+          // 勇気: 高速 (10 Hz) 点滅、強い赤系（crimson）
           const period = 100;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "#400";
@@ -263,7 +274,7 @@
           break;
         }
         case "gratitude": {
-          // 感謝: ゆっくり (1 Hz) 点滅、ラベンダー色＋"ありがとう"のテキスト表示
+          // 感謝: ゆっくり (1 Hz) 点滅、ラベンダー色＋「ありがとう」テキスト
           const period = 1000;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "#eee";
@@ -294,7 +305,6 @@
             ctx.fill();
             ctx.closePath();
           }
-          // 星（スパークル）をランダムに描画
           for (let i = 0; i < 20; i++) {
             const x = Math.random() * canvas.width;
             const y = Math.random() * canvas.height;
@@ -308,7 +318,7 @@
           break;
         }
         case "chakra": {
-          // チャクラ調整: 中心の周りに7色の小球を配置（パルスする効果付き）
+          // チャクラ調整: 中心周りに7色の小球（パルス効果付き）
           ctx.fillStyle = "#222";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const chakraColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
@@ -325,7 +335,6 @@
             ctx.fill();
             ctx.closePath();
           }
-          // 中央のボール
           ctx.beginPath();
           ctx.arc(centerX, centerY, 60, 0, Math.PI * 2);
           ctx.fillStyle = "white";
@@ -334,7 +343,7 @@
           break;
         }
         case "inspiration": {
-          // インスピレーション: サンライズをイメージしたグラデーション背景＋ゆっくりフェードする玉
+          // インスピレーション: サンライズ風グラデーション＋ゆっくりフェードする玉
           const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
           grad.addColorStop(0, "orange");
           grad.addColorStop(1, "yellow");
@@ -350,7 +359,7 @@
           break;
         }
         case "party": {
-          // パーティー: 非常に高速 (約20 Hz) 点滅＆毎回ランダムな色
+          // パーティー: 非常に高速 (約20 Hz) 点滅＋毎回ランダムな色
           const period = 1000 / 20;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -381,7 +390,7 @@
           break;
         }
         case "selfDiscovery": {
-          // 自己発見: 通常の点滅玉（グレー）に加え、拡散するリップル＋「あなたは素晴らしい！」のメッセージ
+          // 自己発見: グレーの玉＋拡散するリップル＋メッセージ
           ctx.fillStyle = "#222";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const period = 1000;
@@ -410,7 +419,7 @@
           break;
         }
         case "balance": {
-          // バランス: 対称に脈打つ玉＋周囲に同心円
+          // バランス: 対称に脈打つ玉＋同心円
           ctx.fillStyle = "#333";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           const pulse = 10 * Math.sin(elapsed / 200);
@@ -434,7 +443,7 @@
           break;
         }
         case "focus": {
-          // フォーカス: 中心は明るく、周辺は暗い（ビネット効果）
+          // フォーカス: 中心明るく、周囲暗い（ビネット効果）
           const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 10, canvas.width/2, canvas.height/2, 300);
           gradient.addColorStop(0, "white");
           gradient.addColorStop(1, "black");
@@ -448,7 +457,7 @@
           break;
         }
         case "brainActivation": {
-          // 脳活性化: 非常に高速（約25 Hz）点滅＋毎回ランダムな色
+          // 脳活性化: 非常に高速（約25 Hz）点滅＋ランダムな色
           const period = 1000 / 25;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = "black";
@@ -464,7 +473,7 @@
           break;
         }
         default: {
-          // デフォルト: 2Hz, 赤い玉
+          // デフォルト: 2 Hz 点滅、赤い玉
           const period = 500;
           const phase = (elapsed % period) < (period / 2);
           ctx.fillStyle = getComplementaryColor("red");
@@ -482,7 +491,7 @@
     }
     requestAnimationFrame(animate);
 
-    // 各ボタンにイベントリスナーを設定
+    // 各ボタンにイベントリスナー設定
     document.getElementById("btnWakeUp").addEventListener("click", () => { setMode("wakeUp"); });
     document.getElementById("btnCalm").addEventListener("click", () => { setMode("calm"); });
     document.getElementById("btnMeditation").addEventListener("click", () => { setMode("meditation"); });
