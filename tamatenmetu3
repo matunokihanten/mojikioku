@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>点滅する球とモードボタン</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 1px solid black;
+    }
+    .buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .buttons button {
+      margin: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="blinkingBall" width="500" height="500"></canvas>
+
+  <div class="buttons">
+    <button id="btnWakeUp">目が覚めるボタン</button>
+    <button id="btnRelax">リラックスボタン</button>
+    <button id="btnMeditation">瞑想ボタン</button>
+    <button id="btnFocus">集中ボタン</button>
+    <button id="btnHappy">楽しい気分ボタン</button>
+    <button id="btnRainbow">虹ボタン</button>
+    <button id="btnFlashDance">フラッシュダンスボタン</button>
+    <button id="btnMagic">マジックボタン</button>
+    <button id="btnCoolDown">クールダウンボタン</button>
+    <button id="btnEnergy">元気アップボタン</button>
+    <button id="btnSoftLight">柔らかいライトボタン</button>
+    <button id="btnStarlit">星空ボタン</button>
+    <button id="btnForest">森の中ボタン</button>
+    <button id="btnSunset">夕焼けボタン</button>
+    <button id="btnBeach">ビーチボタン</button>
+    <button id="btnParty">パーティーボタン</button>
+    <button id="btnRain">雨音ボタン</button>
+    <button id="btnGoodNight">おやすみボタン</button>
+    <button id="btnReading">読書モードボタン</button>
+    <button id="btnFantasy">幻想モードボタン</button>
+    <button id="btnSelfSuggestion">自己暗示ボタン</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('blinkingBall');
+    const ctx = canvas.getContext('2d');
+    
+    // グローバル変数
+    let mode = "normal";        // 現在のモード
+    let selectedColor = "red";  // 現在の球の色
+    let isVisible = true;       // 球が表示されるか（true: 表示 / false: 非表示）
+    let blinkInterval;          // 点滅用のinterval ID
+    
+    // モードごとの配列とインデックス
+    const rainbowColors = ["red", "orange", "yellow", "green", "blue", "purple"];
+    let rainbowIndex = 0;
+    const gradientColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+    let gradientIndex = 0;
+    const sunsetColors = ["orange", "pink", "purple"];
+    let sunsetIndex = 0;
+    
+    // 補色を返す関数（背景色用）
+    function getComplementaryColor(color) {
+      switch (color) {
+        case 'red': return 'cyan';
+        case 'yellow': return 'blue';
+        case 'blue': return 'yellow';
+        case 'green': return 'magenta';
+        case 'purple': return 'lime';
+        case 'orange': return 'aqua';
+        case 'cyan': return 'red';
+        case 'pink': return 'lightgreen';
+        case 'magenta': return 'green';
+        default: return 'white';
+      }
+    }
+    
+    // ランダムな色を返す
+    function getRandomColor() {
+      const colors = ["red", "yellow", "blue", "green", "purple", "orange", "cyan", "magenta", "pink", "lime", "aqua"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    // ★追加エフェクト用の補助関数
+    
+    // 星空モード：ランダムな小さな星を描画
+    function drawStars() {
+      for (let i = 0; i < 50; i++) {
+        let starX = Math.random() * canvas.width;
+        let starY = Math.random() * canvas.height;
+        let starRadius = Math.random() * 2;
+        ctx.beginPath();
+        ctx.arc(starX, starY, starRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+      }
+    }
+    
+    // 雨音モード：ランダムな雨滴（線）を描画
+    function drawRain() {
+      for (let i = 0; i < 20; i++) {
+        let dropX = Math.random() * canvas.width;
+        let dropY = Math.random() * canvas.height;
+        ctx.beginPath();
+        ctx.moveTo(dropX, dropY);
+        ctx.lineTo(dropX, dropY + 10);
+        ctx.strokeStyle = "blue";
+        ctx.stroke();
+      }
+    }
+    
+    // 森モード：簡単な樹木（長方形＋三角形）を描画
+    function drawForest() {
+      for (let i = 0; i < 5; i++) {
+        let treeX = i * (canvas.width / 5) + Math.random() * 20;
+        let treeHeight = 50 + Math.random() * 50;
+        ctx.fillStyle = "darkgreen";
+        ctx.fillRect(treeX, canvas.height - treeHeight, 20, treeHeight);
+        ctx.beginPath();
+        ctx.moveTo(treeX - 10, canvas.height - treeHeight);
+        ctx.lineTo(treeX + 30, canvas.height - treeHeight);
+        ctx.lineTo(treeX + 10, canvas.height - treeHeight - 40);
+        ctx.fillStyle = "green";
+        ctx.fill();
+      }
+    }
+    
+    // 幻想モード：中心から放射状に線を描画
+    function drawFantasy() {
+      ctx.beginPath();
+      ctx.strokeStyle = "magenta";
+      ctx.lineWidth = 2;
+      ctx.moveTo(250, 250);
+      for (let i = 0; i < 6; i++) {
+        let angle = Math.random() * 2 * Math.PI;
+        ctx.lineTo(250 + Math.cos(angle) * 100, 250 + Math.sin(angle) * 100);
+        ctx.moveTo(250, 250);
+      }
+      ctx.stroke();
+    }
+    
+    // 描画のメイン関数
+    function drawBall() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // モードに応じて球の色を決定
+      let ballColor = selectedColor;
+      if (mode === "rainbow") {
+        ballColor = rainbowColors[rainbowIndex];
+        rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
+      } else if (mode === "flashDance" || mode === "party") {
+        ballColor = getRandomColor();
+      } else if (mode === "gradient") {
+        ballColor = gradientColors[gradientIndex];
+        gradientIndex = (gradientIndex + 1) % gradientColors.length;
+      } else if (mode === "sunset") {
+        ballColor = sunsetColors[sunsetIndex];
+        sunsetIndex = (sunsetIndex + 1) % sunsetColors.length;
+      } else if (mode === "fantasy") {
+        ballColor = "pink";
+      }
+      
+      // 背景を補色で描画
+      ctx.fillStyle = getComplementaryColor(ballColor);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // モードごとの追加描画（星空、雨、森、幻想など）
+      if (mode === "starlit") {
+        drawStars();
+      } else if (mode === "rain") {
+        drawRain();
+      } else if (mode === "forest") {
+        drawForest();
+      } else if (mode === "fantasy") {
+        drawFantasy();
+      }
+      
+      // 球の描画（steady/selfSuggestionモードの場合は常に表示）
+      if (isVisible || mode === "steady" || mode === "selfSuggestion") {
+        ctx.beginPath();
+        ctx.arc(250, 250, 100, 0, Math.PI * 2);
+        ctx.fillStyle = ballColor;
+        ctx.fill();
+        ctx.closePath();
+        
+        // 自己暗示モードの場合、メッセージを表示
+        if (mode === "selfSuggestion") {
+          ctx.font = "24px sans-serif";
+          ctx.fillStyle = "black";
+          ctx.textAlign = "center";
+          ctx.fillText("あなたは素晴らしい！", 250, 260);
+        }
+      }
+    }
+    
+    // 点滅用の関数（表示/非表示のトグル）
+    function blinkBall() {
+      isVisible = !isVisible;
+      drawBall();
+    }
+    
+    // 点滅速度（Hz）を更新する
+    function updateBlinkSpeed(speedInHz) {
+      clearInterval(blinkInterval);
+      const speedInMs = 1000 / speedInHz;
+      blinkInterval = setInterval(blinkBall, speedInMs);
+    }
+    
+    // 指定したモードに切り替える
+    // color: 初期の球の色, frequency: 点滅速度 (Hz), newMode: モード識別文字列
+    function setMode(color, frequency, newMode) {
+      mode = newMode;
+      selectedColor = color;
+      isVisible = true;
+      // 各特殊モード用のインデックスリセット
+      if (newMode === "rainbow") {
+        rainbowIndex = 0;
+      }
+      if (newMode === "gradient") {
+        gradientIndex = 0;
+      }
+      if (newMode === "sunset") {
+        sunsetIndex = 0;
+      }
+      clearInterval(blinkInterval);
+      updateBlinkSpeed(frequency);
+    }
+    
+    // 点滅しない（常時表示）モードに切替え
+    // steadyModeName は "steady" や "reading" として区別可能
+    function setSteadyMode(color, steadyModeName) {
+      mode = steadyModeName;
+      selectedColor = color;
+      clearInterval(blinkInterval);
+      isVisible = true;
+      drawBall();
+    }
+    
+    // 自己暗示モード：点滅をやめてメッセージ表示
+    function setSelfSuggestionMode() {
+      mode = "selfSuggestion";
+      clearInterval(blinkInterval);
+      isVisible = true;
+      drawBall();
+    }
+    
+    // 各ボタンにイベントリスナーを設定
+    document.getElementById("btnWakeUp").addEventListener("click", function() {
+      setMode("red", 30, "normal");
+    });
+    document.getElementById("btnRelax").addEventListener("click", function() {
+      setMode("green", 2, "normal");
+    });
+    document.getElementById("btnMeditation").addEventListener("click", function() {
+      setMode("purple", 1, "normal");
+    });
+    document.getElementById("btnFocus").addEventListener("click", function() {
+      setMode("blue", 7, "normal");
+    });
+    document.getElementById("btnHappy").addEventListener("click", function() {
+      setMode("yellow", 5, "normal");
+    });
+    document.getElementById("btnRainbow").addEventListener("click", function() {
+      setMode("red", 3, "rainbow");
+    });
+    document.getElementById("btnFlashDance").addEventListener("click", function() {
+      setMode("red", 10, "flashDance");
+    });
+    document.getElementById("btnMagic").addEventListener("click", function() {
+      setMode("red", 2, "gradient");
+    });
+    document.getElementById("btnCoolDown").addEventListener("click", function() {
+      setMode("cyan", 2, "normal");
+    });
+    document.getElementById("btnEnergy").addEventListener("click", function() {
+      setMode("red", 35, "normal");
+    });
+    document.getElementById("btnSoftLight").addEventListener("click", function() {
+      setSteadyMode("orange", "steady");
+    });
+    document.getElementById("btnStarlit").addEventListener("click", function() {
+      setMode("white", 2, "starlit");
+    });
+    document.getElementById("btnForest").addEventListener("click", function() {
+      setMode("green", 3, "forest");
+    });
+    document.getElementById("btnSunset").addEventListener("click", function() {
+      setMode("orange", 3, "sunset");
+    });
+    document.getElementById("btnBeach").addEventListener("click", function() {
+      setMode("aqua", 2, "normal");
+    });
+    document.getElementById("btnParty").addEventListener("click", function() {
+      setMode("red", 15, "party");
+    });
+    document.getElementById("btnRain").addEventListener("click", function() {
+      setMode("blue", 2, "rain");
+    });
+    document.getElementById("btnGoodNight").addEventListener("click", function() {
+      setMode("darkblue", 1, "normal");
+    });
+    document.getElementById("btnReading").addEventListener("click", function() {
+      setSteadyMode("white", "steady");
+    });
+    document.getElementById("btnFantasy").addEventListener("click", function() {
+      setMode("pink", 2, "fantasy");
+    });
+    document.getElementById("btnSelfSuggestion").addEventListener("click", function() {
+      setSelfSuggestionMode();
+    });
+    
+    // 初期設定：デフォルトは 2Hz で点滅
+    updateBlinkSpeed(2);
+    drawBall();
+  </script>
+</body>
+</html>
