@@ -3,325 +3,506 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>点滅する球とモードボタン</title>
+  <title>全20種のアニメーション統合サンプル</title>
   <style>
     body {
       font-family: sans-serif;
+      background: #333;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
     }
     canvas {
       display: block;
       margin: 20px auto;
-      border: 1px solid black;
+      background: #222;
+      border: 1px solid #fff;
     }
-    .buttons {
-      text-align: center;
-      margin-top: 20px;
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 20px;
     }
-    .buttons button {
-      margin: 5px;
-      padding: 8px 12px;
+    .button-container button {
+      padding: 10px;
       font-size: 14px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <canvas id="blinkingBall" width="500" height="500"></canvas>
-
-  <div class="buttons">
-    <button id="btnWakeUp">目が覚めるボタン</button>
-    <button id="btnRelax">リラックスボタン</button>
-    <button id="btnMeditation">瞑想ボタン</button>
-    <button id="btnFocus">集中ボタン</button>
-    <button id="btnHappy">楽しい気分ボタン</button>
-    <button id="btnRainbow">虹ボタン</button>
-    <button id="btnFlashDance">フラッシュダンスボタン</button>
-    <button id="btnMagic">マジックボタン</button>
-    <button id="btnCoolDown">クールダウンボタン</button>
-    <button id="btnEnergy">元気アップボタン</button>
-    <button id="btnSoftLight">柔らかいライトボタン</button>
-    <button id="btnStarlit">星空ボタン</button>
-    <button id="btnForest">森の中ボタン</button>
-    <button id="btnSunset">夕焼けボタン</button>
-    <button id="btnBeach">ビーチボタン</button>
-    <button id="btnParty">パーティーボタン</button>
-    <button id="btnRain">雨音ボタン</button>
-    <button id="btnGoodNight">おやすみボタン</button>
-    <button id="btnReading">読書モードボタン</button>
-    <button id="btnFantasy">幻想モードボタン</button>
-    <button id="btnSelfSuggestion">自己暗示ボタン</button>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <div class="button-container">
+    <button id="btnWakeUp">目が覚める</button>
+    <button id="btnCalm">落ち着く</button>
+    <button id="btnMeditation">瞑想</button>
+    <button id="btnSelfSuggestion">自己暗示</button>
+    <button id="btnConcentration">集中</button>
+    <button id="btnEnergyBoost">エネルギーアップ</button>
+    <button id="btnRelax">リラックス</button>
+    <button id="btnHappy">幸せ</button>
+    <button id="btnCreativity">創造性</button>
+    <button id="btnCourage">勇気</button>
+    <button id="btnGratitude">感謝</button>
+    <button id="btnSparkle">スパークル</button>
+    <button id="btnChakra">チャクラ調整</button>
+    <button id="btnInspiration">インスピレーション</button>
+    <button id="btnParty">パーティー</button>
+    <button id="btnCoolDown">クールダウン</button>
+    <button id="btnSelfDiscovery">自己発見</button>
+    <button id="btnBalance">バランス</button>
+    <button id="btnFocus">フォーカス</button>
+    <button id="btnBrainActivation">脳活性化</button>
   </div>
 
   <script>
-    const canvas = document.getElementById('blinkingBall');
+    const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    
-    // グローバル変数
-    let mode = "normal";        // 現在のモード
-    let selectedColor = "red";  // 現在の球の色
-    let isVisible = true;       // 球が表示されるか（true: 表示 / false: 非表示）
-    let blinkInterval;          // 点滅用のinterval ID
-    
-    // モードごとの配列とインデックス
-    const rainbowColors = ["red", "orange", "yellow", "green", "blue", "purple"];
-    let rainbowIndex = 0;
-    const gradientColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
-    let gradientIndex = 0;
-    const sunsetColors = ["orange", "pink", "purple"];
-    let sunsetIndex = 0;
-    
-    // 補色を返す関数（背景色用）
+
+    // 現在のモードとモード開始時刻
+    let currentMode = "wakeUp";
+    let modeStartTime = performance.now();
+
+    // ユーティリティ：補色を返す（必要に応じて利用）
     function getComplementaryColor(color) {
-      switch (color) {
+      switch(color) {
         case 'red': return 'cyan';
-        case 'yellow': return 'blue';
-        case 'blue': return 'yellow';
+        case 'blue': return 'orange';
         case 'green': return 'magenta';
+        case 'yellow': return 'purple';
         case 'purple': return 'lime';
-        case 'orange': return 'aqua';
-        case 'cyan': return 'red';
-        case 'pink': return 'lightgreen';
-        case 'magenta': return 'green';
-        default: return 'white';
+        case 'orange': return 'blue';
+        default: return '#fff';
       }
     }
-    
-    // ランダムな色を返す
-    function getRandomColor() {
-      const colors = ["red", "yellow", "blue", "green", "purple", "orange", "cyan", "magenta", "pink", "lime", "aqua"];
-      return colors[Math.floor(Math.random() * colors.length)];
+
+    // モード切替時に呼び出し、開始時刻をリセット
+    function setMode(mode) {
+      currentMode = mode;
+      modeStartTime = performance.now();
     }
-    
-    // ★追加エフェクト用の補助関数
-    
-    // 星空モード：ランダムな小さな星を描画
-    function drawStars() {
-      for (let i = 0; i < 50; i++) {
-        let starX = Math.random() * canvas.width;
-        let starY = Math.random() * canvas.height;
-        let starRadius = Math.random() * 2;
-        ctx.beginPath();
-        ctx.arc(starX, starY, starRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "white";
-        ctx.fill();
-      }
-    }
-    
-    // 雨音モード：ランダムな雨滴（線）を描画
-    function drawRain() {
-      for (let i = 0; i < 20; i++) {
-        let dropX = Math.random() * canvas.width;
-        let dropY = Math.random() * canvas.height;
-        ctx.beginPath();
-        ctx.moveTo(dropX, dropY);
-        ctx.lineTo(dropX, dropY + 10);
-        ctx.strokeStyle = "blue";
-        ctx.stroke();
-      }
-    }
-    
-    // 森モード：簡単な樹木（長方形＋三角形）を描画
-    function drawForest() {
-      for (let i = 0; i < 5; i++) {
-        let treeX = i * (canvas.width / 5) + Math.random() * 20;
-        let treeHeight = 50 + Math.random() * 50;
-        ctx.fillStyle = "darkgreen";
-        ctx.fillRect(treeX, canvas.height - treeHeight, 20, treeHeight);
-        ctx.beginPath();
-        ctx.moveTo(treeX - 10, canvas.height - treeHeight);
-        ctx.lineTo(treeX + 30, canvas.height - treeHeight);
-        ctx.lineTo(treeX + 10, canvas.height - treeHeight - 40);
-        ctx.fillStyle = "green";
-        ctx.fill();
-      }
-    }
-    
-    // 幻想モード：中心から放射状に線を描画
-    function drawFantasy() {
-      ctx.beginPath();
-      ctx.strokeStyle = "magenta";
-      ctx.lineWidth = 2;
-      ctx.moveTo(250, 250);
-      for (let i = 0; i < 6; i++) {
-        let angle = Math.random() * 2 * Math.PI;
-        ctx.lineTo(250 + Math.cos(angle) * 100, 250 + Math.sin(angle) * 100);
-        ctx.moveTo(250, 250);
-      }
-      ctx.stroke();
-    }
-    
-    // 描画のメイン関数
-    function drawBall() {
+
+    // アニメーションループ
+    function animate(timestamp) {
+      const elapsed = timestamp - modeStartTime; // モード開始からの経過時間（ミリ秒）
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // モードに応じて球の色を決定
-      let ballColor = selectedColor;
-      if (mode === "rainbow") {
-        ballColor = rainbowColors[rainbowIndex];
-        rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
-      } else if (mode === "flashDance" || mode === "party") {
-        ballColor = getRandomColor();
-      } else if (mode === "gradient") {
-        ballColor = gradientColors[gradientIndex];
-        gradientIndex = (gradientIndex + 1) % gradientColors.length;
-      } else if (mode === "sunset") {
-        ballColor = sunsetColors[sunsetIndex];
-        sunsetIndex = (sunsetIndex + 1) % sunsetColors.length;
-      } else if (mode === "fantasy") {
-        ballColor = "pink";
-      }
-      
-      // 背景を補色で描画
-      ctx.fillStyle = getComplementaryColor(ballColor);
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // モードごとの追加描画（星空、雨、森、幻想など）
-      if (mode === "starlit") {
-        drawStars();
-      } else if (mode === "rain") {
-        drawRain();
-      } else if (mode === "forest") {
-        drawForest();
-      } else if (mode === "fantasy") {
-        drawFantasy();
-      }
-      
-      // 球の描画（steady/selfSuggestionモードの場合は常に表示）
-      if (isVisible || mode === "steady" || mode === "selfSuggestion") {
-        ctx.beginPath();
-        ctx.arc(250, 250, 100, 0, Math.PI * 2);
-        ctx.fillStyle = ballColor;
-        ctx.fill();
-        ctx.closePath();
-        
-        // 自己暗示モードの場合、メッセージを表示
-        if (mode === "selfSuggestion") {
-          ctx.font = "24px sans-serif";
+
+      // 各モードごとの描画処理
+      switch(currentMode) {
+        case "wakeUp": {
+          // 目が覚めるボタン: 高速点滅（約10 Hz）、赤い玉、背景はシアン
+          const period = 100;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "cyan";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "calm": {
+          // 落ち着くボタン: ゆっくり (1 Hz) 点滅、青い玉、背景はライトブルー
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "lightblue";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "blue";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "meditation": {
+          // 瞑想ボタン: 非常にゆっくりフェード（0.5 Hz）、紫の玉をアルファで描画
+          const frequency = 0.5;
+          const alpha = 0.5 + 0.5 * Math.sin(2 * Math.PI * frequency * elapsed / 1000);
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(128, 0, 128, " + alpha + ")";
+          ctx.fill();
+          ctx.closePath();
+          break;
+        }
+        case "selfSuggestion": {
+          // 自己暗示ボタン: 下部にシンプルな玉（点滅）を描画し、その上に内側に縮むエフェクト＋メッセージをオーバーレイ
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "#444";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "magenta";
+            ctx.fill();
+            ctx.closePath();
+          }
+          const collapseDuration = 3000;
+          const collapseElapsed = elapsed % collapseDuration;
+          const startRadius = Math.max(canvas.width, canvas.height) / 2;
+          const currentRadius = startRadius * (1 - collapseElapsed / collapseDuration);
+          const overlayOpacity = collapseElapsed / collapseDuration;
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, currentRadius, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0," + overlayOpacity + ")";
+          ctx.fill();
+          ctx.closePath();
+          ctx.font = "36px sans-serif";
+          ctx.fillStyle = "white";
+          ctx.textAlign = "center";
+          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2);
+          break;
+        }
+        case "concentration": {
+          // 集中ボタン: 中速（5 Hz）点滅、緑の玉＋外側のリング効果
+          const period = 200;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "#222";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "lime";
+            ctx.fill();
+            ctx.closePath();
+          }
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 100 + 10 * Math.sin(elapsed / 100), 0, Math.PI * 2);
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.closePath();
+          break;
+        }
+        case "energyBoost": {
+          // エネルギーアップ: 高速（15 Hz）点滅、黄色の玉
+          const period = 1000 / 15;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "relax": {
+          // リラックス: ゆっくり (1 Hz) 点滅、柔らかい緑、背景は淡い緑
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "#a0d6a0";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "green";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "happy": {
+          // 幸せ: 約3 Hz の点滅、暖色系（ピンク）で表現
+          const period = 333;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "lightpink";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "hotpink";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "creativity": {
+          // 創造性: 2 Hz 点滅、球の色が時間とともに色相を変化
+          const period = 500;
+          const phase = (elapsed % period) < (period / 2);
+          const hue = (elapsed / 10) % 360;
+          const dynamicColor = "hsl(" + hue + ",80%,50%)";
+          ctx.fillStyle = "#222";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = dynamicColor;
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "courage": {
+          // 勇気: 高速（10 Hz）点滅、強い赤系（crimson）で表現
+          const period = 100;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "#400";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "crimson";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "gratitude": {
+          // 感謝: ゆっくり (1 Hz) 点滅、ラベンダー色＋"ありがとう"のテキスト表示
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "#eee";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "lavender";
+            ctx.fill();
+            ctx.closePath();
+          }
+          ctx.font = "30px sans-serif";
           ctx.fillStyle = "black";
           ctx.textAlign = "center";
-          ctx.fillText("あなたは素晴らしい！", 250, 260);
+          ctx.fillText("ありがとう", canvas.width/2, canvas.height/2 + 10);
+          break;
+        }
+        case "sparkle": {
+          // スパークル: 約3 Hz 点滅＋画面全体に小さな白い星を描画
+          const period = 333;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
+            ctx.fillStyle = "magenta";
+            ctx.fill();
+            ctx.closePath();
+          }
+          // 星（スパークル）をランダムに描画
+          for (let i = 0; i < 20; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const r = Math.random() * 3;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "chakra": {
+          // チャクラ調整: 中心の周りに7色の小球を配置（パルスする効果付き）
+          ctx.fillStyle = "#222";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const chakraColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+          const centerX = canvas.width/2, centerY = canvas.height/2;
+          const circleRadius = 30;
+          const pulse = 10 * Math.sin(elapsed/500);
+          for (let i = 0; i < 7; i++) {
+            const angle = (i / 7) * 2 * Math.PI;
+            const x = centerX + 150 * Math.cos(angle);
+            const y = centerY + 150 * Math.sin(angle);
+            ctx.beginPath();
+            ctx.arc(x, y, circleRadius + pulse, 0, Math.PI * 2);
+            ctx.fillStyle = chakraColors[i];
+            ctx.fill();
+            ctx.closePath();
+          }
+          // 中央のボール
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 60, 0, Math.PI * 2);
+          ctx.fillStyle = "white";
+          ctx.fill();
+          ctx.closePath();
+          break;
+        }
+        case "inspiration": {
+          // インスピレーション: サンライズをイメージしたグラデーション背景＋ゆっくりフェードする玉
+          const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+          grad.addColorStop(0, "orange");
+          grad.addColorStop(1, "yellow");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const period = 2000;
+          const alpha = 0.5 + 0.5 * Math.sin(2 * Math.PI * (elapsed / period));
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,165,0," + alpha + ")";
+          ctx.fill();
+          ctx.closePath();
+          break;
+        }
+        case "party": {
+          // パーティー: 非常に高速 (約20 Hz) 点滅＆毎回ランダムな色
+          const period = 1000 / 20;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            const randColor = 'hsl(' + (Math.random()*360) + ',100%,50%)';
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = randColor;
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "coolDown": {
+          // クールダウン: 冷たいブルー調、1 Hz 点滅
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "navy";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "cyan";
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        case "selfDiscovery": {
+          // 自己発見: 通常の点滅玉（グレー）に加え、拡散するリップル＋「あなたは素晴らしい！」のメッセージ
+          ctx.fillStyle = "#222";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const period = 1000;
+          const phase = (elapsed % period) < (period / 2);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "grey";
+            ctx.fill();
+            ctx.closePath();
+          }
+          const rippleDuration = 1500;
+          const rippleElapsed = elapsed % rippleDuration;
+          const rippleRadius = 80 + (rippleElapsed / rippleDuration) * 200;
+          const rippleAlpha = 1 - (rippleElapsed / rippleDuration);
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, rippleRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255,255,255," + rippleAlpha + ")";
+          ctx.lineWidth = 5;
+          ctx.stroke();
+          ctx.closePath();
+          ctx.font = "32px sans-serif";
+          ctx.fillStyle = "white";
+          ctx.textAlign = "center";
+          ctx.fillText("あなたは素晴らしい！", canvas.width/2, canvas.height/2 + 10);
+          break;
+        }
+        case "balance": {
+          // バランス: 対称に脈打つ玉＋周囲に同心円
+          ctx.fillStyle = "#333";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const pulse = 10 * Math.sin(elapsed / 200);
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.fillStyle = "white";
+          ctx.fill();
+          ctx.closePath();
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 100 + pulse, 0, Math.PI * 2);
+          ctx.strokeStyle = "yellow";
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.closePath();
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 120 - pulse, 0, Math.PI * 2);
+          ctx.strokeStyle = "orange";
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.closePath();
+          break;
+        }
+        case "focus": {
+          // フォーカス: 中心は明るく、周辺は暗い（ビネット効果）
+          const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 10, canvas.width/2, canvas.height/2, 300);
+          gradient.addColorStop(0, "white");
+          gradient.addColorStop(1, "black");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath();
+          ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+          ctx.fillStyle = "white";
+          ctx.fill();
+          ctx.closePath();
+          break;
+        }
+        case "brainActivation": {
+          // 脳活性化: 非常に高速（約25 Hz）点滅＋毎回ランダムな色
+          const period = 1000 / 25;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            const randColor = 'hsl(' + (Math.random() * 360) + ',100%,50%)';
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = randColor;
+            ctx.fill();
+            ctx.closePath();
+          }
+          break;
+        }
+        default: {
+          // デフォルト: 2Hz, 赤い玉
+          const period = 500;
+          const phase = (elapsed % period) < (period / 2);
+          ctx.fillStyle = getComplementaryColor("red");
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (phase) {
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+            ctx.closePath();
+          }
         }
       }
+      requestAnimationFrame(animate);
     }
-    
-    // 点滅用の関数（表示/非表示のトグル）
-    function blinkBall() {
-      isVisible = !isVisible;
-      drawBall();
-    }
-    
-    // 点滅速度（Hz）を更新する
-    function updateBlinkSpeed(speedInHz) {
-      clearInterval(blinkInterval);
-      const speedInMs = 1000 / speedInHz;
-      blinkInterval = setInterval(blinkBall, speedInMs);
-    }
-    
-    // 指定したモードに切り替える
-    // color: 初期の球の色, frequency: 点滅速度 (Hz), newMode: モード識別文字列
-    function setMode(color, frequency, newMode) {
-      mode = newMode;
-      selectedColor = color;
-      isVisible = true;
-      // 各特殊モード用のインデックスリセット
-      if (newMode === "rainbow") {
-        rainbowIndex = 0;
-      }
-      if (newMode === "gradient") {
-        gradientIndex = 0;
-      }
-      if (newMode === "sunset") {
-        sunsetIndex = 0;
-      }
-      clearInterval(blinkInterval);
-      updateBlinkSpeed(frequency);
-    }
-    
-    // 点滅しない（常時表示）モードに切替え
-    // steadyModeName は "steady" や "reading" として区別可能
-    function setSteadyMode(color, steadyModeName) {
-      mode = steadyModeName;
-      selectedColor = color;
-      clearInterval(blinkInterval);
-      isVisible = true;
-      drawBall();
-    }
-    
-    // 自己暗示モード：点滅をやめてメッセージ表示
-    function setSelfSuggestionMode() {
-      mode = "selfSuggestion";
-      clearInterval(blinkInterval);
-      isVisible = true;
-      drawBall();
-    }
-    
+    requestAnimationFrame(animate);
+
     // 各ボタンにイベントリスナーを設定
-    document.getElementById("btnWakeUp").addEventListener("click", function() {
-      setMode("red", 30, "normal");
-    });
-    document.getElementById("btnRelax").addEventListener("click", function() {
-      setMode("green", 2, "normal");
-    });
-    document.getElementById("btnMeditation").addEventListener("click", function() {
-      setMode("purple", 1, "normal");
-    });
-    document.getElementById("btnFocus").addEventListener("click", function() {
-      setMode("blue", 7, "normal");
-    });
-    document.getElementById("btnHappy").addEventListener("click", function() {
-      setMode("yellow", 5, "normal");
-    });
-    document.getElementById("btnRainbow").addEventListener("click", function() {
-      setMode("red", 3, "rainbow");
-    });
-    document.getElementById("btnFlashDance").addEventListener("click", function() {
-      setMode("red", 10, "flashDance");
-    });
-    document.getElementById("btnMagic").addEventListener("click", function() {
-      setMode("red", 2, "gradient");
-    });
-    document.getElementById("btnCoolDown").addEventListener("click", function() {
-      setMode("cyan", 2, "normal");
-    });
-    document.getElementById("btnEnergy").addEventListener("click", function() {
-      setMode("red", 35, "normal");
-    });
-    document.getElementById("btnSoftLight").addEventListener("click", function() {
-      setSteadyMode("orange", "steady");
-    });
-    document.getElementById("btnStarlit").addEventListener("click", function() {
-      setMode("white", 2, "starlit");
-    });
-    document.getElementById("btnForest").addEventListener("click", function() {
-      setMode("green", 3, "forest");
-    });
-    document.getElementById("btnSunset").addEventListener("click", function() {
-      setMode("orange", 3, "sunset");
-    });
-    document.getElementById("btnBeach").addEventListener("click", function() {
-      setMode("aqua", 2, "normal");
-    });
-    document.getElementById("btnParty").addEventListener("click", function() {
-      setMode("red", 15, "party");
-    });
-    document.getElementById("btnRain").addEventListener("click", function() {
-      setMode("blue", 2, "rain");
-    });
-    document.getElementById("btnGoodNight").addEventListener("click", function() {
-      setMode("darkblue", 1, "normal");
-    });
-    document.getElementById("btnReading").addEventListener("click", function() {
-      setSteadyMode("white", "steady");
-    });
-    document.getElementById("btnFantasy").addEventListener("click", function() {
-      setMode("pink", 2, "fantasy");
-    });
-    document.getElementById("btnSelfSuggestion").addEventListener("click", function() {
-      setSelfSuggestionMode();
-    });
-    
-    // 初期設定：デフォルトは 2Hz で点滅
-    updateBlinkSpeed(2);
-    drawBall();
+    document.getElementById("btnWakeUp").addEventListener("click", () => { setMode("wakeUp"); });
+    document.getElementById("btnCalm").addEventListener("click", () => { setMode("calm"); });
+    document.getElementById("btnMeditation").addEventListener("click", () => { setMode("meditation"); });
+    document.getElementById("btnSelfSuggestion").addEventListener("click", () => { setMode("selfSuggestion"); });
+    document.getElementById("btnConcentration").addEventListener("click", () => { setMode("concentration"); });
+    document.getElementById("btnEnergyBoost").addEventListener("click", () => { setMode("energyBoost"); });
+    document.getElementById("btnRelax").addEventListener("click", () => { setMode("relax"); });
+    document.getElementById("btnHappy").addEventListener("click", () => { setMode("happy"); });
+    document.getElementById("btnCreativity").addEventListener("click", () => { setMode("creativity"); });
+    document.getElementById("btnCourage").addEventListener("click", () => { setMode("courage"); });
+    document.getElementById("btnGratitude").addEventListener("click", () => { setMode("gratitude"); });
+    document.getElementById("btnSparkle").addEventListener("click", () => { setMode("sparkle"); });
+    document.getElementById("btnChakra").addEventListener("click", () => { setMode("chakra"); });
+    document.getElementById("btnInspiration").addEventListener("click", () => { setMode("inspiration"); });
+    document.getElementById("btnParty").addEventListener("click", () => { setMode("party"); });
+    document.getElementById("btnCoolDown").addEventListener("click", () => { setMode("coolDown"); });
+    document.getElementById("btnSelfDiscovery").addEventListener("click", () => { setMode("selfDiscovery"); });
+    document.getElementById("btnBalance").addEventListener("click", () => { setMode("balance"); });
+    document.getElementById("btnFocus").addEventListener("click", () => { setMode("focus"); });
+    document.getElementById("btnBrainActivation").addEventListener("click", () => { setMode("brainActivation"); });
   </script>
 </body>
 </html>
