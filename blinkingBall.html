@@ -2,215 +2,325 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>点滅する球 (100モード)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>点滅する球とモードボタン</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      font-family: sans-serif;
     }
-    #blinkingBall {
-      border: 1px solid black;
+    canvas {
       display: block;
-      margin-bottom: 20px;
+      margin: 20px auto;
+      border: 1px solid black;
     }
-    #modeButtons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    .buttons {
+      text-align: center;
+      margin-top: 20px;
     }
-    #modeButtons button {
-      padding: 6px 12px;
-      font-size: 12px;
-      cursor: pointer;
+    .buttons button {
+      margin: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <canvas id="blinkingBall" width="500" height="500"></canvas>
-  <div id="modeButtons"></div>
+
+  <div class="buttons">
+    <button id="btnWakeUp">目が覚めるボタン</button>
+    <button id="btnRelax">リラックスボタン</button>
+    <button id="btnMeditation">瞑想ボタン</button>
+    <button id="btnFocus">集中ボタン</button>
+    <button id="btnHappy">楽しい気分ボタン</button>
+    <button id="btnRainbow">虹ボタン</button>
+    <button id="btnFlashDance">フラッシュダンスボタン</button>
+    <button id="btnMagic">マジックボタン</button>
+    <button id="btnCoolDown">クールダウンボタン</button>
+    <button id="btnEnergy">元気アップボタン</button>
+    <button id="btnSoftLight">柔らかいライトボタン</button>
+    <button id="btnStarlit">星空ボタン</button>
+    <button id="btnForest">森の中ボタン</button>
+    <button id="btnSunset">夕焼けボタン</button>
+    <button id="btnBeach">ビーチボタン</button>
+    <button id="btnParty">パーティーボタン</button>
+    <button id="btnRain">雨音ボタン</button>
+    <button id="btnGoodNight">おやすみボタン</button>
+    <button id="btnReading">読書モードボタン</button>
+    <button id="btnFantasy">幻想モードボタン</button>
+    <button id="btnSelfSuggestion">自己暗示ボタン</button>
+  </div>
 
   <script>
     const canvas = document.getElementById('blinkingBall');
     const ctx = canvas.getContext('2d');
-
-    // 現在の設定
-    let ballColor = "red";
-    let bgColor = "cyan";
-    let isVisible = true;
-    let blinkInterval;
-    let currentBlinkHz = 2;
-
-    // キャンバス描画用関数
+    
+    // グローバル変数
+    let mode = "normal";        // 現在のモード
+    let selectedColor = "red";  // 現在の球の色
+    let isVisible = true;       // 球が表示されるか（true: 表示 / false: 非表示）
+    let blinkInterval;          // 点滅用のinterval ID
+    
+    // モードごとの配列とインデックス
+    const rainbowColors = ["red", "orange", "yellow", "green", "blue", "purple"];
+    let rainbowIndex = 0;
+    const gradientColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+    let gradientIndex = 0;
+    const sunsetColors = ["orange", "pink", "purple"];
+    let sunsetIndex = 0;
+    
+    // 補色を返す関数（背景色用）
+    function getComplementaryColor(color) {
+      switch (color) {
+        case 'red': return 'cyan';
+        case 'yellow': return 'blue';
+        case 'blue': return 'yellow';
+        case 'green': return 'magenta';
+        case 'purple': return 'lime';
+        case 'orange': return 'aqua';
+        case 'cyan': return 'red';
+        case 'pink': return 'lightgreen';
+        case 'magenta': return 'green';
+        default: return 'white';
+      }
+    }
+    
+    // ランダムな色を返す
+    function getRandomColor() {
+      const colors = ["red", "yellow", "blue", "green", "purple", "orange", "cyan", "magenta", "pink", "lime", "aqua"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    // ★追加エフェクト用の補助関数
+    
+    // 星空モード：ランダムな小さな星を描画
+    function drawStars() {
+      for (let i = 0; i < 50; i++) {
+        let starX = Math.random() * canvas.width;
+        let starY = Math.random() * canvas.height;
+        let starRadius = Math.random() * 2;
+        ctx.beginPath();
+        ctx.arc(starX, starY, starRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+      }
+    }
+    
+    // 雨音モード：ランダムな雨滴（線）を描画
+    function drawRain() {
+      for (let i = 0; i < 20; i++) {
+        let dropX = Math.random() * canvas.width;
+        let dropY = Math.random() * canvas.height;
+        ctx.beginPath();
+        ctx.moveTo(dropX, dropY);
+        ctx.lineTo(dropX, dropY + 10);
+        ctx.strokeStyle = "blue";
+        ctx.stroke();
+      }
+    }
+    
+    // 森モード：簡単な樹木（長方形＋三角形）を描画
+    function drawForest() {
+      for (let i = 0; i < 5; i++) {
+        let treeX = i * (canvas.width / 5) + Math.random() * 20;
+        let treeHeight = 50 + Math.random() * 50;
+        ctx.fillStyle = "darkgreen";
+        ctx.fillRect(treeX, canvas.height - treeHeight, 20, treeHeight);
+        ctx.beginPath();
+        ctx.moveTo(treeX - 10, canvas.height - treeHeight);
+        ctx.lineTo(treeX + 30, canvas.height - treeHeight);
+        ctx.lineTo(treeX + 10, canvas.height - treeHeight - 40);
+        ctx.fillStyle = "green";
+        ctx.fill();
+      }
+    }
+    
+    // 幻想モード：中心から放射状に線を描画
+    function drawFantasy() {
+      ctx.beginPath();
+      ctx.strokeStyle = "magenta";
+      ctx.lineWidth = 2;
+      ctx.moveTo(250, 250);
+      for (let i = 0; i < 6; i++) {
+        let angle = Math.random() * 2 * Math.PI;
+        ctx.lineTo(250 + Math.cos(angle) * 100, 250 + Math.sin(angle) * 100);
+        ctx.moveTo(250, 250);
+      }
+      ctx.stroke();
+    }
+    
+    // 描画のメイン関数
     function drawBall() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // 背景塗りつぶし
-      ctx.fillStyle = bgColor;
+      
+      // モードに応じて球の色を決定
+      let ballColor = selectedColor;
+      if (mode === "rainbow") {
+        ballColor = rainbowColors[rainbowIndex];
+        rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
+      } else if (mode === "flashDance" || mode === "party") {
+        ballColor = getRandomColor();
+      } else if (mode === "gradient") {
+        ballColor = gradientColors[gradientIndex];
+        gradientIndex = (gradientIndex + 1) % gradientColors.length;
+      } else if (mode === "sunset") {
+        ballColor = sunsetColors[sunsetIndex];
+        sunsetIndex = (sunsetIndex + 1) % sunsetColors.length;
+      } else if (mode === "fantasy") {
+        ballColor = "pink";
+      }
+      
+      // 背景を補色で描画
+      ctx.fillStyle = getComplementaryColor(ballColor);
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // 玉の描画（可視状態の場合）
-      if (isVisible) {
+      
+      // モードごとの追加描画（星空、雨、森、幻想など）
+      if (mode === "starlit") {
+        drawStars();
+      } else if (mode === "rain") {
+        drawRain();
+      } else if (mode === "forest") {
+        drawForest();
+      } else if (mode === "fantasy") {
+        drawFantasy();
+      }
+      
+      // 球の描画（steady/selfSuggestionモードの場合は常に表示）
+      if (isVisible || mode === "steady" || mode === "selfSuggestion") {
         ctx.beginPath();
         ctx.arc(250, 250, 100, 0, Math.PI * 2);
         ctx.fillStyle = ballColor;
         ctx.fill();
         ctx.closePath();
+        
+        // 自己暗示モードの場合、メッセージを表示
+        if (mode === "selfSuggestion") {
+          ctx.font = "24px sans-serif";
+          ctx.fillStyle = "black";
+          ctx.textAlign = "center";
+          ctx.fillText("あなたは素晴らしい！", 250, 260);
+        }
       }
     }
-
-    // 点滅時に表示・非表示を切り替える
+    
+    // 点滅用の関数（表示/非表示のトグル）
     function blinkBall() {
       isVisible = !isVisible;
       drawBall();
     }
-
-    // 点滅速度の更新
+    
+    // 点滅速度（Hz）を更新する
     function updateBlinkSpeed(speedInHz) {
       clearInterval(blinkInterval);
       const speedInMs = 1000 / speedInHz;
       blinkInterval = setInterval(blinkBall, speedInMs);
-      currentBlinkHz = speedInHz;
     }
-
-    // 16進カラーをランダム生成する関数
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+    
+    // 指定したモードに切り替える
+    // color: 初期の球の色, frequency: 点滅速度 (Hz), newMode: モード識別文字列
+    function setMode(color, frequency, newMode) {
+      mode = newMode;
+      selectedColor = color;
+      isVisible = true;
+      // 各特殊モード用のインデックスリセット
+      if (newMode === "rainbow") {
+        rainbowIndex = 0;
       }
-      return color;
+      if (newMode === "gradient") {
+        gradientIndex = 0;
+      }
+      if (newMode === "sunset") {
+        sunsetIndex = 0;
+      }
+      clearInterval(blinkInterval);
+      updateBlinkSpeed(frequency);
     }
-
-    // モードを適用する関数
-    function setMode(mode) {
-      ballColor = mode.ballColor === "random" ? getRandomColor() : mode.ballColor;
-      bgColor = mode.bgColor === "random" ? getRandomColor() : mode.bgColor;
-      if (mode.blinkHz === "random") {
-        const randomHz = Math.floor(Math.random() * 40) + 1;
-        updateBlinkSpeed(randomHz);
-      } else {
-        updateBlinkSpeed(mode.blinkHz);
-      }
-      // モード切替時は玉を表示して描画
+    
+    // 点滅しない（常時表示）モードに切替え
+    // steadyModeName は "steady" や "reading" として区別可能
+    function setSteadyMode(color, steadyModeName) {
+      mode = steadyModeName;
+      selectedColor = color;
+      clearInterval(blinkInterval);
       isVisible = true;
       drawBall();
     }
-
-    // 100モードの定義
-    const modes = [
-      { id: 1,  label: "目覚める", ballColor: "red", bgColor: "cyan", blinkHz: 35 },
-      { id: 2,  label: "落ち着く", ballColor: "blue", bgColor: "lightblue", blinkHz: 2 },
-      { id: 3,  label: "瞑想モード", ballColor: "purple", bgColor: "lavender", blinkHz: 1 },
-      { id: 4,  label: "集中力向上", ballColor: "yellow", bgColor: "blue", blinkHz: 10 },
-      { id: 5,  label: "創造性解放", ballColor: "magenta", bgColor: "lime", blinkHz: 15 },
-      { id: 6,  label: "エネルギーチャージ", ballColor: "orange", bgColor: "aqua", blinkHz: 30 },
-      { id: 7,  label: "心のリセット", ballColor: "gray", bgColor: "lightgray", blinkHz: 5 },
-      { id: 8,  label: "ポジティブバイブ", ballColor: "yellow", bgColor: "dodgerblue", blinkHz: 8 },
-      { id: 9,  label: "ストレスリリース", ballColor: "green", bgColor: "lightgreen", blinkHz: 2 },
-      { id: 10, label: "睡眠促進", ballColor: "navy", bgColor: "midnightblue", blinkHz: 1 },
-      { id: 11, label: "バランシング", ballColor: "teal", bgColor: "coral", blinkHz: 5 },
-      { id: 12, label: "フロー状態", ballColor: "indigo", bgColor: "peachpuff", blinkHz: 7 },
-      { id: 13, label: "マインドフル", ballColor: "violet", bgColor: "lightyellow", blinkHz: 3 },
-      { id: 14, label: "エモーションリセット", ballColor: "black", bgColor: "white", blinkHz: 20 },
-      { id: 15, label: "脳波シンクロ", ballColor: "pink", bgColor: "teal", blinkHz: 12 },
-      { id: 16, label: "クールダウン", ballColor: "skyblue", bgColor: "navy", blinkHz: 2 },
-      { id: 17, label: "モチベーションアップ", ballColor: "crimson", bgColor: "gold", blinkHz: 25 },
-      { id: 18, label: "ランダムカラーチャレンジ", ballColor: "random", bgColor: "random", blinkHz: "random" },
-      { id: 19, label: "エキサイトメント", ballColor: "fuchsia", bgColor: "lime", blinkHz: 40 },
-      { id: 20, label: "カラーワンダー", ballColor: "chartreuse", bgColor: "purple", blinkHz: 10 },
-      { id: 21, label: "リフレッシュ", ballColor: "aqua", bgColor: "navy", blinkHz: 4 },
-      { id: 22, label: "神経活性化", ballColor: "crimson", bgColor: "gray", blinkHz: 28 },
-      { id: 23, label: "快眠誘導", ballColor: "darkblue", bgColor: "midnightblue", blinkHz: 1 },
-      { id: 24, label: "心理安定", ballColor: "olive", bgColor: "beige", blinkHz: 3 },
-      { id: 25, label: "リズム感覚", ballColor: "deeppink", bgColor: "lightpink", blinkHz: 9 },
-      { id: 26, label: "自己再生", ballColor: "green", bgColor: "darkolivegreen", blinkHz: 6 },
-      { id: 27, label: "エネルギーバースト", ballColor: "red", bgColor: "orange", blinkHz: 38 },
-      { id: 28, label: "幸福感促進", ballColor: "gold", bgColor: "royalblue", blinkHz: 8 },
-      { id: 29, label: "スピードアップ", ballColor: "silver", bgColor: "black", blinkHz: 35 },
-      { id: 30, label: "振動セラピー", ballColor: "violet", bgColor: "white", blinkHz: 12 },
-      { id: 31, label: "奇跡の瞬間", ballColor: "magenta", bgColor: "turquoise", blinkHz: 20 },
-      { id: 32, label: "光の瞑想", ballColor: "white", bgColor: "purple", blinkHz: 2 },
-      { id: 33, label: "宇宙意識", ballColor: "navy", bgColor: "black", blinkHz: 5 },
-      { id: 34, label: "希望の光", ballColor: "yellow", bgColor: "darkblue", blinkHz: 10 },
-      { id: 35, label: "天体観測", ballColor: "indigo", bgColor: "midnightblue", blinkHz: 3 },
-      { id: 36, label: "内省タイム", ballColor: "brown", bgColor: "tan", blinkHz: 4 },
-      { id: 37, label: "インスピレーション", ballColor: "coral", bgColor: "lavender", blinkHz: 7 },
-      { id: 38, label: "心の旅", ballColor: "magenta", bgColor: "darkslateblue", blinkHz: 5 },
-      { id: 39, label: "夢の扉", ballColor: "violet", bgColor: "palevioletred", blinkHz: 6 },
-      { id: 40, label: "静かな海", ballColor: "turquoise", bgColor: "lightcyan", blinkHz: 3 },
-      { id: 41, label: "魂の浄化", ballColor: "crimson", bgColor: "mistyrose", blinkHz: 15 },
-      { id: 42, label: "感性の解放", ballColor: "orchid", bgColor: "thistle", blinkHz: 10 },
-      { id: 43, label: "孤独の友", ballColor: "slateblue", bgColor: "silver", blinkHz: 8 },
-      { id: 44, label: "微睡み", ballColor: "lightsalmon", bgColor: "peachpuff", blinkHz: 2 },
-      { id: 45, label: "情熱の火", ballColor: "firebrick", bgColor: "lightcoral", blinkHz: 25 },
-      { id: 46, label: "清涼感", ballColor: "lightseagreen", bgColor: "aquamarine", blinkHz: 3 },
-      { id: 47, label: "大地の呼吸", ballColor: "sienna", bgColor: "burlywood", blinkHz: 4 },
-      { id: 48, label: "闘志の炎", ballColor: "darkred", bgColor: "black", blinkHz: 30 },
-      { id: 49, label: "魔法の瞬間", ballColor: "mediumorchid", bgColor: "darkmagenta", blinkHz: 12 },
-      { id: 50, label: "自由の風", ballColor: "skyblue", bgColor: "white", blinkHz: 5 },
-      { id: 51, label: "革新の力", ballColor: "orange", bgColor: "dimgray", blinkHz: 22 },
-      { id: 52, label: "神秘の夜", ballColor: "midnightblue", bgColor: "indigo", blinkHz: 1 },
-      { id: 53, label: "花の香り", ballColor: "pink", bgColor: "lightpink", blinkHz: 7 },
-      { id: 54, label: "心穏やかに", ballColor: "mediumseagreen", bgColor: "honeydew", blinkHz: 3 },
-      { id: 55, label: "森のささやき", ballColor: "forestgreen", bgColor: "mintcream", blinkHz: 4 },
-      { id: 56, label: "潮のリズム", ballColor: "cornflowerblue", bgColor: "lightsteelblue", blinkHz: 6 },
-      { id: 57, label: "彩色の宴", ballColor: "violet", bgColor: "plum", blinkHz: 14 },
-      { id: 58, label: "輝きの瞬間", ballColor: "gold", bgColor: "midnightblue", blinkHz: 18 },
-      { id: 59, label: "潜在意識", ballColor: "darkslategray", bgColor: "lightgray", blinkHz: 5 },
-      { id: 60, label: "微分の美", ballColor: "navy", bgColor: "cyan", blinkHz: 12 },
-      { id: 61, label: "リアルタイム", ballColor: "crimson", bgColor: "beige", blinkHz: 20 },
-      { id: 62, label: "朝日の予感", ballColor: "orange", bgColor: "goldenrod", blinkHz: 8 },
-      { id: 63, label: "神の視線", ballColor: "darkorange", bgColor: "navy", blinkHz: 23 },
-      { id: 64, label: "新たなる始まり", ballColor: "lime", bgColor: "black", blinkHz: 5 },
-      { id: 65, label: "活力の源", ballColor: "red", bgColor: "orange", blinkHz: 28 },
-      { id: 66, label: "月光浴モード", ballColor: "silver", bgColor: "darkslateblue", blinkHz: 1 },
-      { id: 67, label: "絶対調和", ballColor: "teal", bgColor: "gold", blinkHz: 9 },
-      { id: 68, label: "静謐の森", ballColor: "darkgreen", bgColor: "lightgreen", blinkHz: 4 },
-      { id: 69, label: "星屑", ballColor: "white", bgColor: "navy", blinkHz: 2 },
-      { id: 70, label: "日没の余韻", ballColor: "orangered", bgColor: "darkblue", blinkHz: 7 },
-      { id: 71, label: "鮮やかな情熱", ballColor: "tomato", bgColor: "midnightblue", blinkHz: 20 },
-      { id: 72, label: "時の旅人", ballColor: "peru", bgColor: "moccasin", blinkHz: 5 },
-      { id: 73, label: "草原の風", ballColor: "olive", bgColor: "khaki", blinkHz: 3 },
-      { id: 74, label: "素朴な安堵", ballColor: "saddlebrown", bgColor: "burlywood", blinkHz: 2 },
-      { id: 75, label: "電子の鼓動", ballColor: "deeppink", bgColor: "darkviolet", blinkHz: 30 },
-      { id: 76, label: "情熱的な夢", ballColor: "hotpink", bgColor: "lightcoral", blinkHz: 15 },
-      { id: 77, label: "山脈のエコー", ballColor: "dimgray", bgColor: "slategray", blinkHz: 6 },
-      { id: 78, label: "風の詩", ballColor: "mediumturquoise", bgColor: "powderblue", blinkHz: 4 },
-      { id: 79, label: "球体の神秘", ballColor: "violet", bgColor: "silver", blinkHz: 10 },
-      { id: 80, label: "革命の咆哮", ballColor: "crimson", bgColor: "black", blinkHz: 35 },
-      { id: 81, label: "彩雲の舞", ballColor: "mediumorchid", bgColor: "lightblue", blinkHz: 5 },
-      { id: 82, label: "透視の視界", ballColor: "cyan", bgColor: "darkcyan", blinkHz: 12 },
-      { id: 83, label: "幻想トワイライト", ballColor: "darkmagenta", bgColor: "mediumpurple", blinkHz: 8 },
-      { id: 84, label: "星降る夜", ballColor: "navy", bgColor: "midnightblue", blinkHz: 2 },
-      { id: 85, label: "魂の囁き", ballColor: "indigo", bgColor: "lavender", blinkHz: 3 },
-      { id: 86, label: "キャンバスの奇跡", ballColor: "coral", bgColor: "peachpuff", blinkHz: 10 },
-      { id: 87, label: "自然の調和", ballColor: "forestgreen", bgColor: "white", blinkHz: 6 },
-      { id: 88, label: "バブルリズム", ballColor: "deepskyblue", bgColor: "white", blinkHz: 14 },
-      { id: 89, label: "真夜中の嵐", ballColor: "black", bgColor: "darkslategray", blinkHz: 20 },
-      { id: 90, label: "天の領域", ballColor: "royalblue", bgColor: "lightsteelblue", blinkHz: 7 },
-      { id: 91, label: "光のサイクル", ballColor: "yellow", bgColor: "darkorange", blinkHz: 9 },
-      { id: 92, label: "生命の息吹", ballColor: "lime", bgColor: "lightgreen", blinkHz: 2 },
-      { id: 93, label: "心魅かれる瞬間", ballColor: "mediumvioletred", bgColor: "mistyrose", blinkHz: 11 },
-      { id: 94, label: "革新的ビジョン", ballColor: "chartreuse", bgColor: "darkgreen", blinkHz: 13 },
-      { id: 95, label: "電光石火", ballColor: "gold", bgColor: "royalblue", blinkHz: 40 },
-      { id: 96, label: "瞬間の煌めき", ballColor: "orchid", bgColor: "lightyellow", blinkHz: 8 },
-      { id: 97, label: "絶景の記憶", ballColor: "turquoise", bgColor: "steelblue", blinkHz: 5 },
-      { id: 98, label: "心温む風", ballColor: "salmon", bgColor: "seashell", blinkHz: 4 },
-      { id: 99, label: "無限の彼方", ballColor: "indigo", bgColor: "black", blinkHz: 6 },
-      { id: 100, label: "終幕の美学", ballColor: "silver", bgColor: "darkslateblue", blinkHz: 10 }
-    ];
-
-    // 各モードに対応するボタンを生成
-    const buttonsContainer = document.getElementById('modeButtons');
-    modes.forEach(mode => {
-      const btn = document.createElement('button');
-      btn.textContent = mode.id + ". " + mode.label;
-      btn.addEventListener('click', () => setMode(mode));
-      buttonsContainer.appendChild(btn);
+    
+    // 自己暗示モード：点滅をやめてメッセージ表示
+    function setSelfSuggestionMode() {
+      mode = "selfSuggestion";
+      clearInterval(blinkInterval);
+      isVisible = true;
+      drawBall();
+    }
+    
+    // 各ボタンにイベントリスナーを設定
+    document.getElementById("btnWakeUp").addEventListener("click", function() {
+      setMode("red", 30, "normal");
     });
-
-    // 初期描画
-    updateBlinkSpeed(currentBlinkHz);
+    document.getElementById("btnRelax").addEventListener("click", function() {
+      setMode("green", 2, "normal");
+    });
+    document.getElementById("btnMeditation").addEventListener("click", function() {
+      setMode("purple", 1, "normal");
+    });
+    document.getElementById("btnFocus").addEventListener("click", function() {
+      setMode("blue", 7, "normal");
+    });
+    document.getElementById("btnHappy").addEventListener("click", function() {
+      setMode("yellow", 5, "normal");
+    });
+    document.getElementById("btnRainbow").addEventListener("click", function() {
+      setMode("red", 3, "rainbow");
+    });
+    document.getElementById("btnFlashDance").addEventListener("click", function() {
+      setMode("red", 10, "flashDance");
+    });
+    document.getElementById("btnMagic").addEventListener("click", function() {
+      setMode("red", 2, "gradient");
+    });
+    document.getElementById("btnCoolDown").addEventListener("click", function() {
+      setMode("cyan", 2, "normal");
+    });
+    document.getElementById("btnEnergy").addEventListener("click", function() {
+      setMode("red", 35, "normal");
+    });
+    document.getElementById("btnSoftLight").addEventListener("click", function() {
+      setSteadyMode("orange", "steady");
+    });
+    document.getElementById("btnStarlit").addEventListener("click", function() {
+      setMode("white", 2, "starlit");
+    });
+    document.getElementById("btnForest").addEventListener("click", function() {
+      setMode("green", 3, "forest");
+    });
+    document.getElementById("btnSunset").addEventListener("click", function() {
+      setMode("orange", 3, "sunset");
+    });
+    document.getElementById("btnBeach").addEventListener("click", function() {
+      setMode("aqua", 2, "normal");
+    });
+    document.getElementById("btnParty").addEventListener("click", function() {
+      setMode("red", 15, "party");
+    });
+    document.getElementById("btnRain").addEventListener("click", function() {
+      setMode("blue", 2, "rain");
+    });
+    document.getElementById("btnGoodNight").addEventListener("click", function() {
+      setMode("darkblue", 1, "normal");
+    });
+    document.getElementById("btnReading").addEventListener("click", function() {
+      setSteadyMode("white", "steady");
+    });
+    document.getElementById("btnFantasy").addEventListener("click", function() {
+      setMode("pink", 2, "fantasy");
+    });
+    document.getElementById("btnSelfSuggestion").addEventListener("click", function() {
+      setSelfSuggestionMode();
+    });
+    
+    // 初期設定：デフォルトは 2Hz で点滅
+    updateBlinkSpeed(2);
     drawBall();
   </script>
 </body>
