@@ -41,7 +41,7 @@
   </div>
   <div class="slider-container">
     <label for="thicknessSlider">線の太さ: <span id="thicknessDisplay">2</span></label>
-    <input type="range" id="thicknessSlider" min="1" max="10" step="1" value="2">
+    <input type="range" id="thicknessSlider" min="1" max="50" step="1" value="2">
   </div>
   <div class="slider-container">
     <label for="gapSlider">線と線の隙間の幅: <span id="gapDisplay">10</span></label>
@@ -50,6 +50,12 @@
   <div class="slider-container">
     <label for="colorPicker">線の色:</label>
     <input type="color" id="colorPicker" value="#ffffff">
+  </div>
+  <div class="slider-container">
+    <label>
+      <input type="checkbox" id="gradientToggle">
+      グラデーションモード（赤→黄→青→白→紫）
+    </label>
   </div>
 
   <script>
@@ -63,11 +69,13 @@
     const gapSlider = document.getElementById('gapSlider');
     const gapDisplay = document.getElementById('gapDisplay');
     const colorPicker = document.getElementById('colorPicker');
+    const gradientToggle = document.getElementById('gradientToggle');
 
     let rotationSpeed = 1; // 回転速度 (度/秒)
     let lineThickness = 2; // 線の太さ
     let lineGap = 10; // 線と線の隙間の幅
     let lineColor = '#ffffff'; // 線の色
+    let useGradient = false; // グラデーションを使うか
     let rotationAngle = 0; // 現在の回転角度 (ラジアン)
     let lastTime = null;
 
@@ -98,7 +106,19 @@
         }
       }
 
-      ctx.strokeStyle = lineColor;
+      // 線の色とグラデーション設定
+      if (useGradient) {
+        const gradient = ctx.createLinearGradient(-300, -300, 300, 300);
+        gradient.addColorStop(0, "red");
+        gradient.addColorStop(0.25, "yellow");
+        gradient.addColorStop(0.5, "blue");
+        gradient.addColorStop(0.75, "white");
+        gradient.addColorStop(1, "purple");
+        ctx.strokeStyle = gradient;
+      } else {
+        ctx.strokeStyle = lineColor;
+      }
+
       ctx.lineWidth = lineThickness;
       ctx.stroke();
 
@@ -136,6 +156,10 @@
 
     colorPicker.addEventListener('input', () => {
       lineColor = colorPicker.value;
+    });
+
+    gradientToggle.addEventListener('change', () => {
+      useGradient = gradientToggle.checked;
     });
   </script>
 </body>
