@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>調整可能な渦巻きとモード切替</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: black;
+      color: white;
+      margin: 20px;
+      text-align: center;
+    }
+    canvas {
+      background-color: black;
+      border: 2px solid white;
+      display: block;
+      margin: 0 auto 20px;
+    }
+    #controls {
+      margin-top: 10px;
+      text-align: left;
+      display: inline-block;
+    }
+    .slider-container {
+      margin: 10px 0;
+    }
+    .slider-container label {
+      display: block;
+      font-size: 14px;
+    }
+    #modeButtons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    #modeButtons button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>調整可能な渦巻きとモード切替</h1>
+  <canvas id="canvas" width="600" height="600"></canvas>
+
+  <div id="controls">
+    <div class="slider-container">
+      <label for="speedSlider">回転スピード: <span id="speedDisplay">1</span> 度/秒</label>
+      <input type="range" id="speedSlider" min="1" max="6000" step="1" value="1">
+    </div>
+    <div class="slider-container">
+      <label for="thicknessSlider">線の太さ: <span id="thicknessDisplay">2</span></label>
+      <input type="range" id="thicknessSlider" min="1" max="10" step="1" value="2">
+    </div>
+    <div class="slider-container">
+      <label for="gapSlider">線の隙間幅: <span id="gapDisplay">10</span></label>
+      <input type="range" id="gapSlider" min="1" max="50" step="1" value="10">
+    </div>
+    <div class="slider-container">
+      <label for="colorPicker">線の色:</label>
+      <input type="color" id="colorPicker" value="#ffffff">
+    </div>
+  </div>
+
+  <div id="modeButtons"></div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const speedSlider = document.getElementById("speedSlider");
+    const speedDisplay = document.getElementById("speedDisplay");
+
+    const thicknessSlider = document.getElementById("thicknessSlider");
+    const thicknessDisplay = document.getElementById("thicknessDisplay");
+
+    const gapSlider = document.getElementById("gapSlider");
+    const gapDisplay = document.getElementById("gapDisplay");
+
+    const colorPicker = document.getElementById("colorPicker");
+
+    const modeButtonsContainer = document.getElementById("modeButtons");
+
+    let rotationSpeed = 1; // 回転スピード（度/秒）
+    let lineThickness = 2; // 線の太さ
+    let lineGap = 10; // 線と線の隙間幅
+    let lineColor = "#ffffff"; // 線の色
+    let rotationAngle = 0; // 現在の回転角度
+    let lastTime = null; // 前回フレームのタイムスタンプ
+
+    // 渦巻きを描画する関数
+    function drawSpiral(angle) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 背景の塗りつぶし
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 中心を基準に座標系を移動＆回転
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(angle);
+
+      // 渦巻きを描画
+      ctx.beginPath();
+      const numTurns = 10; // 渦巻きの回転数
+      const maxRadius = 300; // 渦巻きの最大半径
+      const steps = 1000; // 渦巻きのステップ数
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps; // 0.0 ～ 1.0
+        const theta = t * numTurns * Math.PI * 2; // 角度
+        const radius = maxRadius * t; // 半径
+        const x = radius * Math.cos(theta);
+        const y = radius * Math.sin(theta);
+        if (i % lineGap === 0) { // 隙間を調整
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = lineThickness;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // アニメーションループ
+    function animate(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const delta = timestamp - lastTime;
+      lastTime = timestamp;
+
+      rotationAngle += (rotationSpeed * Math.PI / 180) * (delta / 1000);
+
+      // 描画
+      drawSpiral(rotationAngle);
+
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    // スライダーのイベントハンドラ
+    speedSlider.addEventListener("input", () => {
+      rotationSpeed = parseInt(speedSlider.value);
+      speedDisplay.textContent = speedSlider.value;
+    });
+
+    thicknessSlider.addEventListener("input", () => {
+      lineThickness = parseInt(thicknessSlider.value);
+      thicknessDisplay.textContent = thicknessSlider.value;
+    });
+
+    gapSlider.addEventListener("input", () => {
+      lineGap = parseInt(gapSlider.value);
+      gapDisplay.textContent = gapSlider.value;
+    });
+
+    colorPicker.addEventListener("input", () => {
+      lineColor = colorPicker.value;
+    });
+
+    // 20モードの設定
+    const modes = 
