@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>棒人間アニメーション</title>
+  <style>
+    #stickman {
+      width: 200px;
+      height: 200px;
+      animation: moveStickman 4s linear infinite;
+    }
+
+    @keyframes moveStickman {
+      0% { transform: translateX(0) rotate(0deg); }
+      50% { transform: translateX(100px) rotate(180deg); }
+      100% { transform: translateX(0) rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <svg id="stickman" viewBox="0 0 200 200">
+    <circle cx="100" cy="50" r="20" fill="black" />
+    <line x1="100" y1="70" x2="100" y2="130" stroke="black" stroke-width="3" />
+    <line x1="100" y1="90" x2="60" y2="110" stroke="black" stroke-width="3" />
+    <line x1="100" y1="90" x2="140" y2="110" stroke="black" stroke-width="3" />
+    <line x1="100" y1="130" x2="80" y2="180" stroke="black" stroke-width="3" />
+    <line x1="100" y1="130" x2="120" y2="180" stroke="black" stroke-width="3" />
+  </svg>
+</body>
+</html>
