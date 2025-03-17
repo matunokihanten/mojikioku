@@ -3,285 +3,215 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>渦巻き玉：全機能統合</title>
+  <title>点滅する球 (100モード)</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #f9f9f9;
+      font-family: Arial, sans-serif;
       margin: 20px;
-      text-align: center;
     }
-    h1, h2 {
-      margin: 10px 0;
-    }
-    canvas {
-      background-color: #fff;
-      border: 1px solid #333;
+    #blinkingBall {
+      border: 1px solid black;
       display: block;
-      margin: 0 auto 20px;
-    }
-    #controls {
       margin-bottom: 20px;
-    }
-    #controls label {
-      font-size: 14px;
-      margin-right: 10px;
-    }
-    #speedSlider {
-      vertical-align: middle;
     }
     #modeButtons {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      max-height: 400px;
-      overflow-y: auto;
-      justify-content: center;
+      gap: 10px;
     }
     #modeButtons button {
-      padding: 4px 8px;
+      padding: 6px 12px;
       font-size: 12px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>渦巻き玉 アニメーション</h1>
-  <canvas id="canvas" width="500" height="500"></canvas>
-  
-  <div id="controls">
-    <!-- ブリンク効果のON/OFF -->
-    <label>
-      <input type="checkbox" id="blinkToggle">
-      ブリンク効果
-    </label>
-    <!-- 回転スピード調整スライダー -->
-    <label>回転スピード: <span id="speedDisplay"></span> 度/秒</label>
-    <input type="range" id="speedSlider" min="0.5" max="60" step="0.5">
-  </div>
-  
-  <h2>モードボタン (100種類)</h2>
+  <canvas id="blinkingBall" width="500" height="500"></canvas>
   <div id="modeButtons"></div>
-  
+
   <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const blinkToggle = document.getElementById("blinkToggle");
-    const speedSlider = document.getElementById("speedSlider");
-    const speedDisplay = document.getElementById("speedDisplay");
-    const modeButtonsContainer = document.getElementById("modeButtons");
+    const canvas = document.getElementById('blinkingBall');
+    const ctx = canvas.getContext('2d');
 
-    // グローバルな設定変数
-    let ballColor = "red";      // 玉（スパイラル）の色
-    let bgColor = "white";      // キャンバス背景色
-    let rotationSpeed = 1;      // 回転速度（度/秒）
-    let blinkFrequency = 1;     // ブリンク周波数（Hz）
-    let blinkEnabled = false;   // ブリンク効果のON/OFF
-    let rotationAngle = 0;      // 現在の回転角度（ラジアン）
-    let lastTime = null;        // 前回のアニメーションフレーム時刻
+    // 現在の設定
+    let ballColor = "red";
+    let bgColor = "cyan";
+    let isVisible = true;
+    let blinkInterval;
+    let currentBlinkHz = 2;
 
-    // 100モードの定義（各モードは、玉の色、背景色、回転速度（度/秒）、ブリンク周波数（Hz）を設定）
-    const modes = [
-      { id: 1,  label: "目覚める",              ballColor: "red",         bgColor: "cyan",         rotationSpeed: 35, blinkHz: 35 },
-      { id: 2,  label: "落ち着く",              ballColor: "blue",        bgColor: "lightblue",    rotationSpeed: 2,  blinkHz: 2  },
-      { id: 3,  label: "瞑想モード",            ballColor: "purple",      bgColor: "lavender",     rotationSpeed: 1,  blinkHz: 1  },
-      { id: 4,  label: "集中力向上",            ballColor: "yellow",      bgColor: "blue",         rotationSpeed: 10, blinkHz: 10 },
-      { id: 5,  label: "創造性解放",            ballColor: "magenta",     bgColor: "lime",         rotationSpeed: 15, blinkHz: 15 },
-      { id: 6,  label: "エネルギーチャージ",      ballColor: "orange",      bgColor: "aqua",         rotationSpeed: 30, blinkHz: 30 },
-      { id: 7,  label: "心のリセット",          ballColor: "gray",        bgColor: "lightgray",    rotationSpeed: 5,  blinkHz: 5  },
-      { id: 8,  label: "ポジティブバイブ",      ballColor: "yellow",      bgColor: "dodgerblue",   rotationSpeed: 8,  blinkHz: 8  },
-      { id: 9,  label: "ストレスリリース",      ballColor: "green",       bgColor: "lightgreen",   rotationSpeed: 2,  blinkHz: 2  },
-      { id: 10, label: "睡眠促進",              ballColor: "navy",        bgColor: "midnightblue", rotationSpeed: 1,  blinkHz: 1  },
-      { id: 11, label: "バランシング",          ballColor: "teal",        bgColor: "coral",        rotationSpeed: 5,  blinkHz: 5  },
-      { id: 12, label: "フロー状態",            ballColor: "indigo",      bgColor: "peachpuff",    rotationSpeed: 7,  blinkHz: 7  },
-      { id: 13, label: "マインドフル",          ballColor: "violet",      bgColor: "lightyellow",  rotationSpeed: 3,  blinkHz: 3  },
-      { id: 14, label: "エモーションリセット",    ballColor: "black",       bgColor: "white",        rotationSpeed: 20, blinkHz: 20 },
-      { id: 15, label: "脳波シンクロ",          ballColor: "pink",        bgColor: "teal",         rotationSpeed: 12, blinkHz: 12 },
-      { id: 16, label: "クールダウン",          ballColor: "skyblue",     bgColor: "navy",         rotationSpeed: 2,  blinkHz: 2  },
-      { id: 17, label: "モチベーションアップ",  ballColor: "crimson",     bgColor: "gold",         rotationSpeed: 25, blinkHz: 25 },
-      { id: 18, label: "ランダムカラーチャレンジ", ballColor: "random",   bgColor: "random",       rotationSpeed: 0,  blinkHz: 0  },
-      { id: 19, label: "エキサイトメント",       ballColor: "fuchsia",     bgColor: "lime",         rotationSpeed: 40, blinkHz: 40 },
-      { id: 20, label: "カラーワンダー",         ballColor: "chartreuse",  bgColor: "purple",       rotationSpeed: 10, blinkHz: 10 },
-      { id: 21, label: "リフレッシュ",           ballColor: "aqua",        bgColor: "navy",         rotationSpeed: 4,  blinkHz: 4  },
-      { id: 22, label: "神経活性化",           ballColor: "crimson",     bgColor: "gray",         rotationSpeed: 28, blinkHz: 28 },
-      { id: 23, label: "快眠誘導",             ballColor: "darkblue",    bgColor: "midnightblue", rotationSpeed: 1,  blinkHz: 1  },
-      { id: 24, label: "心理安定",             ballColor: "olive",       bgColor: "beige",        rotationSpeed: 3,  blinkHz: 3  },
-      { id: 25, label: "リズム感覚",           ballColor: "deeppink",    bgColor: "lightpink",    rotationSpeed: 9,  blinkHz: 9  },
-      { id: 26, label: "自己再生",             ballColor: "green",       bgColor: "darkolivegreen", rotationSpeed: 6, blinkHz: 6  },
-      { id: 27, label: "エネルギーバースト",     ballColor: "red",         bgColor: "orange",       rotationSpeed: 38, blinkHz: 38 },
-      { id: 28, label: "幸福感促進",           ballColor: "gold",        bgColor: "royalblue",    rotationSpeed: 8,  blinkHz: 8  },
-      { id: 29, label: "スピードアップ",         ballColor: "silver",      bgColor: "black",        rotationSpeed: 35, blinkHz: 35 },
-      { id: 30, label: "振動セラピー",         ballColor: "violet",      bgColor: "white",        rotationSpeed: 12, blinkHz: 12 },
-      { id: 31, label: "奇跡の瞬間",           ballColor: "magenta",     bgColor: "turquoise",    rotationSpeed: 20, blinkHz: 20 },
-      { id: 32, label: "光の瞑想",             ballColor: "white",       bgColor: "purple",       rotationSpeed: 2,  blinkHz: 2  },
-      { id: 33, label: "宇宙意識",             ballColor: "navy",        bgColor: "black",        rotationSpeed: 5,  blinkHz: 5  },
-      { id: 34, label: "希望の光",             ballColor: "yellow",      bgColor: "darkblue",     rotationSpeed: 10, blinkHz: 10 },
-      { id: 35, label: "天体観測",             ballColor: "indigo",      bgColor: "midnightblue", rotationSpeed: 3,  blinkHz: 3  },
-      { id: 36, label: "内省タイム",           ballColor: "brown",       bgColor: "tan",          rotationSpeed: 4,  blinkHz: 4  },
-      { id: 37, label: "インスピレーション",     ballColor: "coral",       bgColor: "lavender",     rotationSpeed: 7,  blinkHz: 7  },
-      { id: 38, label: "心の旅",               ballColor: "magenta",     bgColor: "darkslateblue",rotationSpeed: 5,  blinkHz: 5  },
-      { id: 39, label: "夢の扉",               ballColor: "violet",      bgColor: "palevioletred", rotationSpeed: 6,  blinkHz: 6  },
-      { id: 40, label: "静かな海",             ballColor: "turquoise",   bgColor: "lightcyan",    rotationSpeed: 3,  blinkHz: 3  },
-      { id: 41, label: "魂の浄化",             ballColor: "crimson",     bgColor: "mistyrose",    rotationSpeed: 15, blinkHz: 15 },
-      { id: 42, label: "感性の解放",           ballColor: "orchid",      bgColor: "thistle",      rotationSpeed: 10, blinkHz: 10 },
-      { id: 43, label: "孤独の友",             ballColor: "slateblue",   bgColor: "silver",       rotationSpeed: 8,  blinkHz: 8  },
-      { id: 44, label: "微睡み",               ballColor: "lightsalmon", bgColor: "peachpuff",    rotationSpeed: 2,  blinkHz: 2  },
-      { id: 45, label: "情熱の火",             ballColor: "firebrick",   bgColor: "lightcoral",   rotationSpeed: 25, blinkHz: 25 },
-      { id: 46, label: "清涼感",               ballColor: "lightseagreen", bgColor: "aquamarine", rotationSpeed: 3,  blinkHz: 3  },
-      { id: 47, label: "大地の呼吸",           ballColor: "sienna",      bgColor: "burlywood",    rotationSpeed: 4,  blinkHz: 4  },
-      { id: 48, label: "闘志の炎",             ballColor: "darkred",     bgColor: "black",        rotationSpeed: 30, blinkHz: 30 },
-      { id: 49, label: "魔法の瞬間",           ballColor: "mediumorchid",bgColor: "darkmagenta",  rotationSpeed: 12, blinkHz: 12 },
-      { id: 50, label: "自由の風",             ballColor: "skyblue",     bgColor: "white",        rotationSpeed: 5,  blinkHz: 5  },
-      { id: 51, label: "革新の力",             ballColor: "orange",      bgColor: "dimgray",      rotationSpeed: 22, blinkHz: 22 },
-      { id: 52, label: "神秘の夜",             ballColor: "midnightblue",bgColor: "indigo",       rotationSpeed: 1,  blinkHz: 1  },
-      { id: 53, label: "花の香り",             ballColor: "pink",        bgColor: "lightpink",    rotationSpeed: 7,  blinkHz: 7  },
-      { id: 54, label: "心穏やかに",           ballColor: "mediumseagreen", bgColor: "honeydew",   rotationSpeed: 3,  blinkHz: 3  },
-      { id: 55, label: "森のささやき",         ballColor: "forestgreen", bgColor: "mintcream",    rotationSpeed: 4,  blinkHz: 4  },
-      { id: 56, label: "潮のリズム",           ballColor: "cornflowerblue", bgColor: "lightsteelblue", rotationSpeed: 6, blinkHz: 6  },
-      { id: 57, label: "彩色の宴",             ballColor: "violet",      bgColor: "plum",         rotationSpeed: 14, blinkHz: 14 },
-      { id: 58, label: "輝きの瞬間",           ballColor: "gold",        bgColor: "midnightblue", rotationSpeed: 18, blinkHz: 18 },
-      { id: 59, label: "潜在意識",             ballColor: "darkslategray", bgColor: "lightgray",  rotationSpeed: 5,  blinkHz: 5  },
-      { id: 60, label: "微分の美",             ballColor: "navy",        bgColor: "cyan",         rotationSpeed: 12, blinkHz: 12 },
-      { id: 61, label: "リアルタイム",         ballColor: "crimson",     bgColor: "beige",        rotationSpeed: 20, blinkHz: 20 },
-      { id: 62, label: "朝日の予感",           ballColor: "orange",      bgColor: "goldenrod",    rotationSpeed: 8,  blinkHz: 8  },
-      { id: 63, label: "神の視線",             ballColor: "darkorange",  bgColor: "navy",         rotationSpeed: 23, blinkHz: 23 },
-      { id: 64, label: "新たなる始まり",       ballColor: "lime",        bgColor: "black",        rotationSpeed: 5,  blinkHz: 5  },
-      { id: 65, label: "活力の源",             ballColor: "red",         bgColor: "orange",       rotationSpeed: 28, blinkHz: 28 },
-      { id: 66, label: "月光浴モード",         ballColor: "silver",      bgColor: "darkslateblue",rotationSpeed: 1,  blinkHz: 1  },
-      { id: 67, label: "絶対調和",             ballColor: "teal",        bgColor: "gold",         rotationSpeed: 9,  blinkHz: 9  },
-      { id: 68, label: "静謐の森",             ballColor: "darkgreen",   bgColor: "lightgreen",   rotationSpeed: 4,  blinkHz: 4  },
-      { id: 69, label: "星屑",                 ballColor: "white",       bgColor: "navy",         rotationSpeed: 2,  blinkHz: 2  },
-      { id: 70, label: "日没の余韻",           ballColor: "orangered",   bgColor: "darkblue",     rotationSpeed: 7,  blinkHz: 7  },
-      { id: 71, label: "鮮やかな情熱",         ballColor: "tomato",      bgColor: "midnightblue", rotationSpeed: 20, blinkHz: 20 },
-      { id: 72, label: "時の旅人",             ballColor: "peru",        bgColor: "moccasin",     rotationSpeed: 5,  blinkHz: 5  },
-      { id: 73, label: "草原の風",             ballColor: "olive",       bgColor: "khaki",        rotationSpeed: 3,  blinkHz: 3  },
-      { id: 74, label: "素朴な安堵",           ballColor: "saddlebrown", bgColor: "burlywood",    rotationSpeed: 2,  blinkHz: 2  },
-      { id: 75, label: "電子の鼓動",           ballColor: "deeppink",    bgColor: "darkviolet",   rotationSpeed: 30, blinkHz: 30 },
-      { id: 76, label: "情熱的な夢",           ballColor: "hotpink",     bgColor: "lightcoral",   rotationSpeed: 15, blinkHz: 15 },
-      { id: 77, label: "山脈のエコー",         ballColor: "dimgray",     bgColor: "slategray",    rotationSpeed: 6,  blinkHz: 6  },
-      { id: 78, label: "風の詩",               ballColor: "mediumturquoise", bgColor: "powderblue", rotationSpeed: 4, blinkHz: 4  },
-      { id: 79, label: "球体の神秘",           ballColor: "violet",      bgColor: "silver",       rotationSpeed: 10, blinkHz: 10 },
-      { id: 80, label: "革命の咆哮",           ballColor: "crimson",     bgColor: "black",        rotationSpeed: 35, blinkHz: 35 },
-      { id: 81, label: "彩雲の舞",             ballColor: "mediumorchid", bgColor: "lightblue",  rotationSpeed: 5,  blinkHz: 5  },
-      { id: 82, label: "透視の視界",           ballColor: "cyan",        bgColor: "darkcyan",     rotationSpeed: 12, blinkHz: 12 },
-      { id: 83, label: "幻想トワイライト",       ballColor: "darkmagenta", bgColor: "mediumpurple", rotationSpeed: 8,  blinkHz: 8  },
-      { id: 84, label: "星降る夜",             ballColor: "navy",        bgColor: "midnightblue", rotationSpeed: 2,  blinkHz: 2  },
-      { id: 85, label: "魂の囁き",             ballColor: "indigo",      bgColor: "lavender",     rotationSpeed: 3,  blinkHz: 3  },
-      { id: 86, label: "キャンバスの奇跡",       ballColor: "coral",       bgColor: "peachpuff",    rotationSpeed: 10, blinkHz: 10 },
-      { id: 87, label: "自然の調和",           ballColor: "forestgreen", bgColor: "white",        rotationSpeed: 6,  blinkHz: 6  },
-      { id: 88, label: "バブルリズム",         ballColor: "deepskyblue", bgColor: "white",        rotationSpeed: 14, blinkHz: 14 },
-      { id: 89, label: "真夜中の嵐",           ballColor: "black",       bgColor: "darkslategray", rotationSpeed: 20, blinkHz: 20 },
-      { id: 90, label: "天の領域",             ballColor: "royalblue",   bgColor: "lightsteelblue", rotationSpeed: 7, blinkHz: 7  },
-      { id: 91, label: "光のサイクル",         ballColor: "yellow",      bgColor: "darkorange",   rotationSpeed: 9,  blinkHz: 9  },
-      { id: 92, label: "生命の息吹",           ballColor: "lime",        bgColor: "lightgreen",   rotationSpeed: 2,  blinkHz: 2  },
-      { id: 93, label: "心魅かれる瞬間",         ballColor: "mediumvioletred", bgColor: "mistyrose", rotationSpeed: 11, blinkHz: 11 },
-      { id: 94, label: "革新的ビジョン",         ballColor: "chartreuse",  bgColor: "darkgreen",    rotationSpeed: 13, blinkHz: 13 },
-      { id: 95, label: "電光石火",             ballColor: "gold",        bgColor: "royalblue",    rotationSpeed: 40, blinkHz: 40 },
-      { id: 96, label: "瞬間の煌めき",         ballColor: "orchid",      bgColor: "lightyellow",  rotationSpeed: 8,  blinkHz: 8  },
-      { id: 97, label: "絶景の記憶",           ballColor: "turquoise",   bgColor: "steelblue",    rotationSpeed: 5,  blinkHz: 5  },
-      { id: 98, label: "心温む風",             ballColor: "salmon",      bgColor: "seashell",     rotationSpeed: 4,  blinkHz: 4  },
-      { id: 99, label: "無限の彼方",           ballColor: "indigo",      bgColor: "black",        rotationSpeed: 6,  blinkHz: 6  },
-      { id: 100, label: "終幕の美学",          ballColor: "silver",      bgColor: "darkslateblue", rotationSpeed: 10, blinkHz: 10 }
-    ];
+    // キャンバス描画用関数
+    function drawBall() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 背景塗りつぶし
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 玉の描画（可視状態の場合）
+      if (isVisible) {
+        ctx.beginPath();
+        ctx.arc(250, 250, 100, 0, Math.PI * 2);
+        ctx.fillStyle = ballColor;
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
 
-    // ランダムカラー生成関数
+    // 点滅時に表示・非表示を切り替える
+    function blinkBall() {
+      isVisible = !isVisible;
+      drawBall();
+    }
+
+    // 点滅速度の更新
+    function updateBlinkSpeed(speedInHz) {
+      clearInterval(blinkInterval);
+      const speedInMs = 1000 / speedInHz;
+      blinkInterval = setInterval(blinkBall, speedInMs);
+      currentBlinkHz = speedInHz;
+    }
+
+    // 16進カラーをランダム生成する関数
     function getRandomColor() {
-      const letters = "0123456789ABCDEF";
-      let color = "#";
+      const letters = '0123456789ABCDEF';
+      let color = '#';
       for (let i = 0; i < 6; i++) {
         color += letters[Math.floor(Math.random() * 16)];
       }
       return color;
     }
 
-    // モード適用関数（モードボタンをクリックしたときに呼ばれる）
+    // モードを適用する関数
     function setMode(mode) {
       ballColor = mode.ballColor === "random" ? getRandomColor() : mode.ballColor;
       bgColor = mode.bgColor === "random" ? getRandomColor() : mode.bgColor;
-      rotationSpeed = mode.rotationSpeed;
-      blinkFrequency = mode.blinkHz;
-      // スライダーと表示も更新
-      speedSlider.value = rotationSpeed;
-      speedDisplay.textContent = rotationSpeed;
+      if (mode.blinkHz === "random") {
+        const randomHz = Math.floor(Math.random() * 40) + 1;
+        updateBlinkSpeed(randomHz);
+      } else {
+        updateBlinkSpeed(mode.blinkHz);
+      }
+      // モード切替時は玉を表示して描画
+      isVisible = true;
+      drawBall();
     }
-    
-    // モードボタンの生成
+
+    // 100モードの定義
+    const modes = [
+      { id: 1,  label: "目覚める", ballColor: "red", bgColor: "cyan", blinkHz: 35 },
+      { id: 2,  label: "落ち着く", ballColor: "blue", bgColor: "lightblue", blinkHz: 2 },
+      { id: 3,  label: "瞑想モード", ballColor: "purple", bgColor: "lavender", blinkHz: 1 },
+      { id: 4,  label: "集中力向上", ballColor: "yellow", bgColor: "blue", blinkHz: 10 },
+      { id: 5,  label: "創造性解放", ballColor: "magenta", bgColor: "lime", blinkHz: 15 },
+      { id: 6,  label: "エネルギーチャージ", ballColor: "orange", bgColor: "aqua", blinkHz: 30 },
+      { id: 7,  label: "心のリセット", ballColor: "gray", bgColor: "lightgray", blinkHz: 5 },
+      { id: 8,  label: "ポジティブバイブ", ballColor: "yellow", bgColor: "dodgerblue", blinkHz: 8 },
+      { id: 9,  label: "ストレスリリース", ballColor: "green", bgColor: "lightgreen", blinkHz: 2 },
+      { id: 10, label: "睡眠促進", ballColor: "navy", bgColor: "midnightblue", blinkHz: 1 },
+      { id: 11, label: "バランシング", ballColor: "teal", bgColor: "coral", blinkHz: 5 },
+      { id: 12, label: "フロー状態", ballColor: "indigo", bgColor: "peachpuff", blinkHz: 7 },
+      { id: 13, label: "マインドフル", ballColor: "violet", bgColor: "lightyellow", blinkHz: 3 },
+      { id: 14, label: "エモーションリセット", ballColor: "black", bgColor: "white", blinkHz: 20 },
+      { id: 15, label: "脳波シンクロ", ballColor: "pink", bgColor: "teal", blinkHz: 12 },
+      { id: 16, label: "クールダウン", ballColor: "skyblue", bgColor: "navy", blinkHz: 2 },
+      { id: 17, label: "モチベーションアップ", ballColor: "crimson", bgColor: "gold", blinkHz: 25 },
+      { id: 18, label: "ランダムカラーチャレンジ", ballColor: "random", bgColor: "random", blinkHz: "random" },
+      { id: 19, label: "エキサイトメント", ballColor: "fuchsia", bgColor: "lime", blinkHz: 40 },
+      { id: 20, label: "カラーワンダー", ballColor: "chartreuse", bgColor: "purple", blinkHz: 10 },
+      { id: 21, label: "リフレッシュ", ballColor: "aqua", bgColor: "navy", blinkHz: 4 },
+      { id: 22, label: "神経活性化", ballColor: "crimson", bgColor: "gray", blinkHz: 28 },
+      { id: 23, label: "快眠誘導", ballColor: "darkblue", bgColor: "midnightblue", blinkHz: 1 },
+      { id: 24, label: "心理安定", ballColor: "olive", bgColor: "beige", blinkHz: 3 },
+      { id: 25, label: "リズム感覚", ballColor: "deeppink", bgColor: "lightpink", blinkHz: 9 },
+      { id: 26, label: "自己再生", ballColor: "green", bgColor: "darkolivegreen", blinkHz: 6 },
+      { id: 27, label: "エネルギーバースト", ballColor: "red", bgColor: "orange", blinkHz: 38 },
+      { id: 28, label: "幸福感促進", ballColor: "gold", bgColor: "royalblue", blinkHz: 8 },
+      { id: 29, label: "スピードアップ", ballColor: "silver", bgColor: "black", blinkHz: 35 },
+      { id: 30, label: "振動セラピー", ballColor: "violet", bgColor: "white", blinkHz: 12 },
+      { id: 31, label: "奇跡の瞬間", ballColor: "magenta", bgColor: "turquoise", blinkHz: 20 },
+      { id: 32, label: "光の瞑想", ballColor: "white", bgColor: "purple", blinkHz: 2 },
+      { id: 33, label: "宇宙意識", ballColor: "navy", bgColor: "black", blinkHz: 5 },
+      { id: 34, label: "希望の光", ballColor: "yellow", bgColor: "darkblue", blinkHz: 10 },
+      { id: 35, label: "天体観測", ballColor: "indigo", bgColor: "midnightblue", blinkHz: 3 },
+      { id: 36, label: "内省タイム", ballColor: "brown", bgColor: "tan", blinkHz: 4 },
+      { id: 37, label: "インスピレーション", ballColor: "coral", bgColor: "lavender", blinkHz: 7 },
+      { id: 38, label: "心の旅", ballColor: "magenta", bgColor: "darkslateblue", blinkHz: 5 },
+      { id: 39, label: "夢の扉", ballColor: "violet", bgColor: "palevioletred", blinkHz: 6 },
+      { id: 40, label: "静かな海", ballColor: "turquoise", bgColor: "lightcyan", blinkHz: 3 },
+      { id: 41, label: "魂の浄化", ballColor: "crimson", bgColor: "mistyrose", blinkHz: 15 },
+      { id: 42, label: "感性の解放", ballColor: "orchid", bgColor: "thistle", blinkHz: 10 },
+      { id: 43, label: "孤独の友", ballColor: "slateblue", bgColor: "silver", blinkHz: 8 },
+      { id: 44, label: "微睡み", ballColor: "lightsalmon", bgColor: "peachpuff", blinkHz: 2 },
+      { id: 45, label: "情熱の火", ballColor: "firebrick", bgColor: "lightcoral", blinkHz: 25 },
+      { id: 46, label: "清涼感", ballColor: "lightseagreen", bgColor: "aquamarine", blinkHz: 3 },
+      { id: 47, label: "大地の呼吸", ballColor: "sienna", bgColor: "burlywood", blinkHz: 4 },
+      { id: 48, label: "闘志の炎", ballColor: "darkred", bgColor: "black", blinkHz: 30 },
+      { id: 49, label: "魔法の瞬間", ballColor: "mediumorchid", bgColor: "darkmagenta", blinkHz: 12 },
+      { id: 50, label: "自由の風", ballColor: "skyblue", bgColor: "white", blinkHz: 5 },
+      { id: 51, label: "革新の力", ballColor: "orange", bgColor: "dimgray", blinkHz: 22 },
+      { id: 52, label: "神秘の夜", ballColor: "midnightblue", bgColor: "indigo", blinkHz: 1 },
+      { id: 53, label: "花の香り", ballColor: "pink", bgColor: "lightpink", blinkHz: 7 },
+      { id: 54, label: "心穏やかに", ballColor: "mediumseagreen", bgColor: "honeydew", blinkHz: 3 },
+      { id: 55, label: "森のささやき", ballColor: "forestgreen", bgColor: "mintcream", blinkHz: 4 },
+      { id: 56, label: "潮のリズム", ballColor: "cornflowerblue", bgColor: "lightsteelblue", blinkHz: 6 },
+      { id: 57, label: "彩色の宴", ballColor: "violet", bgColor: "plum", blinkHz: 14 },
+      { id: 58, label: "輝きの瞬間", ballColor: "gold", bgColor: "midnightblue", blinkHz: 18 },
+      { id: 59, label: "潜在意識", ballColor: "darkslategray", bgColor: "lightgray", blinkHz: 5 },
+      { id: 60, label: "微分の美", ballColor: "navy", bgColor: "cyan", blinkHz: 12 },
+      { id: 61, label: "リアルタイム", ballColor: "crimson", bgColor: "beige", blinkHz: 20 },
+      { id: 62, label: "朝日の予感", ballColor: "orange", bgColor: "goldenrod", blinkHz: 8 },
+      { id: 63, label: "神の視線", ballColor: "darkorange", bgColor: "navy", blinkHz: 23 },
+      { id: 64, label: "新たなる始まり", ballColor: "lime", bgColor: "black", blinkHz: 5 },
+      { id: 65, label: "活力の源", ballColor: "red", bgColor: "orange", blinkHz: 28 },
+      { id: 66, label: "月光浴モード", ballColor: "silver", bgColor: "darkslateblue", blinkHz: 1 },
+      { id: 67, label: "絶対調和", ballColor: "teal", bgColor: "gold", blinkHz: 9 },
+      { id: 68, label: "静謐の森", ballColor: "darkgreen", bgColor: "lightgreen", blinkHz: 4 },
+      { id: 69, label: "星屑", ballColor: "white", bgColor: "navy", blinkHz: 2 },
+      { id: 70, label: "日没の余韻", ballColor: "orangered", bgColor: "darkblue", blinkHz: 7 },
+      { id: 71, label: "鮮やかな情熱", ballColor: "tomato", bgColor: "midnightblue", blinkHz: 20 },
+      { id: 72, label: "時の旅人", ballColor: "peru", bgColor: "moccasin", blinkHz: 5 },
+      { id: 73, label: "草原の風", ballColor: "olive", bgColor: "khaki", blinkHz: 3 },
+      { id: 74, label: "素朴な安堵", ballColor: "saddlebrown", bgColor: "burlywood", blinkHz: 2 },
+      { id: 75, label: "電子の鼓動", ballColor: "deeppink", bgColor: "darkviolet", blinkHz: 30 },
+      { id: 76, label: "情熱的な夢", ballColor: "hotpink", bgColor: "lightcoral", blinkHz: 15 },
+      { id: 77, label: "山脈のエコー", ballColor: "dimgray", bgColor: "slategray", blinkHz: 6 },
+      { id: 78, label: "風の詩", ballColor: "mediumturquoise", bgColor: "powderblue", blinkHz: 4 },
+      { id: 79, label: "球体の神秘", ballColor: "violet", bgColor: "silver", blinkHz: 10 },
+      { id: 80, label: "革命の咆哮", ballColor: "crimson", bgColor: "black", blinkHz: 35 },
+      { id: 81, label: "彩雲の舞", ballColor: "mediumorchid", bgColor: "lightblue", blinkHz: 5 },
+      { id: 82, label: "透視の視界", ballColor: "cyan", bgColor: "darkcyan", blinkHz: 12 },
+      { id: 83, label: "幻想トワイライト", ballColor: "darkmagenta", bgColor: "mediumpurple", blinkHz: 8 },
+      { id: 84, label: "星降る夜", ballColor: "navy", bgColor: "midnightblue", blinkHz: 2 },
+      { id: 85, label: "魂の囁き", ballColor: "indigo", bgColor: "lavender", blinkHz: 3 },
+      { id: 86, label: "キャンバスの奇跡", ballColor: "coral", bgColor: "peachpuff", blinkHz: 10 },
+      { id: 87, label: "自然の調和", ballColor: "forestgreen", bgColor: "white", blinkHz: 6 },
+      { id: 88, label: "バブルリズム", ballColor: "deepskyblue", bgColor: "white", blinkHz: 14 },
+      { id: 89, label: "真夜中の嵐", ballColor: "black", bgColor: "darkslategray", blinkHz: 20 },
+      { id: 90, label: "天の領域", ballColor: "royalblue", bgColor: "lightsteelblue", blinkHz: 7 },
+      { id: 91, label: "光のサイクル", ballColor: "yellow", bgColor: "darkorange", blinkHz: 9 },
+      { id: 92, label: "生命の息吹", ballColor: "lime", bgColor: "lightgreen", blinkHz: 2 },
+      { id: 93, label: "心魅かれる瞬間", ballColor: "mediumvioletred", bgColor: "mistyrose", blinkHz: 11 },
+      { id: 94, label: "革新的ビジョン", ballColor: "chartreuse", bgColor: "darkgreen", blinkHz: 13 },
+      { id: 95, label: "電光石火", ballColor: "gold", bgColor: "royalblue", blinkHz: 40 },
+      { id: 96, label: "瞬間の煌めき", ballColor: "orchid", bgColor: "lightyellow", blinkHz: 8 },
+      { id: 97, label: "絶景の記憶", ballColor: "turquoise", bgColor: "steelblue", blinkHz: 5 },
+      { id: 98, label: "心温む風", ballColor: "salmon", bgColor: "seashell", blinkHz: 4 },
+      { id: 99, label: "無限の彼方", ballColor: "indigo", bgColor: "black", blinkHz: 6 },
+      { id: 100, label: "終幕の美学", ballColor: "silver", bgColor: "darkslateblue", blinkHz: 10 }
+    ];
+
+    // 各モードに対応するボタンを生成
+    const buttonsContainer = document.getElementById('modeButtons');
     modes.forEach(mode => {
-      const btn = document.createElement("button");
+      const btn = document.createElement('button');
       btn.textContent = mode.id + ". " + mode.label;
-      btn.addEventListener("click", () => setMode(mode));
-      modeButtonsContainer.appendChild(btn);
+      btn.addEventListener('click', () => setMode(mode));
+      buttonsContainer.appendChild(btn);
     });
-    
-    // スライダーによる手動調整
-    speedSlider.addEventListener("input", function() {
-      rotationSpeed = parseFloat(this.value);
-      speedDisplay.textContent = this.value;
-    });
-    
-    // ブリンク効果のON/OFF
-    blinkToggle.addEventListener("change", function() {
-      blinkEnabled = this.checked;
-    });
-    
-    // アニメーションループ：回転とブリンク効果を適用
-    function animate(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const delta = timestamp - lastTime;
-      lastTime = timestamp;
-      // 回転角度更新（回転速度は度/秒 → ラジアン/ミリ秒換算）
-      rotationAngle += rotationSpeed * (Math.PI / 180) * (delta / 1000);
-      
-      // 背景色で画面を塗りつぶす
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // ブリンク効果の判定
-      let visible = true;
-      if (blinkEnabled && blinkFrequency > 0) {
-        const period = 1000 / blinkFrequency;
-        const t = timestamp % period;
-        visible = (t < period / 2);
-      }
-      
-      if (visible) {
-        ctx.save();
-        // キャンバス中心に原点を移し、回転を適用
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(rotationAngle);
-        
-        // 渦巻き（スパイラル）を極座標形式で描画
-        ctx.beginPath();
-        const a = 0;      // 開始半径
-        const b = 4;      // 螺旋の間隔
-        const steps = 300;
-        const maxTheta = 6 * Math.PI;  // 約3回転分
-        for (let i = 0; i <= steps; i++) {
-          const theta = i * (maxTheta / steps);
-          const r = a + b * theta;
-          const x = r * Math.cos(theta);
-          const y = r * Math.sin(theta);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = ballColor;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        
-        // 中心の小さな玉（オプション）
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, Math.PI * 2);
-        ctx.fillStyle = "red";
-        ctx.fill();
-        ctx.restore();
-      }
-      
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-    
-    // 初期モードとして1番目を適用
-    setMode(modes[0]);
+
+    // 初期描画
+    updateBlinkSpeed(currentBlinkHz);
+    drawBall();
   </script>
 </body>
 </html>
