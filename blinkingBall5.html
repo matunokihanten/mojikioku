@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>インタラクティブ アニメーション - 20モード</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+    }
+    canvas {
+      display: block;
+    }
+    /* コントロールボタンを画面下部に配置 */
+    .controls {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 5px;
+      padding: 5px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    button {
+      margin: 3px;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 3px;
+      background-color: #ddd;
+    }
+    button:hover {
+      background-color: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <!-- 既存の10モード -->
+    <button onclick="setMode('wakeUp')">目が覚めるモード</button>
+    <button onclick="setMode('calm')">落ち着くモード</button>
+    <button onclick="setMode('meditation')">瞑想モード</button>
+    <button onclick="setMode('chaos')">カオスモード</button>
+    <button onclick="setMode('pulse')">パルスモード</button>
+    <button onclick="setMode('hypnotic')">催眠モード</button>
+    <button onclick="setMode('explosion')">爆発モード</button>
+    <button onclick="setMode('wave')">波動モード</button>
+    <button onclick="setMode('galaxy')">銀河モード</button>
+    <button onclick="setMode('strobe')">ストロボモード</button>
+    <!-- 新たな10モード -->
+    <button onclick="setMode('lightning')">稲妻モード</button>
+    <button onclick="setMode('fireworks')">花火モード</button>
+    <button onclick="setMode('spiral')">渦巻きモード</button>
+    <button onclick="setMode('neon')">ネオンモード</button>
+    <button onclick="setMode('fractal')">フラクタルモード</button>
+    <button onclick="setMode('particleStorm')">パーティクルストーム</button>
+    <button onclick="setMode('solarFlare')">太陽フレアモード</button>
+    <button onclick="setMode('rainbow')">虹サイクルモード</button>
+    <button onclick="setMode('vortex')">ボルテックスモード</button>
+    <button onclick="setMode('quantum')">クァンタムモード</button>
+  </div>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let mode = null;
+    
+    function setMode(newMode) {
+      mode = newMode;
+      // 簡易的な背景色の調整（必要に応じて各モード内で上書き）
+      if(mode === 'wakeUp') {
+        document.body.style.backgroundColor = 'cyan';
+      } else if(mode === 'calm') {
+        document.body.style.backgroundColor = '#000';
+      } else if(mode === 'meditation') {
+        document.body.style.backgroundColor = '#222';
+      } else if(mode === 'strobe') {
+        document.body.style.backgroundColor = '#000';
+      } else {
+        document.body.style.backgroundColor = '#000';
+      }
+    }
+    
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    function draw() {
+      clearCanvas();
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      
+      switch (mode) {
+        case 'wakeUp':
+          drawWakeUp(centerX, centerY);
+          break;
+        case 'calm':
+          drawCalm(centerX, centerY);
+          break;
+        case 'meditation':
+          drawMeditation(centerX, centerY);
+          break;
+        case 'chaos':
+          drawChaos();
+          break;
+        case 'pulse':
+          drawPulse(centerX, centerY);
+          break;
+        case 'hypnotic':
+          drawHypnotic(centerX, centerY);
+          break;
+        case 'explosion':
+          drawExplosion(centerX, centerY);
+          break;
+        case 'wave':
+          drawWave();
+          break;
+        case 'galaxy':
+          drawGalaxy(centerX, centerY);
+          break;
+        case 'strobe':
+          drawStrobe();
+          break;
+        // 新規モード
+        case 'lightning':
+          drawLightning();
+          break;
+        case 'fireworks':
+          drawFireworks();
+          break;
+        case 'spiral':
+          drawSpiral(centerX, centerY);
+          break;
+        case 'neon':
+          drawNeon(centerX, centerY);
+          break;
+        case 'fractal':
+          drawFractalMode(centerX, centerY);
+          break;
+        case 'particleStorm':
+          drawParticleStorm();
+          break;
+        case 'solarFlare':
+          drawSolarFlare(centerX, centerY);
+          break;
+        case 'rainbow':
+          drawRainbow();
+          break;
+        case 'vortex':
+          drawVortex(centerX, centerY);
+          break;
+        case 'quantum':
+          drawQuantum();
+          break;
+      }
+    }
+    
+    // ------------------ 既存モード ------------------
+    function drawWakeUp(x, y) {
+      const now = Date.now();
+      const period = 100; // 100ms周期 (10Hz)
+      const phase = now % period;
+      if (phase < 50) { 
+        ctx.beginPath();
+        ctx.arc(x, y, 50, 0, Math.PI * 2);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+      }
+      const numRays = 16;
+      const rayLength = 80;
+      const rotation = now * 0.005;
+      for (let i = 0; i < numRays; i++) {
+        const angle = (Math.PI * 2 / numRays) * i + rotation;
+        const x2 = x + Math.cos(angle) * rayLength;
+        const y2 = y + Math.sin(angle) * rayLength;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+    }
+    
+    function drawCalm(x, y) {
+      let gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width/2);
+      gradient.addColorStop(0, "#001f3f");
+      gradient.addColorStop(1, "#0074D9");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const now = Date.now();
+      let alpha = ((Math.sin(now * 0.001) + 1) / 2) * 0.6 + 0.4;
+      const radius = 50;
+      ctx.save();
+      ctx.shadowColor = `rgba(0, 150, 255, ${alpha})`;
+      ctx.shadowBlur = 30;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'deepskyblue';
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    function drawMeditation(x, y) {
+      let bgGradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width/2);
+      bgGradient.addColorStop(0, "#2E003E");
+      bgGradient.addColorStop(1, "#000");
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const now = Date.now();
+      let fade = (Math.sin(now * 0.00314) + 1) / 2;
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.beginPath();
+      ctx.arc(x, y, 60, 0, Math.PI * 2);
+      ctx.fillStyle = 'purple';
+      ctx.fill();
+      ctx.restore();
+      const ripplePeriod = 2000;
+      const rippleTime = now % ripplePeriod;
+      const maxRippleRadius = 200;
+      for (let i = 0; i < 3; i++) {
+        let offset = (rippleTime / ripplePeriod) * maxRippleRadius + i * (maxRippleRadius / 3);
+        let rippleAlpha = 1 - (offset / maxRippleRadius);
+        ctx.save();
+        ctx.globalAlpha = rippleAlpha * 0.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 60 + offset, 0, Math.PI * 2);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    
+    function drawChaos() {
+      for (let i = 0; i < 50; i++) {
+        ctx.beginPath();
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const radius = Math.random() * 30 + 10;
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        ctx.fill();
+      }
+    }
+    
+    function drawPulse(x, y) {
+      const radius = Math.abs(Math.sin(Date.now() * 0.005) * 50);
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'lime';
+      ctx.fill();
+    }
+    
+    function drawHypnotic(x, y) {
+      for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        const angle = (Date.now() * 0.002 + i) * Math.PI / 10;
+        const dx = Math.cos(angle) * 100;
+        const dy = Math.sin(angle) * 100;
+        ctx.arc(x + dx, y + dy, 10, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${i * 18}, 100%, 50%)`;
+        ctx.fill();
+      }
+    }
+    
+    function drawExplosion(x, y) {
+      for (let i = 0; i < 100; i++) {
+        ctx.beginPath();
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 200;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        const size = Math.random() * 5 + 2;
+        ctx.arc(x + dx, y + dy, size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        ctx.fill();
+      }
+    }
+    
+    function drawWave() {
+      const time = Date.now() * 0.005;
+      const waveAmplitude = 50;
+      for (let layer = 0; layer < 3; layer++) {
+        const offsetY = canvas.height / 2 + layer * 30 - 30;
+        let hue = (time * 10 + layer * 120) % 360;
+        ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.8)`;
+        for (let x = 0; x < canvas.width; x += 20) {
+          let y = offsetY + Math.sin((x * 0.02) + time + layer) * (waveAmplitude + layer * 10);
+          ctx.beginPath();
+          ctx.arc(x, y, 12, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    
+    function drawGalaxy(x, y) {
+      const now = Date.now();
+      const numRings = 5;
+      const particlesPerRing = 40;
+      for (let ring = 0; ring < numRings; ring++) {
+        let ringRadius = 60 + ring * 30;
+        let ringRotation = now * 0.0005 * (ring % 2 === 0 ? 1 : -1);
+        for (let j = 0; j < particlesPerRing; j++) {
+          let angle = ((Math.PI * 2) / particlesPerRing) * j + ringRotation;
+          let offset = Math.sin(now * 0.002 + j) * 5;
+          let posX = x + Math.cos(angle) * (ringRadius + offset);
+          let posY = y + Math.sin(angle) * (ringRadius + offset);
+          let size = 3 + (ring % 2) * 2;
+          ctx.beginPath();
+          ctx.arc(posX, posY, size, 0, Math.PI * 2);
+          let hue = (ring * 60 + j * 9 + now * 0.01) % 360;
+          ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(posX, posY, size * 2, 0, Math.PI * 2);
+          ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.2)`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+    }
+    
+    function drawStrobe() {
+      ctx.fillStyle = Date.now() % 200 < 100 ? 'white' : 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // ------------------ 新規モード ------------------
+    // 1. 稲妻モード
+    function drawLightning() {
+      const numStrikes = 3;
+      for (let i = 0; i < numStrikes; i++) {
+        let startX = Math.random() * canvas.width;
+        let startY = 0;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        const segments = Math.floor(Math.random() * 5 + 5);
+        for (let j = 0; j < segments; j++) {
+          let nextX = startX + (Math.random() - 0.5) * 50;
+          let nextY = startY + Math.random() * (canvas.height / segments);
+          ctx.lineTo(nextX, nextY);
+          startX = nextX;
+          startY = nextY;
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = 'white';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+    }
+    
+    // 2. 花火モード
+    function drawFireworks() {
+      for (let i = 0; i < 5; i++) {
+        const centerX = Math.random() * canvas.width;
+        const centerY = Math.random() * canvas.height * 0.5;
+        for (let j = 0; j < 50; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 50;
+          const x = centerX + Math.cos(angle) * speed;
+          const y = centerY + Math.sin(angle) * speed;
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+          ctx.fill();
+        }
+      }
+    }
+    
+    // 3. 渦巻きモード
+    function drawSpiral(x, y) {
+      const now = Date.now();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(now * 0.001);
+      for (let i = 0; i < 360; i += 5) {
+        const rad = i * 0.5;
+        const angle = i * Math.PI / 180;
+        const posX = rad * Math.cos(angle);
+        const posY = rad * Math.sin(angle);
+        ctx.beginPath();
+        ctx.arc(posX, posY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${(i + now / 10) % 360}, 100%, 50%)`;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    
+    // 4. ネオンモード
+    function drawNeon(x, y) {
+      const now = Date.now();
+      const pulse = (Math.sin(now * 0.005) + 1) / 2;
+      ctx.save();
+      ctx.shadowColor = 'magenta';
+      ctx.shadowBlur = 30;
+      ctx.beginPath();
+      ctx.arc(x, y, 40 + pulse * 20, 0, Math.PI * 2);
+      ctx.fillStyle = 'lime';
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    // 5. フラクタルモード
+    function drawFractal(x, y, size, depth) {
+      if (depth === 0) return;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${(depth * 40 + Date.now() * 0.02) % 360}, 100%, 50%)`;
+      ctx.fill();
+      drawFractal(x + size, y, size * 0.5, depth - 1);
+      drawFractal(x - size, y, size * 0.5, depth - 1);
+    }
+    function drawFractalMode(x, y) {
+      drawFractal(x, y, 40, 5);
+    }
+    
+    // 6. パーティクルストームモード
+    function drawParticleStorm() {
+      for (let i = 0; i < 300; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${Math.floor(100 + Math.random() * 155)}, ${Math.floor(100 + Math.random() * 155)}, ${Math.floor(100 + Math.random() * 155)}, 0.7)`;
+        ctx.fill();
+      }
+    }
+    
+    // 7. 太陽フレアモード
+    function drawSolarFlare(x, y) {
+      const now = Date.now();
+      const pulse = Math.abs(Math.sin(now * 0.002));
+      ctx.beginPath();
+      ctx.arc(x, y, 30 + pulse * 20, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(x, y, 10, x, y, 30 + pulse * 20);
+      grad.addColorStop(0, 'yellow');
+      grad.addColorStop(1, 'red');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      const numRays = 12;
+      for (let i = 0; i < numRays; i++) {
+        const angle = (Math.PI * 2 / numRays) * i;
+        const startX = x + Math.cos(angle) * (30 + pulse * 20);
+        const startY = y + Math.sin(angle) * (30 + pulse * 20);
+        const endX = x + Math.cos(angle) * (60 + pulse * 40);
+        const endY = y + Math.sin(angle) * (60 + pulse * 40);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = 'orange';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+    
+    // 8. 虹サイクルモード
+    function drawRainbow() {
+      const time = Date.now() * 0.002;
+      for (let i = 0; i < canvas.height; i += 10) {
+        let hue = (i + time * 100) % 360;
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.fillRect(0, i, canvas.width, 10);
+      }
+    }
+    
+    // 9. ボルテックスモード
+    function drawVortex(x, y) {
+      const now = Date.now();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(now * 0.001);
+      const numLines = 30;
+      for (let i = 0; i < numLines; i++) {
+        ctx.beginPath();
+        const angle = (Math.PI * 2 / numLines) * i;
+        const dynamicLength = 100 + Math.sin(now * 0.005 + i) * 50;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angle) * dynamicLength, Math.sin(angle) * dynamicLength);
+        ctx.strokeStyle = `hsl(${(i * 12 + now * 0.05) % 360}, 100%, 60%)`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    
+    // 10. クァンタムモード
+    function drawQuantum() {
+      const now = Date.now();
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = 5 + Math.random() * 10;
+        ctx.fillStyle = `hsla(${(now * 0.1 + i * 3) % 360}, 100%, 50%, ${Math.random() < 0.3 ? 0.3 : 0.8})`;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+    
+    setInterval(draw, 16); // 約60FPS
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>

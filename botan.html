@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ラベル付きボタン</title>
+  <style>
+    /* 全体の背景スタイル */
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #1e90ff, #ff69b4);
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* ヘッダーのスタイル */
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ボタンのグリッドコンテナ */
+    #buttonContainer {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 2列のグリッドを設定 */
+      gap: 15px; /* ボタン間のスペース */
+      width: 80%; /* グリッドの幅を調整 */
+    }
+
+    /* ボタンのスタイル */
+    .file-button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    /* ボタンのホバー効果 */
+    .file-button:hover {
+      transform: scale(1.1);
+      box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <h1>お好きなファイルを実行してください</h1>
+  <div id="buttonContainer"></div>
+
+  <script>
+    // ファイル名とボタンラベルのリスト
+    const files = [
+      { fileName: 'blinkingBall.html',  label: '点滅するボール 1' },
+      { fileName: 'blinkingBall2.html', label: '点滅するボール 2' },
+      { fileName: 'blinkingBall3.html', label: '点滅するボール 3' },
+      { fileName: 'blinkingBall4.html', label: '点滅するボール 4' },
+      { fileName: 'uzumaki.html',      label: '渦巻' },
+      { fileName: 'blinkingBall5.html', label: '幾何学的な動き' }
+    ];
+
+    // ボタンを動的に生成
+    const buttonContainer = document.getElementById("buttonContainer");
+    files.forEach(file => {
+      const button = document.createElement("button");
+      button.textContent = file.label; // ボタンに表示されるラベル
+      button.className = "file-button";
+      button.onclick = () => window.open(file.fileName, "_blank"); // ファイルを新しいタブで開く
+      buttonContainer.appendChild(button);
+    });
+  </script>
+</body>
+</html>

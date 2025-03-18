@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ファイル実行ボタン設定ツール</title>
+  <style>
+    /* ボタン表示エリア：ボタンが多い場合にもスクロール可能に */
+    #button-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+      min-height: 50px;
+      overflow: auto;
+    }
+    .button-wrapper {
+      position: relative;
+    }
+    .custom-button {
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+    /* 削除ボタン（右上に配置） */
+    .delete-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      transform: translate(50%, -50%);
+      background: #ff5656;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      z-index: 2;
+    }
+    /* 編集ボタン（ワンクリックでフォームに設定反映） */
+    .edit-button {
+      position: absolute;
+      top: 0;
+      right: 22px;
+      transform: translate(50%, -50%);
+      background: #00bfff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      z-index: 2;
+    }
+    /* フォームのスタイル */
+    form label {
+      display: inline-block;
+      width: 120px;
+      margin-bottom: 5px;
+    }
+    form input,
+    form select {
+      margin-bottom: 10px;
+    }
+    /* リアルタイムプレビューエリア */
+    #preview-area {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px dashed #aaa;
+      display: inline-block;
+    }
+    /* アクション操作エリア */
+    #action-buttons {
+      margin-top: 10px;
+    }
+    #action-buttons button {
+      margin-right: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+  <!-- SheetJSライブラリ（Excel用） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>ファイル実行ボタン設定ツール</h1>
+  
+  <!-- ボタン表示エリア -->
+  <div id="button-container"></div>
+  
+  <!-- 列数設定 -->
+  <div>
+    <label for="columns-input">ボタンの列数:</label>
+    <input type="number" id="columns-input" value="5" min="1">
+    <button id="update-columns">更新</button>
+  </div>
+  
+  <hr>
+  
+  <!-- 新規ボタン追加／編集フォーム -->
+  <h2>新規ボタン追加／編集</h2>
+  <form id="add-button-form">
+    <!-- 未入力の場合のデフォルト設定 -->
+    <label for="text">ボタンテキスト:</label>
+    <input type="text" name="text" id="text" placeholder="（空の場合は『テスト』になります）"><br>
+    
+    <label for="file">実行ファイル:</label>
+    <input type="text" name="file" id="file" placeholder="（空の場合は『t.html』になります）"><br>
+    
+    <label for="width">幅:</label>
+    <input type="text" name="width" id="width" value="150px"><br>
+    
+    <label for="height">高さ:</label>
+    <input type="text" name="height" id="height" value="50px"><br>
+    
+    <label for="textColor">文字色:</label>
+    <select name="textColor" id="textColor">
+      <option value="black" selected>黒</option>
+      <option value="white">白</option>
+      <option value="red">赤</option>
+      <option value="yellow">黄</option>
+      <option value="blue">青</option>
+      <option value="purple">紫</option>
+      <option value="yellowgreen">黄緑</option>
+    </select><br>
+    
+    <label for="bgColor">背景色:</label>
+    <select name="bgColor" id="bgColor">
+      <option value="black">黒</option>
+      <option value="white">白</option>
+      <option value="red">赤</option>
+      <option value="yellow">黄</option>
+      <option value="blue">青</option>
+      <option value="purple">紫</option>
+      <option value="yellowgreen" selected>黄緑</option>
+    </select><br>
+    
+    <!-- 詳細なスタイル設定 -->
+    <label for="fontSize">フォントサイズ:</label>
+    <input type="text" name="fontSize" id="fontSize" value="16px"><br>
+    
+    <label for="borderRadius">角丸:</label>
+    <input type="text" name="borderRadius" id="borderRadius" value="30px"><br>
+    
+    <label for="borderColor">枠線色:</label>
+    <input type="color" name="borderColor" id="borderColor" value="#cccccc"><br>
+    
+    <button type="submit" id="submit-btn">ボタンを追加</button>
+    <button type="button" id="cancel-edit" style="display:none;">編集キャンセル</button>
+  </form>
+  
+  <!-- リアルタイムプレビューエリア -->
+  <div id="preview-area">
+    <span>プレビュー: </span>
+    <button id="preview-button" class="custom-button">サンプル</button>
+  </div>
+  
+  <hr>
+  
+  <!-- アクション操作エリア -->
+  <div id="action-buttons">
+    <button id="save-config">設定をHTMLファイルとして保存</button>
+    <button id="export-json">設定をJSONとしてエクスポート</button>
+    <button id="import-json">設定をJSONとしてインポート</button>
+    <input type="file" id="import-file" accept=".json" style="display:none;">
+    <!-- Excel用エクスポート／インポート -->
+    <button id="export-excel">Excelとしてエクスポート</button>
+    <button id="import-excel">Excelとしてインポート</button>
+    <input type="file" id="import-excel-file" accept=".xlsx,.xls" style="display:none;">
+  </div>
+  
+  <!-- SortableJS（ドラッグ＆ドロップ用ライブラリ） -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+    // グローバル変数
+    const allowedExtensions = ['exe', 'bat', 'sh', 'html', 'htm'];
+    let buttonsConfig = [];
+    let nextId = 0;
+    let currentEditId = null;  // 編集中のボタンID（nullなら新規追加）
+    
+    const buttonContainer = document.getElementById("button-container");
+    const previewButton = document.getElementById("preview-button");
+    const submitBtn = document.getElementById("submit-btn");
+    const cancelEditBtn = document.getElementById("cancel-edit");
+    
+    // リアルタイムプレビュー更新関数
+    function updatePreview() {
+      const text = document.getElementById("text").value || "サンプル";
+      const width = document.getElementById("width").value || "150px";
+      const height = document.getElementById("height").value || "50px";
+      const textColor = document.getElementById("textColor").value || "black";
+      const bgColor = document.getElementById("bgColor").value || "yellowgreen";
+      const fontSize = document.getElementById("fontSize").value || "16px";
+      const borderRadius = document.getElementById("borderRadius").value || "30px";
+      const borderColor = document.getElementById("borderColor").value || "#cccccc";
+      
+      previewButton.textContent = text;
+      previewButton.style.width = width;
+      previewButton.style.height = height;
+      previewButton.style.color = textColor;
+      previewButton.style.backgroundColor = bgColor;
+      previewButton.style.fontSize = fontSize;
+      previewButton.style.borderRadius = borderRadius;
+      previewButton.style.border = "1px solid " + borderColor;
+    }
+    // 各入力・選択項目の変更でリアルタイムプレビュー更新
+    document.querySelectorAll("#add-button-form input, #add-button-form select").forEach(el => {
+      el.addEventListener("input", updatePreview);
+    });
+    updatePreview();
+    
+    // ボタン表示更新関数
+    function updateButtons() {
+      buttonContainer.innerHTML = "";
+      // orderプロパティでソート
+      let sorted = buttonsConfig.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+      sorted.forEach(btnObj => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "button-wrapper";
+        wrapper.dataset.id = btnObj.id;
+        
+        // メイン実行ボタン（ダブルクリックで実行）
+        const btn = document.createElement("button");
+        btn.textContent = btnObj.text;
+        btn.className = "custom-button";
+        btn.style.width = btnObj.width;
+        btn.style.height = btnObj.height;
+        btn.style.color = btnObj.textColor;
+        btn.style.backgroundColor = btnObj.bgColor;
+        btn.style.fontSize = btnObj.fontSize;
+        btn.style.borderRadius = btnObj.borderRadius;
+        btn.style.border = "1px solid " + btnObj.borderColor;
+        btn.addEventListener("dblclick", () => {
+          const ext = btnObj.file.split('.').pop().toLowerCase();
+          if (!allowedExtensions.includes(ext)) {
+            alert("実行できないファイル形式です: " + ext);
+            return;
+          }
+          window.open(btnObj.file);
+        });
+        wrapper.appendChild(btn);
+        
+        // 編集ボタン（クリックでフォームに設定反映）
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✎";
+        editBtn.className = "edit-button";
+        editBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          currentEditId = btnObj.id;
+          document.getElementById("text").value = btnObj.text;
+          document.getElementById("file").value = btnObj.file;
+          document.getElementById("width").value = btnObj.width;
+          document.getElementById("height").value = btnObj.height;
+          document.getElementById("textColor").value = btnObj.textColor;
+          document.getElementById("bgColor").value = btnObj.bgColor;
+          document.getElementById("fontSize").value = btnObj.fontSize;
+          document.getElementById("borderRadius").value = btnObj.borderRadius;
+          document.getElementById("borderColor").value = btnObj.borderColor;
+          updatePreview();
+          submitBtn.textContent = "更新する";
+          cancelEditBtn.style.display = "inline";
+        });
+        wrapper.appendChild(editBtn);
+        
+        // 削除ボタン
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "✖";
+        delBtn.className = "delete-button";
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm("このボタンを削除してよろしいですか？")) {
+            buttonsConfig = buttonsConfig.filter(b => b.id !== btnObj.id);
+            updateButtons();
+          }
+        });
+        wrapper.appendChild(delBtn);
+        
+        buttonContainer.appendChild(wrapper);
+      });
+      
+      // ドラッグ＆ドロップの有効化（SortableJS）
+      if (buttonContainer.sortable) { buttonContainer.sortable.destroy(); }
+      Sortable.create(buttonContainer, {
+        animation: 150,
+        onEnd: function(evt) {
+          const children = buttonContainer.children;
+          let newOrder = 0;
+          for (let child of children) {
+            const id = parseInt(child.dataset.id);
+            let btn = buttonsConfig.find(b => b.id === id);
+            if (btn) {
+              btn.order = newOrder++;
+            }
+          }
+        }
+      });
+    }
+    
+    // フォームのsubmitイベント（新規追加／編集処理）
+    document.getElementById("add-button-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const form = e.target;
+      
+      // 空の場合、デフォルト値を設定
+      let text = form.elements["text"].value.trim() || "テスト";
+      let file = form.elements["file"].value.trim() || "t.html";
+      
+      let width = form.elements["width"].value.trim();
+      if (width && !width.match(/(px|em|rem|%|vh|vw)$/)) { width += "px"; }
+      width = width || "150px";
+      
+      let height = form.elements["height"].value.trim();
+      if (height && !height.match(/(px|em|rem|%|vh|vw)$/)) { height += "px"; }
+      height = height || "50px";
+      
+      const textColor = form.elements["textColor"].value;
+      const bgColor = form.elements["bgColor"].value;
+      const fontSize = form.elements["fontSize"].value || "16px";
+      const borderRadius = form.elements["borderRadius"].value || "30px";
+      const borderColor = form.elements["borderColor"].value || "#cccccc";
+      
+      if (currentEditId !== null) {
+        // 編集の場合、既存ボタンを更新
+        const btn = buttonsConfig.find(b => b.id === currentEditId);
+        if (btn) {
+          btn.text = text;
+          btn.file = file;
+          btn.width = width;
+          btn.height = height;
+          btn.textColor = textColor;
+          btn.bgColor = bgColor;
+          btn.fontSize = fontSize;
+          btn.borderRadius = borderRadius;
+          btn.borderColor = borderColor;
+        }
+        currentEditId = null;
+        submitBtn.textContent = "ボタンを追加";
+        cancelEditBtn.style.display = "none";
+      } else {
+        // 新規追加の場合
+        let newButton = {
+          id: nextId++,
+          text,
+          file,
+          width,
+          height,
+          textColor,
+          bgColor,
+          fontSize,
+          borderRadius,
+          borderColor,
+          order: buttonsConfig.length
+        };
+        buttonsConfig.push(newButton);
+      }
+      
+      updateButtons();
+      form.reset();
+      // 既定値の再設定
+      form.elements["width"].value = "150px";
+      form.elements["height"].value = "50px";
+      form.elements["textColor"].value = "black";
+      form.elements["bgColor"].value = "yellowgreen";
+      form.elements["fontSize"].value = "16px";
+      form.elements["borderRadius"].value = "30px";
+      form.elements["borderColor"].value = "#cccccc";
+      updatePreview();
+    });
+    
+    // 列数更新処理
+    document.getElementById("update-columns").addEventListener("click", () => {
+      const cols = parseInt(document.getElementById("columns-input").value, 10);
+      if (isNaN(cols) || cols < 1) return;
+      buttonContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    });
+    
+    // 設定内容をHTMLファイルとして保存（ダウンロードフォルダーに保存）
+    document.getElementById("save-config").addEventListener("click", () => {
+      const cols = parseInt(document.getElementById("columns-input").value, 10) || 5;
+      const savedHtml = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保存されたファイル実行ボタン</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+    header {
+      background: rgba(0, 0, 0, 0.3);
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    #button-container {
+      display: grid;
+      grid-template-columns: repeat(${cols}, 1fr);
+      gap: 20px;
+      width: 90%;
+      max-width: 1000px;
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #ffffffcc;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      justify-items: center;
+    }
+    .custom-button {
+      font-size: 1.2em;
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .custom-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+    }
+    footer {
+      text-align: center;
+      width: 100%;
+      margin-top: 40px;
+      padding: 10px;
+      background: rgba(0,0,0,0.1);
+      font-size: 0.9em;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>カラフルファイル実行ボタン</h1>
+  </header>
+  <div id="button-container"></div>
+  <footer>
+    &copy; 2023 Beautiful Config
+  </footer>
+  <script>
+    const allowedExtensions = ${JSON.stringify(allowedExtensions)};
+    const buttonsConfig = ${JSON.stringify(buttonsConfig)};
+    const container = document.getElementById("button-container");
+    function createButton(button) {
+      const btn = document.createElement("button");
+      btn.textContent = button.text;
+      btn.className = "custom-button";
+      btn.style.width = button.width;
+      btn.style.height = button.height;
+      btn.style.color = button.textColor;
+      btn.style.backgroundColor = button.bgColor;
+      btn.style.fontSize = button.fontSize;
+      btn.style.borderRadius = button.borderRadius;
+      btn.style.border = "1px solid " + button.borderColor;
+      btn.addEventListener("dblclick", () => {
+        const ext = button.file.split('.').pop().toLowerCase();
+        if(!allowedExtensions.includes(ext)) {
+          alert("実行できないファイル形式です: " + ext);
+          return;
+        }
+        window.open(button.file);
+      });
+      container.appendChild(btn);
+    }
+    buttonsConfig.forEach(b => createButton(b));
+  <\/script>
+</body>
+</html>`;
+      
+      // Blobを利用したダウンロード（ユーザーの既定のダウンロードフォルダーに保存されます）
+      const blob = new Blob([savedHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ファイル実行ボタン.html";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    });
+    
+    // JSONエクスポート
+    document.getElementById("export-json").addEventListener("click", () => {
+      const json = JSON.stringify(buttonsConfig);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "config.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    });
+    
+    // JSONインポート
+    document.getElementById("import-json").addEventListener("click", () => {
+      document.getElementById("import-file").click();
+    });
+    document.getElementById("import-file").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          buttonsConfig = JSON.parse(event.target.result);
+          nextId = buttonsConfig.reduce((max, btn) => Math.max(max, btn.id), 0) + 1;
+          updateButtons();
+        } catch(err) {
+          alert("JSON読み込みエラー");
+        }
+      };
+      reader.readAsText(file);
+    });
+    
+    // Excelエクスポート
+    document.getElementById("export-excel").addEventListener("click", () => {
+      const header = ["ボタンテキスト", "実行ファイル", "幅", "高さ", "背景色", "フォントサイズ", "角丸", "枠線色"];
+      const ws_data = [ header ];
+      buttonsConfig.forEach(btn => {
+        ws_data.push([ 
+          btn.text, 
+          btn.file, 
+          btn.width, 
+          btn.height, 
+          btn.bgColor, 
+          btn.fontSize, 
+          btn.borderRadius, 
+          btn.borderColor 
+        ]);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Buttons");
+      XLSX.writeFile(wb, "buttons_config.xlsx");
+    });
+    
+    // Excelインポート
+    document.getElementById("import-excel").addEventListener("click", () => {
+      document.getElementById("import-excel-file").click();
+    });
+    document.getElementById("import-excel-file").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, {type: "array"});
+        const wsname = workbook.SheetNames[0];
+        const ws = workbook.Sheets[wsname];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        // jsonDataは配列の配列（1行目がヘッダー）
+        if(jsonData.length < 2) return; // データがない場合
+        const headerRow = jsonData[0];
+        // ヘッダーと内部のプロパティ名の対応
+        const mapping = {
+          "ボタンテキスト": "text",
+          "実行ファイル": "file",
+          "幅": "width",
+          "高さ": "height",
+          "背景色": "bgColor",
+          "フォントサイズ": "fontSize",
+          "角丸": "borderRadius",
+          "枠線色": "borderColor"
+        };
+        buttonsConfig = [];
+        for(let i = 1; i < jsonData.length; i++){
+          const row = jsonData[i];
+          if(row.length === 0) continue;
+          let buttonObj = {};
+          headerRow.forEach((colName, index) => {
+            const propName = mapping[colName];
+            if(propName) {
+              buttonObj[propName] = row[index];
+            }
+          });
+          // 新規ID・order付与
+          buttonObj.id = nextId++;
+          buttonObj.order = buttonsConfig.length;
+          // デフォルト値（不足している場合の補完）
+          if(!buttonObj.text) buttonObj.text = "テスト";
+          if(!buttonObj.file) buttonObj.file = "t.html";
+          if(!buttonObj.width) buttonObj.width = "150px";
+          if(!buttonObj.height) buttonObj.height = "50px";
+          if(!buttonObj.fontSize) buttonObj.fontSize = "16px";
+          if(!buttonObj.borderRadius) buttonObj.borderRadius = "30px";
+          if(!buttonObj.borderColor) buttonObj.borderColor = "#cccccc";
+          if(!buttonObj.bgColor) buttonObj.bgColor = "yellowgreen";
+          buttonsConfig.push(buttonObj);
+        }
+        updateButtons();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
