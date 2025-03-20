@@ -37,14 +37,14 @@
   </select>
   <p id="instructions">
     リラックスして、目の焦点を少し奥に合わせると、隠された数字が浮かび上がります。<br>
-    下の入力欄に答えを入力してください。
+    下の入力欄に答えを入力してください。<br>
+    ※回答欄に何も入力しないで回答すると、隠し数字が自動的に表示されます。
   </p>
   <canvas id="stereoCanvas" width="400" height="300"></canvas>
   <br>
   <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1">
   <button id="submitGuess">回答する</button>
   <button id="changeNumber">数字変更</button>
-  <!-- 以下、新たに追加する「数字表示」ボタン -->
   <button id="showAnswer">数字表示</button>
   <p id="result"></p>
 
@@ -178,8 +178,13 @@
     // 「回答する」ボタンの処理
     document.getElementById("submitGuess").addEventListener("click", function () {
       const userGuess = guessInput.value.trim();
+      // もし入力が空なら、隠し数字を自動表示して次の問題へ（数字が浮かび上がる）
       if (userGuess === "") {
-        resultEl.textContent = "まずは数字を入力してください。";
+        resultEl.textContent = `答え: ${hiddenAnswer} でした。`;
+        setTimeout(() => {
+          guessInput.value = "";
+          generateStereogram();
+        }, 2000);
         return;
       }
       if (userGuess === hiddenAnswer) {
@@ -203,7 +208,7 @@
       guessInput.value = "";
     });
 
-    // ★ 追加： 「数字表示」ボタン　押下時の処理 ★
+    // 「数字表示」ボタンの処理（現在の隠し数字を結果表示領域に出力）
     document.getElementById("showAnswer").addEventListener("click", function () {
       resultEl.textContent = `答え: ${hiddenAnswer} でした。`;
     });
