@@ -36,7 +36,7 @@
     <option value="digit3_bw">黒のみ数字レベル3 (3桁: 100～999)</option>
   </select>
   <p id="instructions">
-    リラックスして、目の焦点を少し奥に合わせると、隠された数字が浮かび上がるはずです。<br>
+    リラックスして、目の焦点を少し奥に合わせると、隠された数字が浮かび上がります。<br>
     下の入力欄に答えを入力してください。
   </p>
   <canvas id="stereoCanvas" width="400" height="300"></canvas>
@@ -44,6 +44,8 @@
   <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1">
   <button id="submitGuess">回答する</button>
   <button id="changeNumber">数字変更</button>
+  <!-- 以下、新たに追加する「数字表示」ボタン -->
+  <button id="showAnswer">数字表示</button>
   <p id="result"></p>
 
   <script>
@@ -95,10 +97,10 @@
       const offCtx = offCanvas.getContext('2d');
       offCtx.fillStyle = "black";
       offCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-      offCtx.fillStyle = "white";
-      offCtx.font = "250px sans-serif";
-      offCtx.textAlign = "center";
-      offCtx.textBaseline = "middle";
+      offCtx.fillStyle = "white"; // 描画は白で行い、数字部分を判定
+      offCtx.font = '250px sans-serif';
+      offCtx.textAlign = 'center';
+      offCtx.textBaseline = 'middle';
       offCtx.fillText(hiddenAnswer, canvasWidth / 2, canvasHeight / 2);
 
       // ピクセル情報から深度マップを作成（白い部分＝深度0.3）
@@ -110,8 +112,8 @@
           const index = (y * canvasWidth + x) * 4;
           depthMap[y][x] =
             (offData.data[index] > 200 &&
-            offData.data[index + 1] > 200 &&
-            offData.data[index + 2] > 200) ? 0.3 : 0;
+             offData.data[index + 1] > 200 &&
+             offData.data[index + 2] > 200) ? 0.3 : 0;
         }
       }
 
@@ -122,7 +124,6 @@
         let row = new Array(canvasWidth);
         // 先頭 eyeSeparation ピクセルはランダムパターン
         for (let x = 0; x < eyeSeparation; x++) {
-          // モードに応じて色を設定（color: randomColor、bw: randomGray）
           if (mode.indexOf("_color") !== -1) {
             row[x] = randomColor();
           } else {
@@ -143,7 +144,7 @@
             row[x] = row[srcIndex];
           }
         }
-        // 生成した行データを画像データに反映
+        // 行の色データを画像データに反映
         for (let x = 0; x < canvasWidth; x++) {
           const idx = (y * canvasWidth + x) * 4;
           stereoImage.data[idx]     = row[x].r;
@@ -200,6 +201,11 @@
     document.getElementById("changeNumber").addEventListener("click", function () {
       generateStereogram();
       guessInput.value = "";
+    });
+
+    // ★ 追加： 「数字表示」ボタン　押下時の処理 ★
+    document.getElementById("showAnswer").addEventListener("click", function () {
+      resultEl.textContent = `答え: ${hiddenAnswer} でした。`;
     });
   </script>
 </body>
