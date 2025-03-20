@@ -142,10 +142,11 @@
   <!-- ゲームボード -->
   <div id="game"></div>
 
-  <!-- コントロール部分：ヒント、シャッフル、終了 -->
+  <!-- コントロール部分：ヒント、シャッフル、レベルアップ、終了 -->
   <div id="controls">
     <button id="hint">ヒント</button>
     <button id="shuffle">シャッフル</button>
+    <button id="levelUp">レベルアップ</button>
     <button id="finish">終了</button>
   </div>
 
@@ -172,6 +173,7 @@
     const messageEl = document.getElementById('message');
     const hintButton = document.getElementById('hint');
     const shuffleButton = document.getElementById('shuffle');
+    const levelUpButton = document.getElementById('levelUp');
     const finishButton = document.getElementById('finish');
 
     // Fisher‐Yatesアルゴリズムによるシャッフル
@@ -213,7 +215,7 @@
       for (let i = 1; i <= cellCount - 1; i++) {
         uniqueNumbers.push(i);
       }
-      // リストからランダムに1つ選び、重複させる
+      // リストからランダムに1つ選んで重複させる
       duplicateNumber = uniqueNumbers[Math.floor(Math.random() * uniqueNumbers.length)];
 
       // 数字配列を作成：重複分を追加してシャッフル
@@ -260,7 +262,6 @@
       } else {
         messageEl.textContent = "不正解。正解は " + duplicateNumber + " です。 経過時間: " + elapsed + " s";
       }
-      // 次の問題へ進む前に、新たな盤面を作成（1.5秒後）
       setTimeout(() => {
         createBoard();
       }, 1500);
@@ -273,21 +274,18 @@
       if (cell.classList.contains('matched') || cell.classList.contains('selected')) return;
 
       cell.classList.add('selected');
-
       if (!firstSelection) {
         firstSelection = cell;
       } else {
-        isProcessing = true; // 連続クリックを防止
+        isProcessing = true;
         const num1 = firstSelection.textContent;
         const num2 = cell.textContent;
         stopTimer();
         if (num1 === num2) {
-          // 正解の場合：両方にクラスを追加
           firstSelection.classList.add('matched');
           cell.classList.add('matched');
           revealAnswerAndNext(true);
         } else {
-          // 不正解の場合：選択セルはそのまま残した上、正解セルを光らせる
           revealAnswerAndNext(false);
         }
         firstSelection = null;
@@ -308,7 +306,7 @@
       }, 1000);
     }
 
-    // シャッフルボタン：盤面の数字配置を再シャッフル（盤面の状態をリセット）
+    // シャッフルボタン：盤面の数字配置を再シャッフル（盤面状態をリセット）
     function shuffleBoard() {
       if (isProcessing || firstSelection !== null) return;
       numbers = shuffle(numbers);
@@ -317,6 +315,13 @@
         cell.textContent = numbers[index];
         cell.classList.remove('selected', 'matched', 'correct', 'hint');
       });
+    }
+
+    // レベルアップボタン：現在のレベルを1段階上げ、盤面サイズを増やす
+    function levelUp() {
+      // 任意に上限を設ける場合は、ここで制御も可能（例：最大レベル20など）
+      chosenLevel++;
+      createBoard();
     }
 
     // 終了ボタン：ゲーム終了して、メニュー画面を再表示（レベル選択可能に）
@@ -337,6 +342,7 @@
     });
     hintButton.addEventListener('click', showHint);
     shuffleButton.addEventListener('click', shuffleBoard);
+    levelUpButton.addEventListener('click', levelUp);
     finishButton.addEventListener('click', finishGame);
   </script>
 </body>
