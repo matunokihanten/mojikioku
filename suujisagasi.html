@@ -110,13 +110,13 @@
   </style>
 </head>
 <body>
-  <!-- メニュー：レベル選択 -->
+  <!-- メニュー：レベル選択（初回表示時はレベル1が選ばれる）-->
   <div id="menu">
     <h1>重複数字ゲーム</h1>
     <div>
       <label for="levelSelect">レベルを選択: </label>
       <select id="levelSelect">
-        <option value="1">レベル 1 (3×3)</option>
+        <option value="1" selected>レベル 1 (3×3)</option>
         <option value="2">レベル 2 (4×4)</option>
         <option value="3">レベル 3 (5×5)</option>
         <option value="4">レベル 4 (6×6)</option>
@@ -138,19 +138,20 @@
   <!-- ゲームボード -->
   <div id="game"></div>
 
-  <!-- コントロール部分：ヒント、シャッフル、レベルアップ、終了 -->
+  <!-- コントロール部分：ヒント、シャッフル、レベルアップ、レベルダウン、終了 -->
   <div id="controls">
     <button id="hint">ヒント</button>
     <button id="shuffle">シャッフル</button>
     <button id="levelUp">レベルアップ</button>
+    <button id="levelDown">レベルダウン</button>
     <button id="finish">終了</button>
   </div>
 
   <p id="message"></p>
 
   <script>
-    // グローバル変数
-    let chosenLevel = 1;      // メニューで選択されたレベル（固定）
+    // グローバル変数（初期の chosenLevel を 1 に設定）
+    let chosenLevel = 1;
     let gridSize;             // gridSize = chosenLevel + 2
     let duplicateNumber;      // 重複する数字
     let numbers = [];         // 盤面に表示する数字の配列
@@ -170,6 +171,7 @@
     const hintButton = document.getElementById('hint');
     const shuffleButton = document.getElementById('shuffle');
     const levelUpButton = document.getElementById('levelUp');
+    const levelDownButton = document.getElementById('levelDown');
     const finishButton = document.getElementById('finish');
 
     // Fisher‐Yatesアルゴリズムによるシャッフル
@@ -202,7 +204,7 @@
 
     // ゲームボードの生成
     function createBoard() {
-      // 選択されたレベルに基づくグリッドサイズ（固定）: gridSize = chosenLevel + 2
+      // 現在の chosenLevel に基づくグリッドサイズ: gridSize = chosenLevel + 2
       gridSize = chosenLevel + 2;
       const cellCount = gridSize * gridSize;
       
@@ -211,7 +213,7 @@
       for (let i = 1; i <= cellCount - 1; i++) {
         uniqueNumbers.push(i);
       }
-      // リストからランダムに1つ選んで重複させる
+      // リストからランダムに1つ選び重複させる
       duplicateNumber = uniqueNumbers[Math.floor(Math.random() * uniqueNumbers.length)];
 
       // 数字配列を作成：重複分を追加してシャッフル
@@ -228,7 +230,7 @@
       isProcessing = false;
       messageEl.textContent = "";
 
-      // 各セルを生成＆クリックイベントを登録
+      // 各セルを生成してクリックイベントを登録
       numbers.forEach((num, index) => {
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -238,13 +240,13 @@
         gameBoard.appendChild(cell);
       });
 
-      // 統計表示更新＆タイマー開始
+      // 統計表示の更新＆タイマー開始
       levelDisplay.textContent = "レベル: " + chosenLevel + " (" + gridSize + "×" + gridSize + ")";
       stopTimer();
       startTimer();
     }
 
-    // 正誤にかかわらず、正解のセルを光らせ、メッセージを表示して次の問題へ進む
+    // 正誤にかかわらず、正解のセルを表示してメッセージ表示後、次の問題へ進む
     function revealAnswerAndNext(isCorrect) {
       const cells = document.querySelectorAll('.cell');
       cells.forEach(cell => {
@@ -268,7 +270,6 @@
       if (isProcessing) return;
       const cell = event.currentTarget;
       if (cell.classList.contains('matched') || cell.classList.contains('selected')) return;
-
       cell.classList.add('selected');
       if (!firstSelection) {
         firstSelection = cell;
@@ -288,7 +289,7 @@
       }
     }
 
-    // ヒントボタン：解答となる数字をメッセージエリアに表示する
+    // ヒントボタン：解答の数字をメッセージエリアに表示
     function showHint() {
       if (isProcessing) return;
       messageEl.textContent = "ヒント: 重複している数字は " + duplicateNumber + " です";
@@ -297,7 +298,7 @@
       }, 1500);
     }
 
-    // シャッフルボタン：盤面の数字配置を再シャッフル（盤面状態をリセット）
+    // シャッフルボタン：盤面の数字配置を再シャッフル（選択中状態をリセット）
     function shuffleBoard() {
       if (isProcessing || firstSelection !== null) return;
       numbers = shuffle(numbers);
@@ -308,13 +309,26 @@
       });
     }
 
-    // レベルアップボタン：現在のレベルを1段階上げ、盤面サイズを増やす
+    // レベルアップボタン：現在のレベルを 1 増やして盤面を再生成
     function levelUp() {
       chosenLevel++;
       createBoard();
     }
 
-    // 終了ボタン：ゲーム終了して、メニュー画面を再表示（レベル選択可能に）
+    // レベルダウンボタン：現在のレベルが 1 より上なら 1 減らして盤面を再生成
+    function levelDown() {
+      if (chosenLevel > 1) {
+        chosenLevel--;
+        createBoard();
+      } else {
+        messageEl.textContent = "これ以上レベルは下がりません";
+        setTimeout(() => {
+          messageEl.textContent = "";
+        }, 1500);
+      }
+    }
+
+    // 終了ボタン：ゲーム終了して、メニュー画面（レベル選択）を再表示
     function finishGame() {
       stopTimer();
       gameBoard.innerHTML = "";
@@ -333,7 +347,11 @@
     hintButton.addEventListener('click', showHint);
     shuffleButton.addEventListener('click', shuffleBoard);
     levelUpButton.addEventListener('click', levelUp);
+    levelDownButton.addEventListener('click', levelDown);
     finishButton.addEventListener('click', finishGame);
+
+    // 起動時は chosenLevel が 1 なので（メニューでの選択も 1 に指定しているため）、
+    // アプリ起動時に「レベル1」がデフォルトとなります。
   </script>
 </body>
 </html>
