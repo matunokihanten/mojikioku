@@ -76,8 +76,7 @@
     .cell.selected {
       background-color: #ffeaa7;
     }
-    .cell.matched,
-    .cell.correct {
+    .cell.matched, .cell.correct {
       background-color: #55efc4;
       border-color: #00b894;
       color: white;
@@ -110,7 +109,7 @@
   </style>
 </head>
 <body>
-  <!-- メニュー：レベル選択（初回表示時はレベル1が選ばれる）-->
+  <!-- メニュー：レベル選択（※終了時に表示されます） -->
   <div id="menu">
     <h1>重複数字ゲーム</h1>
     <div>
@@ -150,7 +149,7 @@
   <p id="message"></p>
 
   <script>
-    // グローバル変数（初期の chosenLevel を 1 に設定）
+    // グローバル変数（初期の chosenLevel は 1）
     let chosenLevel = 1;
     let gridSize;             // gridSize = chosenLevel + 2
     let duplicateNumber;      // 重複する数字
@@ -213,7 +212,7 @@
       for (let i = 1; i <= cellCount - 1; i++) {
         uniqueNumbers.push(i);
       }
-      // リストからランダムに1つ選び重複させる
+      // リストからランダムに1つ選び、重複させる
       duplicateNumber = uniqueNumbers[Math.floor(Math.random() * uniqueNumbers.length)];
 
       // 数字配列を作成：重複分を追加してシャッフル
@@ -230,7 +229,7 @@
       isProcessing = false;
       messageEl.textContent = "";
 
-      // 各セルを生成してクリックイベントを登録
+      // 各セルの生成とクリックイベント登録
       numbers.forEach((num, index) => {
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -240,13 +239,13 @@
         gameBoard.appendChild(cell);
       });
 
-      // 統計表示の更新＆タイマー開始
+      // 統計情報の更新＆タイマー開始
       levelDisplay.textContent = "レベル: " + chosenLevel + " (" + gridSize + "×" + gridSize + ")";
       stopTimer();
       startTimer();
     }
 
-    // 正誤にかかわらず、正解のセルを表示してメッセージ表示後、次の問題へ進む
+    // 正誤にかかわらず、正解セルを表示しメッセージ後に次の問題へ
     function revealAnswerAndNext(isCorrect) {
       const cells = document.querySelectorAll('.cell');
       cells.forEach(cell => {
@@ -298,7 +297,7 @@
       }, 1500);
     }
 
-    // シャッフルボタン：盤面の数字配置を再シャッフル（選択中状態をリセット）
+    // シャッフルボタン：盤面の数字配置を再シャッフル（選択状態をリセット）
     function shuffleBoard() {
       if (isProcessing || firstSelection !== null) return;
       numbers = shuffle(numbers);
@@ -309,13 +308,13 @@
       });
     }
 
-    // レベルアップボタン：現在のレベルを 1 増やして盤面を再生成
+    // レベルアップボタン：現在のレベルを 1 増加して盤面再生成
     function levelUp() {
       chosenLevel++;
       createBoard();
     }
 
-    // レベルダウンボタン：現在のレベルが 1 より上なら 1 減らして盤面を再生成
+    // レベルダウンボタン：現在のレベルが 1 より上なら 1 減少して盤面再生成
     function levelDown() {
       if (chosenLevel > 1) {
         chosenLevel--;
@@ -328,7 +327,7 @@
       }
     }
 
-    // 終了ボタン：ゲーム終了して、メニュー画面（レベル選択）を再表示
+    // 終了ボタン：ゲーム終了し、メニュー（レベル選択）を表示
     function finishGame() {
       stopTimer();
       gameBoard.innerHTML = "";
@@ -338,7 +337,7 @@
       menu.style.display = "block";
     }
 
-    // イベント登録
+    // イベント登録（メニューからの開始は finishGame を経由して再表示された場合に利用）
     startGameBtn.addEventListener('click', () => {
       chosenLevel = parseInt(levelSelect.value);
       menu.style.display = "none";
@@ -350,8 +349,13 @@
     levelDownButton.addEventListener('click', levelDown);
     finishButton.addEventListener('click', finishGame);
 
-    // 起動時は chosenLevel が 1 なので（メニューでの選択も 1 に指定しているため）、
-    // アプリ起動時に「レベル1」がデフォルトとなります。
+    // アプリ起動時に、初めからレベル1の盤面を表示する
+    window.onload = function() {
+      chosenLevel = 1;
+      // メニューは起動時は非表示にして、自動で盤面を作成
+      menu.style.display = "none";
+      createBoard();
+    };
   </script>
 </body>
 </html>
