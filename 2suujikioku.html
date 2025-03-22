@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>数字記憶ゲーム シンプル版</title>
+  <style>
+    /* シンプルなレイアウト */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 4px;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    /* 出題数字・メッセージ・結果 */
+    #display {
+      text-align: center;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    #message, #result {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    /* キーパッドのレイアウト（3列グリッド） */
+    #keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    #keypad button {
+      padding: 15px;
+      font-size: 18px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>数字記憶ゲーム</h1>
+    
+    <!-- 設定画面 -->
+    <div id="settings">
+      <h2>設定</h2>
+      <label for="digitCount">桁数 (例: 2 → 10～99)</label>
+      <input type="number" id="digitCount" min="1" value="2">
+      <label for="waitTime">待ち時間 (秒)</label>
+      <input type="number" id="waitTime" min="1" value="3">
+      <button id="startGameBtn">ゲーム開始</button>
+    </div>
+    
+    <!-- ゲーム画面 -->
+    <div id="game" class="hidden">
+      <!-- 表示する数字 -->
+      <div id="display">--</div>
+      <!-- 状況メッセージ -->
+      <div id="message">数字を覚えてください</div>
+      <!-- 答え入力欄（readonlyでシステムキーボードは出ません） -->
+      <input type="text" id="answerDisplay" placeholder="答えを入力" readonly style="text-align: center;">
+      <!-- 電卓風キーパッド -->
+      <div id="keypad">
+        <button class="key" data-val="7">7</button>
+        <button class="key" data-val="8">8</button>
+        <button class="key" data-val="9">9</button>
+        <button class="key" data-val="4">4</button>
+        <button class="key" data-val="5">5</button>
+        <button class="key" data-val="6">6</button>
+        <button class="key" data-val="1">1</button>
+        <button class="key" data-val="2">2</button>
+        <button class="key" data-val="3">3</button>
+        <button class="key" id="clearBtn">Clear</button>
+        <button class="key" data-val="0">0</button>
+        <button class="key" id="enterBtn">Enter</button>
+      </div>
+      <!-- 結果表示 -->
+      <div id="result">スコア: 0</div>
+      <!-- 再スタート用ボタン（ゲーム終了時に表示） -->
+      <button id="restart" class="hidden">設定に戻る</button>
+    </div>
+  </div>
+  
+  <script>
+    // グローバル変数
+    let digitCount, waitTime;
+    let score = 0;
+    let currentNumber, previousNumber;
+    
+    const settingsDiv = document.getElementById("settings");
+    const gameDiv = document.getElementById("game");
+    const displayDiv = document.getElementById("display");
+    const messageDiv = document.getElementById("message");
+    const answerDisplay = document.getElementById("answerDisplay");
+    const resultDiv = document.getElementById("result");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const restartBtn = document.getElementById("restart");
+    const keypad = document.getElementById("keypad");
+    
+    // 指定桁数に合わせたランダムな数字を生成（例：2桁なら10～99）
+    function generateRandomNumber(digits) {
+      const lower = Math.pow(10, digits - 1);
+      const upper = Math.pow(10, digits) - 1;
+      return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+    }
+    
+    // ゲーム開始処理
+    function startGame() {
+      digitCount = parseInt(document.getElementById("digitCount").value, 10);
+      waitTime = parseInt(document.getElementById("waitTime").value, 10) * 1000;
+      score = 0;
+      resultDiv.innerText = "スコア: " + score;
+      answerDisplay.value = "";
+      
+      settingsDiv.classList.add("hidden");
+      gameDiv.classList.remove("hidden");
+      restartBtn.classList.add("hidden");
+      
+      // 初回は数字を覚えるフェーズ
+      currentNumber = generateRandomNumber(digitCount);
+      displayDiv.innerText = currentNumber;
+      messageDiv.innerText = "数字を覚えてください";
+      
+      setKeypad(false);
+      
+      // 待ち時間終了後、入力フェーズへ移行
+      setTimeout(nextRound, waitTime);
+    }
+    
+    // 次のラウンドへ進む（直前の数字を正解とする）
+    function nextRound() {
+      previousNumber = currentNumber;
+      currentNumber = generateRandomNumber(digitCount);
+      displayDiv.innerText = currentNumber;
+      messageDiv.innerText = "前の数字を入力してください";
+      answerDisplay.value = "";
+      setKeypad(true);
+    }
+    
+    // 回答チェック（Enter押下時に実行）
+    function checkAnswer() {
+      const userInput = answerDisplay.value.trim();
+      if (userInput === "") return;
+      
+      if (parseInt(userInput, 10) === previousNumber) {
+        // 正解ならスコアを加算し、すぐに次のラウンドへ進む
+        score++;
+        resultDiv.innerText = "正解！ スコア: " + score;
+        setKeypad(false);
+        nextRound();
+      } else {
+        // 不正解ならゲーム終了
+        resultDiv.innerText = "不正解！ 正しい答えは " + previousNumber + " でした。ゲーム終了";
+        setKeypad(false);
+        restartBtn.classList.remove("hidden");
+      }
+    }
+    
+    // キーパッドの有効／無効を設定
+    function setKeypad(enabled) {
+      const buttons = keypad.querySelectorAll("button");
+      buttons.forEach(btn => btn.disabled = !enabled);
+    }
+    
+    // キーパッドのクリックイベント
+    keypad.addEventListener("click", function(e) {
+      const target = e.target;
+      if (!target.matches("button") || target.disabled) return;
+      
+      if (target.id === "clearBtn") {
+        answerDisplay.value = "";
+      } else if (target.id === "enterBtn") {
+        checkAnswer();
+      } else {
+        // 数字ボタン：入力欄に追記（桁数未満なら）
+        if (answerDisplay.value.length < digitCount) {
+          answerDisplay.value += target.getAttribute("data-val");
+        }
+      }
+    });
+    
+    // イベントリスナーの登録
+    startGameBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", function() {
+      settingsDiv.classList.remove("hidden");
+      gameDiv.classList.add("hidden");
+    });
+  </script>
+</body>
+</html>
