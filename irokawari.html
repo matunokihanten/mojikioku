@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>反応速度チャレンジ - シンプル改良版</title>
+  <title>反応速度チャレンジ - シンプル改良版 (修正済み)</title>
   <style>
     body {
       background: #fff;
@@ -200,7 +200,11 @@
       scoreBoard.innerHTML = "";
       scores.forEach((score, index) => {
         const li = document.createElement("li");
-        li.textContent = `試行 ${index + 1}: ${score} ${typeof score === "number" ? "ミリ秒" : ""}`;
+        if (typeof score === "number") {
+          li.textContent = `試行 ${index + 1}: ${score} ミリ秒`;
+        } else {
+          li.textContent = `試行 ${index + 1}: ${score}`;
+        }
         scoreBoard.appendChild(li);
       });
     }
@@ -247,7 +251,8 @@
       resultElem.textContent = `反応速度: ${reactionTime.toFixed(0)} ミリ秒`;
       successSound.currentTime = 0;
       successSound.play();
-      scores.push(reactionTime.toFixed(0));
+      // 数値として保存することで平均計算が正しく行われる
+      scores.push(Number(reactionTime.toFixed(0)));
       updateScoreBoard();
       trialActive = false;
       nextTrial();
