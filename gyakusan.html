@@ -48,7 +48,7 @@
     button:hover {
       background-color: #45a049;
     }
-    #answer-display {
+    #hint-display, #message {
       font-size: 1.2rem;
       margin-top: 1rem;
     }
@@ -59,8 +59,10 @@
   <div id="game-container">
     <p id="target"></p>
     <div id="numbers-container"></div>
-    <button id="answer-button">答えを見る</button>
-    <p id="answer-display"></p>
+    <button id="hint-button">ヒント</button>
+    <p id="hint-display"></p>
+    <button id="ok-button">OK</button>
+    <p id="message"></p>
     <button id="new-challenge">新しいチャレンジ</button>
   </div>
 
@@ -81,7 +83,7 @@
       let numbers = [];
       let target = 0;
       let solution = [];
-      
+
       do {
         numbers = [];
         target = 0;
@@ -94,7 +96,7 @@
           target += num * sign;
         }
       } while (target <= 0); // 正の目標値にする
-      
+
       puzzle.numbers = shuffleArray(numbers);
       puzzle.target = target;
       puzzle.solution = solution;
@@ -108,22 +110,55 @@
       puzzle.numbers.forEach((number, index) => {
         const span = document.createElement("span");
         span.innerText = `${number}`;
+        span.dataset.index = index;
+        span.addEventListener("click", function () {
+          toggleNumber(index);
+        });
         numbersContainer.appendChild(span);
       });
-      document.getElementById("answer-display").innerText = "";
+      document.getElementById("hint-display").innerText = "";
+      document.getElementById("message").innerText = "";
     }
 
-    // 答えを表示する
-    function displayAnswer() {
-      let answerString = puzzle.numbers.map((num, index) => {
-        const sign = puzzle.solution[index] === 1 ? "+" : "-";
-        return `${sign}${num}`;
-      }).join(" ");
-      document.getElementById("answer-display").innerText = `正しい答え: ${answerString}`;
+    // 数字の符号を切り替える関数
+    function toggleNumber(index) {
+      puzzle.solution[index] *= -1; // ユーザーの選択変更（解答ロジック用）
+      const span = document.querySelector(`span[data-index="${index}"]`);
+      const sign = puzzle.solution[index] === 1 ? "+" : "-";
+      span.innerText = `${sign}${puzzle.numbers[index]}`;
+    }
+
+    // ヒントを表示する関数
+    function displayHint() {
+      const currentSum = puzzle.numbers.reduce((acc, num, index) => acc + num * puzzle.solution[index], 0);
+      document.getElementById("hint-display").innerText = `現在の合計: ${currentSum}`;
+    }
+
+    // 答え合わせをする関数
+    function checkAnswer() {
+      const currentSum = puzzle.numbers.reduce((acc, num, index) => acc + num * puzzle.solution[index], 0);
+      if (currentSum === puzzle.target) {
+        document.getElementById("message").innerText = "正解！次に進みます...";
+        setTimeout(() => {
+          generatePuzzle();
+          displayPuzzle();
+        }, 2000);
+      } else {
+        let correctAnswer = puzzle.numbers.map((num, index) => {
+          const sign = puzzle.solution[index] === 1 ? "+" : "-";
+          return `${sign}${num}`;
+        }).join(" ");
+        document.getElementById("message").innerText = `不正解！正しい答え: ${correctAnswer}`;
+        setTimeout(() => {
+          generatePuzzle();
+          displayPuzzle();
+        }, 4000);
+      }
     }
 
     // ボタンのイベントリスナーを設定
-    document.getElementById("answer-button").addEventListener("click", displayAnswer);
+    document.getElementById("hint-button").addEventListener("click", displayHint);
+    document.getElementById("ok-button").addEventListener("click", checkAnswer);
     document.getElementById("new-challenge").addEventListener("click", () => {
       generatePuzzle();
       displayPuzzle();
