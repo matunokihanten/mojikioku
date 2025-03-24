@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>豪華な逆算チャレンジ</title>
+  <title>豪華な逆算チャレンジ（ヒント付き）</title>
   <style>
     /* 背景＆フォント */
     body {
@@ -46,8 +46,8 @@
     #level-panel button:hover {
       background-color: #45a049;
     }
-    /* 目標＆合計の表示 */
-    #target, #current-sum {
+    /* 目標の表示 */
+    #target {
       font-size: 1.5rem;
       margin: 0.8rem 0;
     }
@@ -87,16 +87,32 @@
     .control-buttons button:hover {
       background-color: #0b7dda;
     }
-    /* メッセージ表示 */
-    #message {
+    /* ヒント＆メッセージ表示 */
+    #hint-button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #FF9800;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #hint-button:hover {
+      background-color: #e68900;
+    }
+    #hint-display, #message {
       font-size: 1.3rem;
       margin-top: 0.8rem;
+    }
+    #message {
       color: #d9534f;
     }
   </style>
 </head>
 <body>
-  <h1>豪華な逆算チャレンジ</h1>
+  <h1>豪華な逆算チャレンジ（ヒント付き）</h1>
   <div id="game-container">
     <div id="level-panel">
       <button id="level-down">レベルダウン</button>
@@ -104,8 +120,10 @@
       <button id="level-up">レベルアップ</button>
     </div>
     <p id="target">目標: ?</p>
-    <p id="current-sum">現在の合計: ?</p>
     <div id="numbers-container"></div>
+    <!-- ヒントボタンとヒント表示エリア -->
+    <button id="hint-button">ヒント</button>
+    <p id="hint-display"></p>
     <p id="message"></p>
     <div class="control-buttons">
       <button id="new-challenge">新しいチャレンジ</button>
@@ -173,12 +191,12 @@
         for (let i = 0; i < count; i++) {
           // 1～maxNumber の数字を生成
           const num = Math.floor(Math.random() * maxNumber) + 1;
-          // ランダムに解答用の符号 + (1) か - (-1) を設定
+          // ランダムに解答用の符号（+1 or -1）を設定
           const solSign = Math.random() < 0.5 ? 1 : -1;
           numbers.push({
             value: num,
             solutionSign: solSign,  // 内部利用
-            currentSign: 1          // 現在の符号はすべて +1 からスタート
+            currentSign: 1          // 現在の符号は全て+1からスタート
           });
           initialSum += num;
           target += solSign * num;
@@ -190,14 +208,14 @@
       puzzle.target = target;
     }
 
-    // パズルの内容を画面に表示
+    // パズル内容を画面に表示する（「現在の合計」表示は行わず、ヒントエリアは空にしています）
     function displayPuzzle() {
       document.getElementById("current-level").innerText = "レベル: " + currentLevel;
       document.getElementById("target").innerText = "目標: " + puzzle.target;
-      document.getElementById("current-sum").innerText = "現在の合計: " + puzzle.initialSum;
       const container = document.getElementById("numbers-container");
       container.innerHTML = "";
       document.getElementById("message").innerText = "";
+      document.getElementById("hint-display").innerText = ""; // ヒント表示エリアのクリア
       puzzle.numbers.forEach((item, index) => {
         const span = document.createElement("span");
         span.innerText = "+" + item.value;
@@ -209,10 +227,9 @@
       });
     }
 
-    // 現在の合計を計算し、正解かチェックする
-    function updateCurrentSumAndCheck() {
+    // 現在の合計を計算し、正解かチェックする（チェックのみ、合計は画面に出しません）
+    function updateCheck() {
       let currentSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
-      document.getElementById("current-sum").innerText = "現在の合計: " + currentSum;
       const messageElem = document.getElementById("message");
       if (currentSum === puzzle.target) {
         messageElem.innerText = "正解！";
@@ -221,15 +238,21 @@
       }
     }
 
-    // 数字の符号を切り替える（+ ⇔ -）
+    // 数字の符号を切り替える関数
     function toggleNumber(index) {
       puzzle.numbers[index].currentSign *= -1;
       const span = document.querySelector('span[data-index="' + index + '"]');
       span.innerText = (puzzle.numbers[index].currentSign === 1 ? "+" : "-") + puzzle.numbers[index].value;
-      updateCurrentSumAndCheck();
+      updateCheck();
     }
 
-    // レベルアップ処理
+    // ヒントボタンを押したときに、現在の合計を表示する関数
+    function displayHint() {
+      let currentSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
+      document.getElementById("hint-display").innerText = "現在の合計: " + currentSum;
+    }
+
+    // レベルアップ／レベルダウン処理
     function levelUp() {
       if (currentLevel < maxLevel) {
         currentLevel++;
@@ -239,8 +262,6 @@
         alert("最高レベルに到達しています！");
       }
     }
-
-    // レベルダウン処理
     function levelDown() {
       if (currentLevel > minLevel) {
         currentLevel--;
@@ -251,13 +272,14 @@
       }
     }
 
-    // ボタンへのイベント設定
+    // イベントリスナーの設定
     document.getElementById("level-up").addEventListener("click", levelUp);
     document.getElementById("level-down").addEventListener("click", levelDown);
     document.getElementById("new-challenge").addEventListener("click", function() {
       generatePuzzle();
       displayPuzzle();
     });
+    document.getElementById("hint-button").addEventListener("click", displayHint);
 
     // ページ読み込み時に初期パズル生成
     window.onload = function() {
