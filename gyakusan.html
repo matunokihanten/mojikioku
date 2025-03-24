@@ -112,7 +112,7 @@
   </style>
 </head>
 <body>
-  <h1>豪華な逆算チャレンジ（ヒント付き）</h1>
+  <h1>豪華な逆算チャレンジ（ヒント＆OKボタン付き）</h1>
   <div id="game-container">
     <div id="level-panel">
       <button id="level-down">レベルダウン</button>
@@ -125,8 +125,9 @@
     <button id="hint-button">ヒント</button>
     <p id="hint-display"></p>
     <p id="message"></p>
+    <!-- OKボタン（答え合わせ用） -->
     <div class="control-buttons">
-      <button id="new-challenge">新しいチャレンジ</button>
+      <button id="ok-button">OK</button>
     </div>
   </div>
   
@@ -183,7 +184,7 @@
       let numbers = [];
       let initialSum = 0;
       let target = 0;
-      // すべてが + の場合、初期合計と目標が同じになってしまうので再生成
+      // すべてが + の場合、初期合計と目標が一致してしまうので再生成
       do {
         numbers = [];
         initialSum = 0;
@@ -191,12 +192,12 @@
         for (let i = 0; i < count; i++) {
           // 1～maxNumber の数字を生成
           const num = Math.floor(Math.random() * maxNumber) + 1;
-          // ランダムに解答用の符号（+1 or -1）を設定
+          // ランダムに解答用の符号を設定（+1 または -1）
           const solSign = Math.random() < 0.5 ? 1 : -1;
           numbers.push({
             value: num,
-            solutionSign: solSign,  // 内部利用
-            currentSign: 1          // 現在の符号は全て+1からスタート
+            solutionSign: solSign,  // 内部正答情報
+            currentSign: 1          // 現在の符号はすべて +1 からスタート
           });
           initialSum += num;
           target += solSign * num;
@@ -206,16 +207,18 @@
       puzzle.numbers = numbers;
       puzzle.initialSum = initialSum;
       puzzle.target = target;
+      puzzle.locked = false;  // 回答前は操作可能
     }
 
-    // パズル内容を画面に表示する（「現在の合計」表示は行わず、ヒントエリアは空にしています）
+    // パズル内容を画面に表示する（現在の合計表示は行わず、ヒントエリアもクリア）
     function displayPuzzle() {
       document.getElementById("current-level").innerText = "レベル: " + currentLevel;
       document.getElementById("target").innerText = "目標: " + puzzle.target;
       const container = document.getElementById("numbers-container");
       container.innerHTML = "";
       document.getElementById("message").innerText = "";
-      document.getElementById("hint-display").innerText = ""; // ヒント表示エリアのクリア
+      document.getElementById("hint-display").innerText = "";
+      // 各数字を span 要素として生成
       puzzle.numbers.forEach((item, index) => {
         const span = document.createElement("span");
         span.innerText = "+" + item.value;
@@ -227,29 +230,47 @@
       });
     }
 
-    // 現在の合計を計算し、正解かチェックする（チェックのみ、合計は画面に出しません）
-    function updateCheck() {
-      let currentSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
-      const messageElem = document.getElementById("message");
-      if (currentSum === puzzle.target) {
-        messageElem.innerText = "正解！";
-      } else {
-        messageElem.innerText = "";
-      }
-    }
-
-    // 数字の符号を切り替える関数
+    // 数字の符号を切り替える（答え合わせ前のみ有効）
     function toggleNumber(index) {
+      if (puzzle.locked) return; // 既に回答済みの場合は操作不可
       puzzle.numbers[index].currentSign *= -1;
       const span = document.querySelector('span[data-index="' + index + '"]');
       span.innerText = (puzzle.numbers[index].currentSign === 1 ? "+" : "-") + puzzle.numbers[index].value;
-      updateCheck();
     }
 
-    // ヒントボタンを押したときに、現在の合計を表示する関数
+    // ヒントボタンを押した場合に、現在の合計を表示する関数
     function displayHint() {
       let currentSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
       document.getElementById("hint-display").innerText = "現在の合計: " + currentSum;
+    }
+
+    // OKボタンを押したときの答え合わせ
+    function checkAnswer() {
+      if (puzzle.locked) return;
+      puzzle.locked = true; // 回答をロック
+      let userSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
+      const messageElem = document.getElementById("message");
+      if (userSum === puzzle.target) {
+        messageElem.innerText = "正解！";
+        // 正解の場合、2秒後に新たなチャレンジへ自動進行
+        setTimeout(() => {
+          generatePuzzle();
+          displayPuzzle();
+        }, 2000);
+      } else {
+        // 不正解の場合、各数字を正しい符号（solutionSign）に更新して表示
+        puzzle.numbers.forEach((item, index) => {
+          item.currentSign = item.solutionSign;
+          const span = document.querySelector('span[data-index="' + index + '"]');
+          span.innerText = (item.solutionSign === 1 ? "+" : "-") + item.value;
+        });
+        messageElem.innerText = "不正解！正しい答えを表示しています。";
+        // 3秒後に次のチャレンジへ自動進行
+        setTimeout(() => {
+          generatePuzzle();
+          displayPuzzle();
+        }, 3000);
+      }
     }
 
     // レベルアップ／レベルダウン処理
@@ -275,11 +296,8 @@
     // イベントリスナーの設定
     document.getElementById("level-up").addEventListener("click", levelUp);
     document.getElementById("level-down").addEventListener("click", levelDown);
-    document.getElementById("new-challenge").addEventListener("click", function() {
-      generatePuzzle();
-      displayPuzzle();
-    });
     document.getElementById("hint-button").addEventListener("click", displayHint);
+    document.getElementById("ok-button").addEventListener("click", checkAnswer);
 
     // ページ読み込み時に初期パズル生成
     window.onload = function() {
