@@ -3,95 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>反応速度チャレンジ - 平均記録保持版</title>
+  <title>反応速度チャレンジ - シンプル版</title>
   <style>
-    /* 全体レイアウト */
     body {
-      background: linear-gradient(45deg, #e3e3e3, #ffffff);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #fff;
+      font-family: Arial, sans-serif;
       text-align: center;
-      margin: 0;
-      padding: 20px;
+      margin: 20px;
       color: #333;
     }
     h1 {
-      font-size: 36px;
-      margin-bottom: 20px;
+      font-size: 28px;
+      margin-bottom: 16px;
     }
-    /* ゲームエリア */
+    /* ゲームエリア：シンプルな境界線のみ */
     #gameArea {
       width: 300px;
       height: 300px;
       margin: 0 auto;
-      border-radius: 15px;
+      border: 1px solid #333;
       display: flex;
       justify-content: center;
       align-items: center;
       font-size: 24px;
       color: #fff;
-      background-color: #e53935; /* 初期は赤 */
+      background-color: #e53935;
       cursor: pointer;
       user-select: none;
-      transition: background-color 0.5s, transform 0.2s;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
     }
-    /* 緑状態 */
+    /* 緑の状態 */
     #gameArea.ready {
       background-color: #43A047;
     }
-    /* フライング時のシェイクアニメーション */
+    /* シンプルなシェイク（必要最低限のアニメーション） */
     #gameArea.shake {
       animation: shake 0.3s;
     }
     @keyframes shake {
       0% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      50% { transform: translateX(10px); }
-      75% { transform: translateX(-10px); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
       100% { transform: translateX(0); }
     }
-    /* スコア/結果表示エリア */
-    #scoreDisplay {
-      margin-top: 30px;
+    /* 結果表示エリア */
+    #scoreDisplay, #avgRecordsDisplay {
+      margin-top: 20px;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
     }
-    #scoreDisplay h2,
-    #scoreDisplay h3 {
+    #scoreDisplay h2, #scoreDisplay h3, #avgRecordsDisplay h3 {
       margin: 10px 0;
+      font-size: 18px;
     }
     #result {
-      font-size: 22px;
-      font-weight: bold;
-      margin: 10px;
-    }
-    #scoreBoard {
-      list-style: none;
-      padding: 0;
-      margin-top: 10px;
-    }
-    #scoreBoard li {
-      font-size: 20px;
-      margin: 6px 0;
-      background: rgba(76,175,80,0.1);
-      padding: 8px 12px;
-      border-radius: 6px;
-    }
-    /* 過去の平均タイム記録エリア */
-    #avgRecordsDisplay {
-      margin-top: 30px;
-    }
-    #avgRecordsDisplay h3 {
+      font-size: 16px;
       margin: 10px 0;
     }
-    #avgRecords {
+    #scoreBoard, #avgRecords {
       list-style: none;
       padding: 0;
+      font-size: 16px;
     }
-    #avgRecords li {
-      font-size: 18px;
-      margin: 4px 0;
-      background: rgba(33,150,243,0.1);
-      padding: 6px 10px;
-      border-radius: 4px;
+    #scoreBoard li, #avgRecords li {
+      padding: 4px;
+      border-bottom: 1px solid #ccc;
     }
   </style>
 </head>
@@ -111,33 +89,29 @@
     <ul id="avgRecords"></ul>
   </div>
   
-  <!-- 効果音 -->
-  <!-- ※以下の src はご自身の効果音ファイルの URL に変更してください -->
+  <!-- 効果音（各自の音源URLに変更してください） -->
   <audio id="successSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
   <audio id="errorSound" src="https://www.soundjay.com/button/beep-10.wav" preload="auto"></audio>
   
   <script>
-    // DOM 要素の取得
     const gameArea = document.getElementById("gameArea");
     const result = document.getElementById("result");
     const scoreBoard = document.getElementById("scoreBoard");
     const avgRecordsUl = document.getElementById("avgRecords");
     const successSound = document.getElementById("successSound");
     const errorSound = document.getElementById("errorSound");
-    
-    // 状態管理用変数
-    // gameState: "initial"（初期状態）、"playing"（ゲーム進行中）、"finished"（ゲーム終了後）
+
+    // 状態管理変数
+    // gameState: "initial"（初期）, "playing"（ゲーム進行中）, "finished"（終了）
     let gameState = "initial";
-    let trialActive = false;     // 各試行中かどうか
-    let readyToClick = false;    // 緑色になってクリック可能になったか
+    let trialActive = false; // 各試行中か
+    let readyToClick = false; // 緑になってクリック可能状態か
     let trialCount = 0;
     const totalTrials = 5;
-    let scores = [];             // 各試行の記録 (数値 or "フライング")
-    let avgRecords = [];         // 各ゲームの平均タイム記録（文字列で保持）
-    
-    let startTime, timeoutId;    // 反応計測用変数
-    
-    // 初期状態にリセット（平均記録は残す）
+    let scores = [];      // 各試行の記録 ("フライング"または反応時間)
+    let avgRecords = [];  // 各ゲームの平均タイム記録（最新10件保持）
+    let startTime, timeoutId; // 反応計測用
+
     function resetGame() {
       trialCount = 0;
       scores = [];
@@ -150,8 +124,7 @@
       trialActive = false;
       gameState = "initial";
     }
-    
-    // ゲーム開始（初期状態の画面タップでスタート）
+
     function startGame() {
       gameState = "playing";
       trialCount = 0;
@@ -161,22 +134,19 @@
       gameArea.textContent = "準備中…";
       gameArea.style.backgroundColor = "#e53935";
       gameArea.classList.remove("ready");
-      
-      // 1秒後に最初の試行開始
       setTimeout(() => {
         startTrial();
       }, 1000);
     }
-    
-    // 各試行の開始
+
     function startTrial() {
       trialActive = true;
       readyToClick = false;
       gameArea.textContent = "待機中…";
       gameArea.style.backgroundColor = "#e53935";
       gameArea.classList.remove("ready");
-      
-      // 2～5秒のランダムな遅延
+
+      // 2～5秒のランダムな待機時間
       const delay = Math.random() * 3000 + 2000;
       timeoutId = setTimeout(() => {
         gameArea.style.backgroundColor = "#43A047";
@@ -186,8 +156,7 @@
         readyToClick = true;
       }, delay);
     }
-    
-    // 試行終了後、次の試行またはゲーム終了へ
+
     function nextTrial() {
       trialCount++;
       if (trialCount < totalTrials) {
@@ -199,28 +168,23 @@
         finishGame();
       }
     }
-    
-    // ゲーム終了時：合計タイム・平均タイムを表示し、記録を保存
+
     function finishGame() {
-      // 数値でない記録（"フライング"）は 0 と見なして計算
-      const totalTime = scores.reduce((sum, score) => {
-        return sum + (typeof score === "number" ? score : 0);
-      }, 0);
+      // "フライング"は反応タイム 0 とみなして計算
+      const totalTime = scores.reduce((sum, score) => sum + (typeof score === "number" ? score : 0), 0);
       const averageTime = totalTime / totalTrials;
-      
       gameArea.textContent = "ゲーム終了";
-      result.textContent = `合計タイム: ${totalTime} ミリ秒　｜　平均タイム: ${averageTime.toFixed(2)} ミリ秒 (画面をタップして再挑戦)`;
+      result.textContent = `合計タイム: ${totalTime} ミリ秒 ｜ 平均タイム: ${averageTime.toFixed(2)} ミリ秒 (クリックで再挑戦)`;
       gameState = "finished";
-      
-      // 平均タイム記録を保存（最大10件）
+
+      // 平均タイム記録に追加（最新10件を保持）
       avgRecords.push(averageTime.toFixed(2));
       if (avgRecords.length > 10) {
         avgRecords.shift();
       }
       updateAvgRecords();
     }
-    
-    // 各試行の記録を更新
+
     function updateScoreBoard() {
       scoreBoard.innerHTML = "";
       scores.forEach((score, index) => {
@@ -229,8 +193,7 @@
         scoreBoard.appendChild(li);
       });
     }
-    
-    // 平均タイム記録リストを更新
+
     function updateAvgRecords() {
       avgRecordsUl.innerHTML = "";
       avgRecords.forEach((record, index) => {
@@ -239,25 +202,20 @@
         avgRecordsUl.appendChild(li);
       });
     }
-    
-    // ゲームエリアのタップ時の動作
+
     gameArea.addEventListener("click", () => {
       if (gameState === "initial") {
-        // 初期状態ならゲーム開始
         startGame();
         return;
       }
       if (gameState === "finished") {
-        // ゲーム終了状態でタップされたらリセットして再スタート
         resetGame();
         startGame();
         return;
       }
-      // ここからは gameState === "playing" の処理
       if (!trialActive) return;
-      
+
       if (!readyToClick) {
-        // 緑状態になる前にクリック → フライング扱い
         clearTimeout(timeoutId);
         gameArea.classList.add("shake");
         setTimeout(() => {
@@ -273,7 +231,6 @@
         return;
       }
       
-      // 正常なクリックの場合
       const reactionTime = Date.now() - startTime;
       result.textContent = `反応速度: ${reactionTime} ミリ秒`;
       successSound.currentTime = 0;
@@ -283,8 +240,7 @@
       trialActive = false;
       nextTrial();
     });
-    
-    // 初期状態にする
+
     window.addEventListener("load", resetGame);
   </script>
 </body>
