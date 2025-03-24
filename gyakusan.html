@@ -4,306 +4,134 @@
   <meta charset="UTF-8">
   <title>逆算チャレンジ</title>
   <style>
-    /* 背景＆フォント */
     body {
-      background: linear-gradient(to right, #ece9e6, #ffffff);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 800px;
+      font-family: Arial, sans-serif;
+      max-width: 600px;
       margin: 2rem auto;
-      padding: 1rem;
       text-align: center;
-      color: #333;
     }
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-size: 2rem;
+      color: #333;
     }
-    /* ゲーム全体のコンテナ */
     #game-container {
-      background: #fdfdfd;
-      border: 2px solid #ccc;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 1.5rem;
-      margin-top: 1rem;
-    }
-    /* レベル設定パネル */
-    #level-panel {
-      margin: 1rem 0;
-      font-size: 1.2rem;
-    }
-    #level-panel button {
-      margin: 0 0.5rem;
-      padding: 0.4rem 0.8rem;
-      font-size: 1rem;
-      border: none;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
       border-radius: 5px;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    #level-panel button:hover {
-      background-color: #45a049;
-    }
-    /* 目標の表示 */
-    #target {
-      font-size: 1.5rem;
-      margin: 0.8rem 0;
-    }
-    /* 数字表示 */
-    #numbers-container {
-      margin: 1rem 0;
+      background: #f9f9f9;
     }
     #numbers-container > span {
-      display: inline-block;
       margin: 0.5rem;
-      font-size: 1.8rem;
-      padding: 0.5rem 1rem;
-      border: 2px solid #888;
-      border-radius: 8px;
+      font-size: 1.2rem;
+      padding: 0.3rem 0.7rem;
+      display: inline-block;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
+      transition: background-color 0.3s;
     }
     #numbers-container > span:hover {
-      transform: scale(1.1);
-      border-color: #555;
+      background-color: #eee;
     }
-    /* コントロールボタン */
-    .control-buttons {
-      margin: 1rem;
-    } 
-    .control-buttons button {
-      margin: 0.5rem;
+    button {
+      margin: 1rem 0.5rem;
       padding: 0.5rem 1rem;
       font-size: 1rem;
       border: none;
       border-radius: 5px;
-      background-color: #2196F3;
-      color: white;
       cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
       transition: background-color 0.3s;
     }
-    .control-buttons button:hover {
-      background-color: #0b7dda;
+    button:hover {
+      background-color: #45a049;
     }
-    /* ヒント＆メッセージ表示 */
-    #hint-button {
+    #answer-display {
+      font-size: 1.2rem;
       margin-top: 1rem;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 5px;
-      background-color: #FF9800;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    #hint-button:hover {
-      background-color: #e68900;
-    }
-    #hint-display, #message {
-      font-size: 1.3rem;
-      margin-top: 0.8rem;
-    }
-    #message {
-      color: #d9534f;
     }
   </style>
 </head>
 <body>
   <h1>逆算チャレンジ</h1>
   <div id="game-container">
-    <div id="level-panel">
-      <button id="level-down">レベルダウン</button>
-      <span id="current-level">レベル: 2</span>
-      <button id="level-up">レベルアップ</button>
-    </div>
-    <p id="target">目標: ?</p>
+    <p id="target"></p>
     <div id="numbers-container"></div>
-    <!-- ヒントボタンとヒント表示エリア -->
-    <button id="hint-button">ヒント</button>
-    <p id="hint-display"></p>
-    <p id="message"></p>
-    <!-- OKボタン（答え合わせ用） -->
-    <div class="control-buttons">
-      <button id="ok-button">OK</button>
-    </div>
+    <button id="answer-button">答えを見る</button>
+    <p id="answer-display"></p>
+    <button id="new-challenge">新しいチャレンジ</button>
   </div>
-  
-  <script>
-    // グローバル変数
-    let puzzle = {};
-    let currentLevel = 2; // 初期レベル
-    const minLevel = 1;
-    const maxLevel = 5;
 
-    // レベルに応じたパズル設定を取得
-    function getLevelSettings(level) {
-      let settings = {};
-      switch (level) {
-        case 1:
-          settings.count = 3;
-          settings.maxNumber = 5;
-          break;
-        case 2:
-          settings.count = 5;
-          settings.maxNumber = 9;
-          break;
-        case 3:
-          settings.count = 7;
-          settings.maxNumber = 9;
-          break;
-        case 4:
-          settings.count = 9;
-          settings.maxNumber = 12;
-          break;
-        case 5:
-          settings.count = 11;
-          settings.maxNumber = 15;
-          break;
-        default:
-          settings.count = 5;
-          settings.maxNumber = 9;
-      }
-      return settings;
-    }
-    
-    // Fisher-Yates アルゴリズムでシャッフル
+  <script>
+    let puzzle = {};
+
+    // Fisher-Yatesでシャッフル
     function shuffleArray(array) {
       for (let i = array.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
       return array;
     }
 
-    // パズル生成関数
+    // 問題を作成する関数（必ず正解があるように作成）
     function generatePuzzle() {
-      const { count, maxNumber } = getLevelSettings(currentLevel);
       let numbers = [];
-      let initialSum = 0;
       let target = 0;
-      // すべてが + の場合、初期合計と目標が一致してしまうので再生成
+      let solution = [];
+      
       do {
         numbers = [];
-        initialSum = 0;
         target = 0;
-        for (let i = 0; i < count; i++) {
-          // 1～maxNumber の数字を生成
-          const num = Math.floor(Math.random() * maxNumber) + 1;
-          // ランダムに解答用の符号を設定（+1 または -1）
-          const solSign = Math.random() < 0.5 ? 1 : -1;
-          numbers.push({
-            value: num,
-            solutionSign: solSign,  // 内部正答情報
-            currentSign: 1          // 現在の符号はすべて +1 からスタート
-          });
-          initialSum += num;
-          target += solSign * num;
+        solution = [];
+        for (let i = 0; i < 5; i++) { // 5つの数字
+          const num = Math.floor(Math.random() * 9) + 1; // 1～9
+          const sign = Math.random() < 0.5 ? 1 : -1; // ランダムな符号
+          numbers.push(num);
+          solution.push(sign);
+          target += num * sign;
         }
-      } while (target === initialSum || target <= 0);
+      } while (target <= 0); // 正の目標値にする
       
-      puzzle.numbers = numbers;
-      puzzle.initialSum = initialSum;
+      puzzle.numbers = shuffleArray(numbers);
       puzzle.target = target;
-      puzzle.locked = false;  // 回答前は操作可能
+      puzzle.solution = solution;
     }
 
-    // パズル内容を画面に表示する（現在の合計表示は行わず、ヒントエリアもクリア）
+    // 問題を画面に表示する
     function displayPuzzle() {
-      document.getElementById("current-level").innerText = "レベル: " + currentLevel;
-      document.getElementById("target").innerText = "目標: " + puzzle.target;
-      const container = document.getElementById("numbers-container");
-      container.innerHTML = "";
-      document.getElementById("message").innerText = "";
-      document.getElementById("hint-display").innerText = "";
-      // 各数字を span 要素として生成
-      puzzle.numbers.forEach((item, index) => {
+      document.getElementById("target").innerText = `目標: ${puzzle.target}`;
+      const numbersContainer = document.getElementById("numbers-container");
+      numbersContainer.innerHTML = "";
+      puzzle.numbers.forEach((number, index) => {
         const span = document.createElement("span");
-        span.innerText = "+" + item.value;
-        span.dataset.index = index;
-        span.addEventListener("click", function() {
-          toggleNumber(index);
-        });
-        container.appendChild(span);
+        span.innerText = `${number}`;
+        numbersContainer.appendChild(span);
       });
+      document.getElementById("answer-display").innerText = "";
     }
 
-    // 数字の符号を切り替える（答え合わせ前のみ有効）
-    function toggleNumber(index) {
-      if (puzzle.locked) return; // 既に回答済みの場合は操作不可
-      puzzle.numbers[index].currentSign *= -1;
-      const span = document.querySelector('span[data-index="' + index + '"]');
-      span.innerText = (puzzle.numbers[index].currentSign === 1 ? "+" : "-") + puzzle.numbers[index].value;
+    // 答えを表示する
+    function displayAnswer() {
+      let answerString = puzzle.numbers.map((num, index) => {
+        const sign = puzzle.solution[index] === 1 ? "+" : "-";
+        return `${sign}${num}`;
+      }).join(" ");
+      document.getElementById("answer-display").innerText = `正しい答え: ${answerString}`;
     }
 
-    // ヒントボタンを押した場合に、現在の合計を表示する関数
-    function displayHint() {
-      let currentSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
-      document.getElementById("hint-display").innerText = "現在の合計: " + currentSum;
-    }
-
-    // OKボタンを押したときの答え合わせ
-    function checkAnswer() {
-      if (puzzle.locked) return;
-      puzzle.locked = true; // 回答をロック
-      let userSum = puzzle.numbers.reduce((acc, item) => acc + item.currentSign * item.value, 0);
-      const messageElem = document.getElementById("message");
-      if (userSum === puzzle.target) {
-        messageElem.innerText = "正解！";
-        // 正解の場合、2秒後に新たなチャレンジへ自動進行
-        setTimeout(() => {
-          generatePuzzle();
-          displayPuzzle();
-        }, 2000);
-      } else {
-        // 不正解の場合、各数字を正しい符号（solutionSign）に更新して表示
-        puzzle.numbers.forEach((item, index) => {
-          item.currentSign = item.solutionSign;
-          const span = document.querySelector('span[data-index="' + index + '"]');
-          span.innerText = (item.solutionSign === 1 ? "+" : "-") + item.value;
-        });
-        messageElem.innerText = "不正解！正しい答えを表示しています。";
-        // 3秒後に次のチャレンジへ自動進行
-        setTimeout(() => {
-          generatePuzzle();
-          displayPuzzle();
-        }, 3000);
-      }
-    }
-
-    // レベルアップ／レベルダウン処理
-    function levelUp() {
-      if (currentLevel < maxLevel) {
-        currentLevel++;
-        generatePuzzle();
-        displayPuzzle();
-      } else {
-        alert("最高レベルに到達しています！");
-      }
-    }
-    function levelDown() {
-      if (currentLevel > minLevel) {
-        currentLevel--;
-        generatePuzzle();
-        displayPuzzle();
-      } else {
-        alert("これ以上レベルを下げられません！");
-      }
-    }
-
-    // イベントリスナーの設定
-    document.getElementById("level-up").addEventListener("click", levelUp);
-    document.getElementById("level-down").addEventListener("click", levelDown);
-    document.getElementById("hint-button").addEventListener("click", displayHint);
-    document.getElementById("ok-button").addEventListener("click", checkAnswer);
-
-    // ページ読み込み時に初期パズル生成
-    window.onload = function() {
+    // ボタンのイベントリスナーを設定
+    document.getElementById("answer-button").addEventListener("click", displayAnswer);
+    document.getElementById("new-challenge").addEventListener("click", () => {
       generatePuzzle();
       displayPuzzle();
-    }
+    });
+
+    // 初期化
+    generatePuzzle();
+    displayPuzzle();
   </script>
 </body>
 </html>
