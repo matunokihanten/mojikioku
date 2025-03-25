@@ -83,8 +83,8 @@
 
         // 新しいチャレンジを生成
         function newChallenge() {
-            const maxNumber = level * 5; // レベルに応じた最大数値
-            numbers = Array.from({ length: 5 }, () => Math.floor(Math.random() * maxNumber) + 1);
+            const numberCount = level + 4; // レベルに応じて数字の個数を増加
+            numbers = Array.from({ length: numberCount }, () => Math.floor(Math.random() * 9) + 1);
             signs = numbers.map(() => '+');
             target = numbers.reduce((sum, num, index) => sum + (index % 2 === 0 ? num : -num), 0);
             document.getElementById("target").innerText = target;
