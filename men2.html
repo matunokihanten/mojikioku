@@ -2,8 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ラーメン作りゲーム（難易度＆カスタマイズ＆タイマー＆ヒント＆答えボタン）</title>
+  <title>ラーメン作りゲーム（単一注文・レイアウト調整版）</title>
   <style>
+    :root {
+      --button-padding: 10px 20px;   /* ボタン内余白 */
+      --button-font-size: 18px;       /* ボタンのフォントサイズ */
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
@@ -12,11 +16,12 @@
       max-width: 900px;
       margin: 0 auto;
     }
-    /* スタート前のオプション設定 */
+    /* スタート前のオプション */
     #start-options {
       text-align: center;
       margin-bottom: 10px;
     }
+    /* 伝票表示エリア */
     #ticket {
       border: 1px solid #ccc;
       background-color: #fff;
@@ -53,27 +58,22 @@
       margin-top: 0;
       text-align: center;
     }
-    .category-section {
-      margin: 8px 0;
+    /* メニューボタン群グリッド */
+    .menu-button-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
     }
-    .category-section label {
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    .option-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-top: 5px;
-    }
+    /* 各ボタン全般 */
     .option-button {
-      padding: 5px 10px;
+      padding: var(--button-padding);
+      font-size: var(--button-font-size);
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
     }
-    /* 色分け */
+    /* カテゴリごとの色分け */
     .menu-button {
       background-color: #f0f0f0;
     }
@@ -85,23 +85,42 @@
       background-color: #66cc66;
       color: #fff;
     }
-    /* ボタン群 */
+    /* 入力フィールド行：3列で1行配置 */
+    .fields-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .field-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .field-item label {
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .field-item input {
+      padding: 8px;
+      font-size: 16px;
+      width: 100%;
+    }
+    /* 下部のボタンエリア */
     #start-button {
-      font-size: 18px;
-      padding: 10px 20px;
+      font-size: var(--button-font-size);
+      padding: var(--button-padding);
       margin: 10px;
       cursor: pointer;
     }
-    /* 下部ボタンエリア */
     #action-buttons {
       text-align: center;
       margin-top: 10px;
       display: none;
     }
-    /* ボタン: 終了・ヒント・答え・完了 */
+    /* 下部ボタン：終了、ヒント、答え、完了 */
     #exit-button, #hint-button, #answer-button, #submit-button {
-      font-size: 18px;
-      padding: 10px 20px;
+      font-size: var(--button-font-size);
+      padding: var(--button-padding);
       margin: 10px;
       cursor: pointer;
     }
@@ -109,7 +128,7 @@
 </head>
 <body>
   <div id="game-container">
-    <!-- スタート前のオプション：難易度・テーマ選択 -->
+    <!-- スタート前のオプション -->
     <div id="start-options">
       <label for="difficulty-select">難易度:</label>
       <select id="difficulty-select">
@@ -151,11 +170,11 @@
   <script>
     // グローバル変数
     let correctCount = 0;           // 全体正解数
-    let currentTickets = [];        // 出題中の注文群（配列）
-    let ticketTimer;                // setTimeoutのIDを保持
-    let countdownInterval;          // カウントダウン更新のintervalID
-    let ticketDisplayTimeBase;      // 基本表示時間 (ms), 難易度によって変動
-    const MIN_TICKET_DISPLAY_TIME = 4000;     // 最低表示時間 (4,000ms)
+    let currentTickets = [];        // 出題中の注文（今回は常に1件）
+    let ticketTimer;                // setTimeoutのID保持
+    let countdownInterval;          // カウントダウン更新用のintervalID
+    let ticketDisplayTimeBase;      // 基本表示時間（難易度により変動）
+    const MIN_TICKET_DISPLAY_TIME = 4000; // 最低表示時間 (4,000ms)
     let hintUsed = false;           // ヒント使用済みフラグ
 
     // 各オプションの配列
@@ -170,11 +189,10 @@
 
     // ゲーム開始
     function startGame() {
-      // 取得：難易度とテーマの選択
       const difficulty = document.getElementById("difficulty-select").value;
       const theme = document.getElementById("theme-select").value;
       
-      // 難易度設定：伝票表示時間の基本値
+      // 難易度に応じた表示時間設定
       if (difficulty === "easy") {
         ticketDisplayTimeBase = 12000;
       } else if (difficulty === "normal") {
@@ -183,8 +201,8 @@
         ticketDisplayTimeBase = 8000;
       }
       
-      // テーマ設定：背景色の変更（伝票・注文入力エリア）
-      let bgColor = "#fff"; // デフォルト
+      // テーマによる背景色変更
+      let bgColor = "#fff";
       if (theme === "lightblue") {
         bgColor = "#add8e6";
       } else if (theme === "lightgreen") {
@@ -195,7 +213,7 @@
       document.getElementById("ticket").style.backgroundColor = bgColor;
       document.getElementById("orders-input-container").style.backgroundColor = bgColor;
       
-      // スタート前のオプション・スタートボタン非表示、下部ボタンエリア表示
+      // オプション非表示および各エリア表示
       document.getElementById("start-options").style.display = "none";
       document.getElementById("start-button").style.display = "none";
       document.getElementById("action-buttons").style.display = "block";
@@ -205,11 +223,10 @@
       
       correctCount = 0;
       updateScoreboard();
-      
       showTicket();
     }
 
-    // 伝票出題：注文数は正解3問ごとに増加、タイマー（カウントダウン）付き
+    // 伝票出題（常に1注文、タイマー付き）
     function showTicket() {
       if (ticketTimer) clearTimeout(ticketTimer);
       if (countdownInterval) clearInterval(countdownInterval);
@@ -218,31 +235,33 @@
       document.getElementById("hint-button").disabled = false;
       document.getElementById("answer-button").disabled = false;
       
-      // 注文数は、正解数3問ごとに1注文ずつ増加（最低1注文）
-      let orderCount = Math.floor(correctCount / 3) + 1;
-      
-      // 動的難易度：正解数に応じて伝票表示時間を短縮
+      const orderCount = 1; // 1件固定
       let dynamicDisplayTime = Math.max(ticketDisplayTimeBase - (correctCount * 500), MIN_TICKET_DISPLAY_TIME);
       
-      // 複数注文を生成
+      // 1注文の出題
       currentTickets = [];
       let ticketText = "";
       for (let i = 0; i < orderCount; i++) {
         let randomMenu = menus[Math.floor(Math.random() * menus.length)];
         let randomSpiciness = spicinessLevels[Math.floor(Math.random() * spicinessLevels.length)];
         let randomNoodle = noodleOptions[Math.floor(Math.random() * noodleOptions.length)];
-        let order = { menu: randomMenu, spiciness: randomSpiciness, noodle: randomNoodle };
+        let order = {
+          menu: randomMenu,
+          spiciness: randomSpiciness,
+          noodle: randomNoodle
+        };
         currentTickets.push(order);
-        // 表示時、辛さと麺の硬さは（）で囲む
-        ticketText += "注文 " + (i+1) + ": " + randomMenu + "　(" + randomSpiciness + ")　(" + randomNoodle + ")\n";
+        ticketText += "注文 " + (i+1) + ": " 
+                    + randomMenu + "　(" 
+                    + randomSpiciness + ")　(" 
+                    + randomNoodle + ")\n";
       }
       
-      // 伝票エリアに表示
       const ticketDiv = document.getElementById("ticket");
       ticketDiv.innerText = ticketText;
       ticketDiv.style.display = "block";
       
-      // タイマー表示開始（カウントダウン）
+      // カウントダウン開始
       const timerDisplay = document.getElementById("timer-display");
       timerDisplay.style.display = "block";
       let startTime = Date.now();
@@ -256,98 +275,175 @@
         }
       }, 100);
       
-      // 伝票を非表示にするタイマー設定
+      // 伝票非表示タイマー
       ticketTimer = setTimeout(() => { 
-        document.getElementById("ticket").style.display = "none"; 
+        ticketDiv.style.display = "none"; 
       }, dynamicDisplayTime);
       
-      // 注文入力UIを生成
-      generateOrdersInputUI(orderCount);
+      // 注文入力UI生成
+      generateOrdersInputUI();
     }
 
-    // 注文入力UIを動的に生成（各注文ブロック）
-    function generateOrdersInputUI(orderCount) {
+    // 注文入力UI生成  
+    // 上部に【メニューボタン群】、その下に3列1行のフィールド（メニュー、辛さ、硬さ）
+    function generateOrdersInputUI() {
       const container = document.getElementById("orders-input-container");
-      container.innerHTML = "";  // クリア
-      for (let i = 0; i < orderCount; i++) {
-        const orderBlock = document.createElement("div");
-        orderBlock.className = "order-block";
-        const header = document.createElement("h3");
-        header.innerText = "注文 " + (i+1);
-        orderBlock.appendChild(header);
-        
-        orderBlock.appendChild(createCategorySection(i, "menu", "メニュー", menus, "menu-button"));
-        orderBlock.appendChild(createCategorySection(i, "spiciness", "辛さ", spicinessLevels, "spiciness-button"));
-        orderBlock.appendChild(createCategorySection(i, "noodle", "麺の硬さ", noodleOptions, "noodle-button"));
-        
-        container.appendChild(orderBlock);
-      }
-    }
-    
-    // 各カテゴリの入力フィールドとボタン群を作成する関数
-    function createCategorySection(orderIndex, categoryKey, labelText, options, buttonClass) {
-      const sectionDiv = document.createElement("div");
-      sectionDiv.className = "category-section";
-      const label = document.createElement("label");
-      label.innerText = labelText + ": ";
-      sectionDiv.appendChild(label);
-      const inputField = document.createElement("input");
-      inputField.type = "text";
-      inputField.id = "order-" + orderIndex + "-" + categoryKey;
-      inputField.placeholder = labelText + "を選択";
-      sectionDiv.appendChild(inputField);
+      container.innerHTML = "";
       
-      const buttonsDiv = document.createElement("div");
-      buttonsDiv.className = "option-buttons";
-      options.forEach(option => {
+      const orderBlock = document.createElement("div");
+      orderBlock.className = "order-block";
+      
+      // ヘッダー
+      const header = document.createElement("h3");
+      header.innerText = "注文 1";
+      orderBlock.appendChild(header);
+      
+      // メニューボタン群（グループを2つに分割：通常メニュー・黒担々麺類）
+      const menuButtonGroupContainer = document.createElement("div");
+      // 通常メニュー群
+      const normalGrid = document.createElement("div");
+      normalGrid.className = "menu-button-group";
+      const normalMenus = menus.filter(m => !m.startsWith("黒"));
+      normalMenus.forEach(menu => {
+        const btn = document.createElement("button");
+        btn.innerText = menu;
+        btn.className = "option-button menu-button";
+        btn.onclick = function() {
+          document.getElementById("order-0-menu").value = menu;
+        };
+        normalGrid.appendChild(btn);
+      });
+      // パディング：通常メニューグループは必ず2行（8セル）になるように不足分を埋める
+      const normalPadding = 8 - normalMenus.length;
+      for (let i = 0; i < normalPadding; i++) {
+        const pad = document.createElement("div");
+        pad.innerText = "";
+        normalGrid.appendChild(pad);
+      }
+      
+      menuButtonGroupContainer.appendChild(normalGrid);
+      
+      // 黒担々麺類群（こちらは2行目以降、すなわち3行目から表示）
+      const blackGrid = document.createElement("div");
+      blackGrid.className = "menu-button-group";
+      const blackMenus = menus.filter(m => m.startsWith("黒"));
+      blackMenus.forEach(menu => {
+        const btn = document.createElement("button");
+        btn.innerText = menu;
+        btn.className = "option-button menu-button";
+        // 右寄せ配置
+        btn.style.justifySelf = "end";
+        btn.onclick = function() {
+          document.getElementById("order-0-menu").value = menu;
+        };
+        blackGrid.appendChild(btn);
+      });
+      menuButtonGroupContainer.appendChild(blackGrid);
+      
+      orderBlock.appendChild(menuButtonGroupContainer);
+      
+      // フィールド行：3列1行（メニュー、辛さ、硬さ）
+      const fieldsRow = document.createElement("div");
+      fieldsRow.className = "fields-row";
+      
+      // メニュー入力フィールド
+      const fieldMenu = document.createElement("div");
+      fieldMenu.className = "field-item";
+      const labelMenu = document.createElement("label");
+      labelMenu.innerText = "メニュー:";
+      fieldMenu.appendChild(labelMenu);
+      const inputMenu = document.createElement("input");
+      inputMenu.type = "text";
+      inputMenu.id = "order-0-menu";
+      inputMenu.placeholder = "メニューを選択";
+      fieldMenu.appendChild(inputMenu);
+      fieldsRow.appendChild(fieldMenu);
+      
+      // 辛さ入力フィールド（ボタン群付き）
+      const fieldSpiciness = document.createElement("div");
+      fieldSpiciness.className = "field-item";
+      const labelSpiciness = document.createElement("label");
+      labelSpiciness.innerText = "辛さ:";
+      fieldSpiciness.appendChild(labelSpiciness);
+      const inputSpiciness = document.createElement("input");
+      inputSpiciness.type = "text";
+      inputSpiciness.id = "order-0-spiciness";
+      inputSpiciness.placeholder = "辛さを選択";
+      fieldSpiciness.appendChild(inputSpiciness);
+      // 辛さボタン群（水平レイアウト）
+      const spicinessButtons = document.createElement("div");
+      spicinessButtons.className = "option-buttons";
+      spicinessLevels.forEach(level => {
+        const btn = document.createElement("button");
+        btn.innerText = level;
+        btn.className = "option-button spiciness-button";
+        btn.onclick = function() {
+          document.getElementById("order-0-spiciness").value = level;
+        };
+        spicinessButtons.appendChild(btn);
+      });
+      fieldSpiciness.appendChild(spicinessButtons);
+      fieldsRow.appendChild(fieldSpiciness);
+      
+      // 硬さ入力フィールド（ボタン群付き）
+      const fieldNoodle = document.createElement("div");
+      fieldNoodle.className = "field-item";
+      const labelNoodle = document.createElement("label");
+      labelNoodle.innerText = "硬さ:";
+      fieldNoodle.appendChild(labelNoodle);
+      const inputNoodle = document.createElement("input");
+      inputNoodle.type = "text";
+      inputNoodle.id = "order-0-noodle";
+      inputNoodle.placeholder = "硬さを選択";
+      fieldNoodle.appendChild(inputNoodle);
+      // 硬さボタン群
+      const noodleButtons = document.createElement("div");
+      noodleButtons.className = "option-buttons";
+      noodleOptions.forEach(option => {
         const btn = document.createElement("button");
         btn.innerText = option;
-        btn.className = "option-button " + buttonClass;
+        btn.className = "option-button noodle-button";
         btn.onclick = function() {
-          document.getElementById("order-" + orderIndex + "-" + categoryKey).value = option;
+          document.getElementById("order-0-noodle").value = option;
         };
-        buttonsDiv.appendChild(btn);
+        noodleButtons.appendChild(btn);
       });
-      sectionDiv.appendChild(buttonsDiv);
-      return sectionDiv;
+      fieldNoodle.appendChild(noodleButtons);
+      fieldsRow.appendChild(fieldNoodle);
+      
+      orderBlock.appendChild(fieldsRow);
+      container.appendChild(orderBlock);
     }
 
-    // 正誤判定：各注文の入力内容をチェック
+    // 正誤判定：入力フィールドの内容と伝票内容の比較
     function submitOrder() {
-      let orderCount = currentTickets.length;
-      let allCorrect = true;
-      
-      for (let i = 0; i < orderCount; i++) {
-        const menuInput = document.getElementById(`order-${i}-menu`).value.trim();
-        const spicinessInput = document.getElementById(`order-${i}-spiciness`).value.trim();
-        const noodleInput = document.getElementById(`order-${i}-noodle`).value.trim();
-        
-        if (!menuInput || !spicinessInput || !noodleInput) {
-          allCorrect = false;
-          break;
-        }
-        if (menuInput !== currentTickets[i].menu ||
-            spicinessInput !== currentTickets[i].spiciness ||
-            noodleInput !== currentTickets[i].noodle) {
-          allCorrect = false;
-          break;
-        }
-      }
+      const orderData = currentTickets[0];
+      const menuInput = document.getElementById("order-0-menu").value.trim();
+      const spicinessInput = document.getElementById("order-0-spiciness").value.trim();
+      const noodleInput = document.getElementById("order-0-noodle").value.trim();
       
       const messageDiv = document.getElementById("message");
-      if (allCorrect) {
+      if (!menuInput || !spicinessInput || !noodleInput) {
+        messageDiv.innerText = "不正解：全ての項目を入力してください！";
+        messageDiv.style.color = "red";
+        return;
+      }
+      
+      if (menuInput === orderData.menu &&
+          spicinessInput === orderData.spiciness &&
+          noodleInput === orderData.noodle) {
         correctCount++;
         updateScoreboard();
         messageDiv.innerText = "正解です！次の問題です！";
         messageDiv.style.color = "green";
         showTicket();
       } else {
-        messageDiv.innerText = "不正解です。全ての項目を正しく選択してください！";
+        messageDiv.innerText = "不正解：全ての項目を正しく入力してください！";
         messageDiv.style.color = "red";
       }
     }
 
-    // ヒントボタン：伝票を追加3秒間再表示（1ラウンドにつき1回）
+    // ヒントボタン：伝票を追加で3秒間再表示（1ラウンド1回）
     function useHint() {
       if (hintUsed) return;
       hintUsed = true;
@@ -358,10 +454,7 @@
       const ticketDiv = document.getElementById("ticket");
       ticketDiv.style.display = "block";
       
-      // ヒント表示時間は3秒
-      ticketTimer = setTimeout(() => { 
-        ticketDiv.style.display = "none"; 
-      }, 3000);
+      ticketTimer = setTimeout(() => { ticketDiv.style.display = "none"; }, 3000);
       
       const timerDisplay = document.getElementById("timer-display");
       timerDisplay.style.display = "block";
@@ -377,7 +470,7 @@
       }, 100);
     }
 
-    // 答えボタン：現在の伝票（答え）を再表示し、タイマー停止
+    // 答えボタン：現在の伝票（答え）を再表示しタイマー停止
     function showAnswer() {
       if (ticketTimer) {
         clearTimeout(ticketTimer);
@@ -388,9 +481,7 @@
         countdownInterval = null;
         document.getElementById("timer-display").style.display = "none";
       }
-      // 現在の伝票（答え）を常時表示する
       document.getElementById("ticket").style.display = "block";
-      // 一度答えを表示したら、答えボタンを無効にする
       document.getElementById("answer-button").disabled = true;
     }
 
@@ -399,7 +490,7 @@
       document.getElementById("scoreboard").innerText = `正解数: ${correctCount}`;
     }
 
-    // ゲーム終了：全てリセット
+    // ゲーム終了（リセット）
     function exitGame() {
       document.getElementById("start-options").style.display = "block";
       document.getElementById("start-button").style.display = "inline-block";
