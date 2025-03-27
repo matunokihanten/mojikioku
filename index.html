@@ -1,130 +1,114 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <title>脳トレ部屋 | 松乃木飯店</title>
-    <meta name="description" content="ホームページ管理者が一生懸命作りました">
+
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5471310947968399"
+     crossorigin="anonymous"></script>
+
+<meta name="google-adsense-account" content="ca-pub-5471310947968399">
+
+
+  <meta charset="UTF-8">
+  <title>Saved File</title>
+  <style>
+
+    /* 基本スタイル */
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background-color: #f0f0f0; padding: 10px; }
+    header label { margin-left: 10px; }
+    button { margin: 5px; padding: 8px 12px; }
+    #editor { margin: 10px; padding: 10px; border: 1px solid #ccc; min-height: 400px; }
     
-    <style>
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background-color: #333;
-            color: #fff;
-            padding: 10px 0;
-            text-align: center;
-        }
-        nav ul {
-            list-style: none;
-            padding: 0;
-        }
-        nav ul li {
-            display: inline;
-            margin: 0 15px;
-        }
-        nav a {
-            color: #fff;
-            text-decoration: none;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-        .articleBox {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .list_area {
-            margin-top: 20px;
-        }
-        .list_area ul {
-            list-style: none;
-            padding: 0;
-            display: flex; /* Flexboxを使用 */
-            flex-wrap: wrap; /* 折り返しを有効 */
-        }
-        .list_area li {
-            width: 25%; /* 4列にするために幅を25%に設定 */
-            margin: 10px 0;
-            padding: 0 10px; /* 左右に余白を追加 */
-            box-sizing: border-box; /* paddingを含めて幅を計算 */
-        }
-        .list_area a {
-            text-decoration: none;
-            color: #333;
-            display: block; /* ブロック要素に変更 */
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-            height: 100%; /* 高さをliに合わせる */
-        }
-        .list_area a:hover {
-            background-color: #f0f0f0;
-        }
-        footer {
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 20px 0;
-            position: relative;
-            bottom: 0;
-            width: 100%;
-        }
-    </style>
+    /* リンクボタン用スタイル */
+    .link-button {
+      display: inline-block;
+      padding: 8px 12px;
+      text-decoration: none;
+      color: white;
+      border-radius: 5px;
+      margin: 3px;
+    }
+    
+    /* シンプルボタン用スタイル */
+    .simple-button {
+      background-color: #eee !important;
+      color: #333 !important;
+      border-radius: 0 !important;
+      padding: 8px 12px !important;
+      text-decoration: none !important;
+      border: 1px solid #ccc;
+    }
+    
+    /* モーダルウィンドウ */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90%;
+      overflow-y: auto;
+      border-radius: 8px;
+    }
+    /* モーダル内の入力欄 */
+    .modal-content input[type="text"],
+    .modal-content input[type="number"],
+    .modal-content select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px;
+      font-size: 14px;
+      color: #000;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 8px; text-align: left; }
+    /* 並び順セルに固定幅 */
+    td:first-child { width: 40px; }
+    /* 削除ボタンセルにも固定幅 */
+    td:last-child { width: 60px; }
+    .draggable { cursor: move; }
+    
+    /* リンクボタンのグリッドレイアウト */
+    .link-grid { display: grid; gap: 5px; }
+  
+  </style>
 </head>
 <body>
-    <header>
-        <h1>松乃木飯店</h1>
-        <nav>
-            <ul>
-                <li><a href="https://ldbyq.crayonsite.com/">トップ</a></li>
-                <li><a href="https://ldbyq.crayonsite.com/p/61/">脳トレ部屋</a></li>
-            </ul>
-        </nav>
-    </header>
-    <div class="container">
-        <div class="articleBox">
-            <h2>脳トレなど</h2>
-            <div class="list_area">
-                <ul>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/kioku2" target="_blank">追跡漢字記憶ゲーム</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/men2.html">担々麺作りゲーム</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/sinkei.html">神経衰弱</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/blinkingBall.html">玉点滅</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/blinkingBall2.html">玉点滅設定可能</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/akadamaidou.html">移動する赤玉※触ると玉が消えるよ</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/dotukado">ドッツカード</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/irosagasi">色探しゲーム　※少しずつ難しくなります</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/irosagasi2">色探しゲーム　レベル選択式</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/syunnkann">瞬間記憶ゲーム</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/suujikioku">数字記憶ゲーム</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/kiriperin">クリペリン検査</a></li>
-                    <li><a href="https://matunokihanten.github.io/mojikioku/sutereo" target="_blank">ステレオグラムゲーム</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <footer>
-        <p>静岡県袋井市山科3224-2</p>
-        <p>電話: <a href="tel:0538-43-3398">0538-43-3398</a></p>
-        <p>メール: <a href="mailto:matunokihanten@ybb.ne.jp">matunokihanten@ybb.ne.jp</a></p>
-    </footer>
-    <script src="//accaii.com/matunoki/script.js" async></script>
-    <noscript><img src="//accaii.com/matunoki/script?guid=on" alt="アクセスカウンター"></noscript>
-    <a href="//accaii.com/matunoki/"><img src="//accaii.com/matunoki/counter.png" style="width:240px;height:45px;vertical-align:middle;" alt="アクセスカウンター" /></a>
+<div class="l-pageWrap"><div class="articleBox mgb_20  " style=""><div id="container" class="" style=""><div class="list_area mgb_20"><div><br></div></div></div></div></div><script src="/static/js/sns.js?1742983785.8715532"></script><script src="/static/js/access-log.js?1742983785.8715532"></script><script src="/static/js/slick/slick.min.js"></script><script src="/static/js/slick/slick-action.js"></script><script src="/static/js/shop_item-parts.js?1742983785.8715532"></script><script src="/static/js/obi.js"></script><script src="/static/js/jquery-modal/jquery.modal.min.js"></script><script src="/static/js/jquery-modal/jquery-modal-netshop.js?1742983785.8715532"></script><script src="/static/js/jquery-fancybox/jquery.fancybox.min.js"></script><script src="/static/js/fancybox.js"></script><script src="/static/js/colorbox/jquery.colorbox-min.js"></script><script src="/static/js/colorbox/colorbox-custom.js?1742983785.8715532"></script><script src="/static/js/animation.js?1742983785.8715532"></script><script src="/static/js/fitie.js"></script><script src="/static/js/youtube.js?1742983785.8715532"></script><script src="/static/js/intersection-observer.js"></script><script src="/static/js/lazyload.min.js"></script><script>
+      $(function(){
+        $("img[data-lazy-src]")
+          .attr('src', '/static/img/loading.gif')
+          .on('load.lazy', function(e) {
+            if(e.target.getAttribute('src') === e.target.getAttribute('data-lazy-src')) {
+              e.target.removeAttribute('data-lazy-src');
+              $(e.target).off('load.lazy');
+            }
+          });
+        
+        if(typeof $("img[data-lazy-src]").lazyload === "function") {
+          $("img[data-lazy-src]").lazyload({src: 'data-lazy-src', rootMargin: "300px"});
+        } else {
+          $("img[data-lazy-src]").each(function(i, elem) {
+            elem.setAttribute('src', elem.getAttribute('data-lazy-src'));
+          });
+        }
+      });
+    </script><script src="/static/js/lazysizes.min.js"></script><script src="/static/js/ls.unveilhooks.min.js"></script><script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<div id="linkContainer" class="link-grid" style="grid-template-columns: repeat(5, 1fr);"><a href="https://matunokihanten.github.io/mojikioku/kioku2" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">追跡漢字記憶ゲーム</a><a href="https://matunokihanten.github.io/mojikioku/men2.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">担々麺作りゲーム</a><a href="https://matunokihanten.github.io/mojikioku/sinkei.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">神経衰弱</a><a href="https://matunokihanten.github.io/mojikioku/dotukado" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">ドッツカード</a><a href="https://matunokihanten.github.io/mojikioku/irosagasi" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">色探しゲーム　※少しずつ難しくなります</a><a href="https://matunokihanten.github.io/mojikioku/irosagasi2" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">色探しゲーム　レベル選択式</a><a href="https://matunokihanten.github.io/mojikioku/syunnkann" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">瞬間記憶ゲーム</a><a href="https://matunokihanten.github.io/mojikioku/suujikioku" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">数字記憶ゲーム（瞬間記憶型）</a><a href="https://matunokihanten.github.io/mojikioku/2suujikioku" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">数字記憶ゲーム（記憶追跡型）</a><a href="https://matunokihanten.github.io/mojikioku/suujisagasi" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">重複数字探しゲーム</a><a href="https://matunokihanten.github.io/mojikioku/kiriperin" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">クリペリン検査</a><a href="https://matunokihanten.github.io/mojikioku/sutereo" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">ステレオグラムゲーム</a><a href="https://matunokihanten.github.io/mojikioku/sutereo3" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">ステレオグラムゲーム※色付きあり</a><a href="https://matunokihanten.github.io/mojikioku/irokawari.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">反応速度チャレンジ</a><a href="https://matunokihanten.github.io/mojikioku/gyakusan.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">逆算ゲーム</a><a href="https://matunokihanten.github.io/mojikioku/blinkingBall.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">玉点滅※ボタン多数</a><a href="https://matunokihanten.github.io/mojikioku/akadamaidou.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">移動する赤玉※触ると玉が消えるよ</a><a href="https://matunokihanten.github.io/mojikioku/blinkingBall3.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">玉点滅※自己開発</a><a href="https://matunokihanten.github.io/mojikioku/blinkingBall4.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">玉点滅※新自己開発</a><a href="https://matunokihanten.github.io/mojikioku/blinkingBall2.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">玉点滅※設定可能</a><a href="https://matunokihanten.github.io/mojikioku/uzumaki.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">渦巻き※心の疲れの消去効果</a><a href="https://matunokihanten.github.io/sigoto/dentaku" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">高機能電卓※飲食店専用</a><a href="https://matunokihanten.github.io/sigoto/keijiban" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">マインドマップ式掲示板メモ帳※機能がありすぎ</a><a href="https://matunokihanten.github.io/sigoto/kousokumemo.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">高速メモ※とにかく速さ重視</a><a href="https://matunokihanten.github.io/sigoto/botansettei.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">高速実行ボタン製造機※PC用</a><a href="https://matunokihanten.github.io/sigoto/aikon" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">高速アイコン作成※ SVG ＆ ICO 出力形式も対応</a><a href="https://matunokihanten.github.io/sigoto/ko-do.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">高速HTMLファイル作成※HTMLコード入力で高速作成</a><a href="https://matunokihanten.github.io/sigoto/nyuusyutu.html" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">入出金伝票※若干バグあり</a><a href="https://matunokihanten.github.io/sigoto/ho-mu" class="link-button" data-color="赤" style="background-color: red; padding: 8px 12px; text-decoration: none; border-radius: 5px; color: white;">ホームページ修正※少しだけ文字を変えるだけならこれ</a></div><link rel="stylesheet" href="/static/js/slick/slick.css"><link rel="stylesheet" href="/static/css/default_style.css?1742983785.8715532"><link rel="stylesheet" href="/static/css/color014.css?1742983785.8715532"><link rel="stylesheet" href="/static/css/parts_style.css?1742983785.8715532"><link rel="stylesheet" href="/static/css/fontawesome_all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="/static/css/obistyle.css?1742983785.8715532"><link rel="stylesheet" href="/static/css/protectionstyle.css?1742983785.8715532"><link rel="stylesheet" href="/static/js/colorbox/colorbox.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="/static/js/jquery-modal/jquery.modal.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="/static/js/jquery-fancybox/jquery.fancybox.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="/static/css/blog.css?1742983785.8715532"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&amp;family=Noto+Serif+JP&amp;family=M+PLUS+1p&amp;family=M+PLUS+Rounded+1c&amp;family=Sawarabi+Mincho&amp;family=Sawarabi+Gothic&amp;family=Kosugi+Maru&amp;family=Kosugi&amp;family=Yusei+Magic&amp;family=Hachi+Maru+Pop&amp;family=Potta+One&amp;family=DotGothic16&amp;family=RocknRoll+One&amp;family=Stick&amp;family=Reggae+One&amp;display=swap" media="all" onload="this.media='all'"><link rel="icon" href="//crayonimg.e-shops.jp/cms-dimg/1124499/905735/401_101.png" sizes="48x48" type="image/png" media="all"><link rel="apple-touch-icon-precomposed" href="//crayonimg.e-shops.jp/cms-dimg/1124499/905735/401_101.png" type="image/png" media="all">
 </body>
 </html>
