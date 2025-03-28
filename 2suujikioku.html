@@ -85,7 +85,7 @@
       margin: 10px 0;
       min-height: 20px;
     }
-    /* 履歴表示：画面下部、10列グリッド */
+    /* 入力履歴：画面下部に10列グリッド */
     #historyContainer {
       margin-top: 20px;
       display: grid;
@@ -99,9 +99,24 @@
       text-align: center;
       background-color: #fff;
     }
+    /* 答えボタン */
+    #showAnswerButton {
+      margin-top: 10px;
+      font-size: 1em;
+      padding: 8px 16px;
+      background-color: #2196F3;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #showAnswerButton:hover {
+      background-color: #1976D2;
+    }
     /* 終了ボタン */
     #endButton {
-      margin-top: 30px;
+      margin-top: 10px;
       font-size: 1em;
       padding: 8px 16px;
       background-color: #f44336;
@@ -109,11 +124,14 @@
       border: none;
       border-radius: 3px;
       cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    #endButton:hover {
+      background-color: #d32f2f;
     }
   </style>
 </head>
 <body>
-
   <!-- 設定画面 -->
   <div id="settingsContainer">
     <h1>数字記憶ゲーム</h1>
@@ -134,7 +152,7 @@
       <h2>数字記憶ゲーム</h2>
       <div id="score">Score: 0</div>
     </div>
-    <!-- 記憶用に大きく表示 -->
+    <!-- 記憶用に数字を大きく表示 -->
     <div id="memoryDisplay"></div>
     <div id="prompt"></div>
     <input type="text" id="userInput" readonly>
@@ -148,6 +166,9 @@
     <!-- 入力履歴（10列グリッド） -->
     <div id="historyContainer"></div>
     
+    <!-- 答えボタン -->
+    <button id="showAnswerButton">答え</button>
+    
     <!-- 終了ボタン -->
     <button id="endButton">終了</button>
   </div>
@@ -157,15 +178,18 @@
     let digitCount = 2;
     let score = 0;
     let round = 1;
-    let prevNumber = "";
-    let currentNumber = "";
+    let prevNumber = "";    // 前回のラウンドの正解（入力対象）
+    let currentNumber = ""; // 次回の正解候補
     let allowInput = false;
+    // 答えが表示中かどうかのフラグ
+    let answerRevealed = false;
     
     // イベントリスナー
     document.getElementById("startButton").addEventListener("click", startGame);
     document.getElementById("endButton").addEventListener("click", endGame);
+    document.getElementById("showAnswerButton").addEventListener("click", showAnswer);
     
-    // ゲーム開始：設定画面からゲーム画面へ遷移
+    // ゲーム開始：設定画面からゲーム画面へ切り替え
     function startGame() {
       digitCount = parseInt(document.getElementById("digitSelect").value, 10);
       score = 0;
@@ -173,6 +197,7 @@
       prevNumber = "";
       currentNumber = "";
       allowInput = false;
+      answerRevealed = false;
       
       document.getElementById("score").textContent = "Score: " + score;
       document.getElementById("userInput").value = "";
@@ -187,13 +212,14 @@
       startRound();
     }
     
-    // 終了処理：ゲームをリセットして設定画面へ戻る
+    // 終了処理：ゲーム状態をリセットして設定画面に戻る
     function endGame() {
       score = 0;
       round = 1;
       prevNumber = "";
       currentNumber = "";
       allowInput = false;
+      answerRevealed = false;
       
       document.getElementById("score").textContent = "Score: " + score;
       document.getElementById("userInput").value = "";
@@ -204,6 +230,15 @@
       
       document.getElementById("gameContainer").style.display = "none";
       document.getElementById("settingsContainer").style.display = "block";
+    }
+    
+    // 答えボタンの処理：押されると正解（prevNumber）を表示（青色）し、以降ユーザーが入力を開始するまでそのままにする
+    function showAnswer() {
+      if (!allowInput) return;
+      answerRevealed = true;
+      const statusElem = document.getElementById("status");
+      statusElem.textContent = "答え: " + prevNumber;
+      statusElem.style.color = "blue";
     }
     
     // キーパッド生成（1～9と0）
@@ -222,28 +257,29 @@
       keypad.appendChild(btn0);
     }
     
-    // ランダムな数字を生成（例：2桁なら10～99）
+    // 指定桁数のランダムな数字生成（例：2桁なら10～99）
     function generateRandomNumber(digits) {
       const min = Math.pow(10, digits - 1);
       const max = Math.pow(10, digits) - 1;
       return String(Math.floor(Math.random() * (max - min + 1)) + min);
     }
     
-    // 記憶フェーズ中に数字とメッセージを表示
+    // 記憶フェーズにおいて数字とメッセージを表示
     function displayMemoryNumber(num, msg) {
-      document.getElementById("memoryDisplay").innerHTML = `<div>${num}</div><div class="message">${msg}</div>`;
+      document.getElementById("memoryDisplay").innerHTML =
+        `<div>${num}</div><div class="message">${msg}</div>`;
     }
     
-    // 各ラウンド開始
+    // 各ラウンドの開始
     function startRound() {
       if (round === 1) {
-        // 第1ラウンド（記憶専用）
+        // 第1ラウンド：記憶専用フェーズ
         currentNumber = generateRandomNumber(digitCount);
         displayMemoryNumber(currentNumber, "数字を覚えてね！");
         allowInput = false;
         setTimeout(() => {
           document.getElementById("memoryDisplay").textContent = "";
-          // 次ラウンドの正解対象としてセット
+          // 次回ラウンドの正解対象としてセット
           prevNumber = currentNumber;
           round++;
           startRound();
@@ -264,6 +300,11 @@
     // キーパッド入力処理
     function appendDigit(digit) {
       if (!allowInput) return;
+      // もし答えが表示中なら、最初の入力でその表示をクリアする
+      if (answerRevealed) {
+        document.getElementById("status").textContent = "";
+        answerRevealed = false;
+      }
       const inputField = document.getElementById("userInput");
       inputField.value += digit.toString();
       if (inputField.value.length === digitCount) {
@@ -279,7 +320,8 @@
         document.getElementById("score").textContent = "Score: " + score;
         addToHistory(prevNumber);
         document.getElementById("status").textContent = "正解！";
-        // 次回の正解対象は今回の記憶数字
+        document.getElementById("status").style.color = "green";
+        // 次回ラウンドの正解対象は今回の記憶数字
         prevNumber = currentNumber;
         round++;
         inputField.value = "";
@@ -290,11 +332,12 @@
         }, 500);
       } else {
         document.getElementById("status").textContent = "不正解！ 正しい答えは " + prevNumber;
+        document.getElementById("status").style.color = "red";
         setTimeout(endGame, 2000);
       }
     }
     
-    // 履歴に正解だった数字を追加（10列表示）
+    // 履歴に正解だった数字を追加（10列グリッド）
     function addToHistory(num) {
       const historyContainer = document.getElementById("historyContainer");
       const span = document.createElement("span");
