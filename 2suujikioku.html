@@ -2,241 +2,306 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>数字記憶ゲーム（改良版）</title>
+  <title>数字記憶ゲーム</title>
   <style>
+    /* シンプルなデザイン */
     body {
-      background: linear-gradient(to bottom, #fafafa, #d7e1ec);
-      color: #333;
-      font-family: 'Arial', sans-serif;
+      background-color: #f2f2f2;
+      font-family: sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       text-align: center;
     }
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    }
-    h2 {
-      font-size: 26px;
-      color: #005f73;
+    /* 設定画面 */
+    #settingsContainer {
       margin-bottom: 20px;
-      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
     }
-    .display-number {
-      font-size: 64px;
+    #settingsContainer h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    #settingsContainer select,
+    #settingsContainer button {
+      font-size: 1em;
+      padding: 8px 16px;
+      margin: 5px;
+    }
+    /* ゲーム画面 */
+    #gameContainer {
+      display: none;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    #header h2 {
+      font-size: 1.8em;
+      margin: 10px 0;
+    }
+    #score {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    /* 数字表示エリア */
+    #memoryDisplay {
+      font-size: 2.5em;
       margin: 20px 0;
-      color: #ff4500;
-      font-weight: bold;
-      letter-spacing: 6px;
-      opacity: 0;
-      transition: opacity 0.7s ease-in-out;
+      min-height: 60px;
     }
-    .display-number.visible {
-      opacity: 1;
+    #memoryDisplay .message {
+      font-size: 0.8em;
+      margin-top: 10px;
     }
+    /* プロンプト・入力欄 */
+    #prompt {
+      font-size: 1.2em;
+      margin: 10px 0;
+      min-height: 20px;
+    }
+    #userInput {
+      font-size: 1.5em;
+      padding: 5px;
+      width: 200px;
+      margin: 10px auto;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background-color: #fff;
+    }
+    /* キーパッド */
     #keypad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-gap: 15px;
-      margin-top: 20px;
+      grid-gap: 10px;
+      max-width: 300px;
+      margin: 20px auto;
     }
     #keypad button {
-      font-size: 22px;
-      padding: 15px;
-      border-radius: 8px;
-      border: none;
-      background: linear-gradient(135deg, #77a1d3, #79cbca);
-      color: white;
-      cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      transition: background-color 0.3s ease;
-    }
-    #keypad button:hover {
-      background: #ffd700;
-    }
-    #inputDisplay {
-      font-size: 32px;
+      font-size: 1.5em;
       padding: 10px;
-      margin: 20px auto;
-      width: 80%;
-      background-color: #f8f9fa;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
     }
-    #scoreBoard {
+    /* 正誤メッセージ */
+    #status {
+      font-size: 1.2em;
+      margin: 10px 0;
+      min-height: 20px;
+    }
+    /* 履歴表示：画面下部、10列グリッド */
+    #historyContainer {
       margin-top: 20px;
-      font-size: 20px;
-      font-weight: bold;
-      color: #005f73;
-    }
-    #history {
-      margin-top: 30px;
-      text-align: left;
-      font-size: 16px;
-      color: #333;
-    }
-    #history ul {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      list-style: none;
-      gap: 10px;
-      padding-left: 0;
+      grid-gap: 5px;
     }
-    #history li {
-      padding: 5px 10px;
-      background: #f5d5d5;
-      border-radius: 5px;
+    .history-number {
+      font-size: 1em;
+      padding: 5px;
+      border: 1px solid #ccc;
       text-align: center;
+      background-color: #fff;
+    }
+    /* 終了ボタン */
+    #endButton {
+      margin-top: 30px;
+      font-size: 1em;
+      padding: 8px 16px;
+      background-color: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>数字記憶ゲーム</h2>
-    <!-- 設定画面 -->
-    <div id="settings">
-      <label for="digitCount">桁数を選択:</label>
-      <select id="digitCount">
-        <option value="2">2 桁</option>
-        <option value="3">3 桁</option>
-        <option value="4">4 桁</option>
-        <option value="5">5 桁</option>
-      </select>
-      <button id="startGame">ゲーム開始</button>
-    </div>
 
-    <!-- ゲーム画面 -->
-    <div id="game" class="hidden">
-      <div id="gameMessage">数字を覚えてね！</div>
-      <div id="numberDisplay" class="display-number"></div>
-      <div id="inputSection">
-        <input type="text" id="inputDisplay" readonly>
-        <div id="keypad">
-          <button data-value="1">1</button>
-          <button data-value="2">2</button>
-          <button data-value="3">3</button>
-          <button data-value="4">4</button>
-          <button data-value="5">5</button>
-          <button data-value="6">6</button>
-          <button data-value="7">7</button>
-          <button data-value="8">8</button>
-          <button data-value="9">9</button>
-          <button data-value="0">0</button>
-        </div>
-      </div>
-      <div id="scoreBoard">Score: 0</div>
-      <div id="history">
-        <h3>数字履歴</h3>
-        <ul id="historyList"></ul>
-      </div>
+  <!-- 設定画面 -->
+  <div id="settingsContainer">
+    <h1>数字記憶ゲーム</h1>
+    <label for="digitSelect">桁数選択:</label>
+    <select id="digitSelect">
+      <option value="2">2桁</option>
+      <option value="3">3桁</option>
+      <option value="4">4桁</option>
+      <option value="5">5桁</option>
+    </select>
+    <br>
+    <button id="startButton">ゲーム開始</button>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="gameContainer">
+    <div id="header">
+      <h2>数字記憶ゲーム</h2>
+      <div id="score">Score: 0</div>
     </div>
+    <!-- 記憶用に大きく表示 -->
+    <div id="memoryDisplay"></div>
+    <div id="prompt"></div>
+    <input type="text" id="userInput" readonly>
+    
+    <!-- キーパッド -->
+    <div id="keypad"></div>
+    
+    <!-- 正誤メッセージ -->
+    <div id="status"></div>
+    
+    <!-- 入力履歴（10列グリッド） -->
+    <div id="historyContainer"></div>
+    
+    <!-- 終了ボタン -->
+    <button id="endButton">終了</button>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const settingsDiv = document.getElementById("settings");
-      const gameDiv = document.getElementById("game");
-      const digitCountSelect = document.getElementById("digitCount");
-      const startGameButton = document.getElementById("startGame");
-      const numberDisplay = document.getElementById("numberDisplay");
-      const inputDisplay = document.getElementById("inputDisplay");
-      const keypadButtons = document.querySelectorAll("#keypad button[data-value]");
-      const scoreBoard = document.getElementById("scoreBoard");
-      const historyList = document.getElementById("historyList");
-      const gameMessage = document.getElementById("gameMessage");
-
-      let score = 0;
-      let round = 0;
-      let digitCount = 2;
-      const waitTime = 3;
-      const numberHistory = [];
-
-      function generateRandomNumber() {
-        const min = Math.pow(10, digitCount - 1);
-        const max = Math.pow(10, digitCount) - 1;
-        return String(Math.floor(Math.random() * (max - min + 1)) + min);
+    // ゲーム状態管理用グローバル変数
+    let digitCount = 2;
+    let score = 0;
+    let round = 1;
+    let prevNumber = "";
+    let currentNumber = "";
+    let allowInput = false;
+    
+    // イベントリスナー
+    document.getElementById("startButton").addEventListener("click", startGame);
+    document.getElementById("endButton").addEventListener("click", endGame);
+    
+    // ゲーム開始：設定画面からゲーム画面へ遷移
+    function startGame() {
+      digitCount = parseInt(document.getElementById("digitSelect").value, 10);
+      score = 0;
+      round = 1;
+      prevNumber = "";
+      currentNumber = "";
+      allowInput = false;
+      
+      document.getElementById("score").textContent = "Score: " + score;
+      document.getElementById("userInput").value = "";
+      document.getElementById("historyContainer").innerHTML = "";
+      document.getElementById("status").textContent = "";
+      document.getElementById("prompt").textContent = "";
+      
+      document.getElementById("settingsContainer").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      
+      createKeypad();
+      startRound();
+    }
+    
+    // 終了処理：ゲームをリセットして設定画面へ戻る
+    function endGame() {
+      score = 0;
+      round = 1;
+      prevNumber = "";
+      currentNumber = "";
+      allowInput = false;
+      
+      document.getElementById("score").textContent = "Score: " + score;
+      document.getElementById("userInput").value = "";
+      document.getElementById("historyContainer").innerHTML = "";
+      document.getElementById("status").textContent = "";
+      document.getElementById("prompt").textContent = "";
+      document.getElementById("memoryDisplay").textContent = "";
+      
+      document.getElementById("gameContainer").style.display = "none";
+      document.getElementById("settingsContainer").style.display = "block";
+    }
+    
+    // キーパッド生成（1～9と0）
+    function createKeypad() {
+      const keypad = document.getElementById("keypad");
+      keypad.innerHTML = "";
+      for (let num = 1; num <= 9; num++) {
+        const btn = document.createElement("button");
+        btn.textContent = num;
+        btn.addEventListener("click", () => appendDigit(num));
+        keypad.appendChild(btn);
       }
-
-      function showNumber(num) {
-        numberDisplay.textContent = num;
-        numberDisplay.classList.add("visible");
-      }
-
-      function hideNumber() {
-        numberDisplay.textContent = "";
-        numberDisplay.classList.remove("visible");
-      }
-
-      function startMemorization() {
-        round++;
-        const newNumber = generateRandomNumber();
-        numberHistory.push(newNumber);
-        gameMessage.textContent = round === 1 ? "数字を覚えてね！" : "正解！ 次の数字を覚えてね！";
-        inputDisplay.value = "";
-        showNumber(newNumber);
-
+      const btn0 = document.createElement("button");
+      btn0.textContent = "0";
+      btn0.addEventListener("click", () => appendDigit(0));
+      keypad.appendChild(btn0);
+    }
+    
+    // ランダムな数字を生成（例：2桁なら10～99）
+    function generateRandomNumber(digits) {
+      const min = Math.pow(10, digits - 1);
+      const max = Math.pow(10, digits) - 1;
+      return String(Math.floor(Math.random() * (max - min + 1)) + min);
+    }
+    
+    // 記憶フェーズ中に数字とメッセージを表示
+    function displayMemoryNumber(num, msg) {
+      document.getElementById("memoryDisplay").innerHTML = `<div>${num}</div><div class="message">${msg}</div>`;
+    }
+    
+    // 各ラウンド開始
+    function startRound() {
+      if (round === 1) {
+        // 第1ラウンド（記憶専用）
+        currentNumber = generateRandomNumber(digitCount);
+        displayMemoryNumber(currentNumber, "数字を覚えてね！");
+        allowInput = false;
         setTimeout(() => {
-          hideNumber();
-          if (round > 1) {
-            promptInput();
-          } else {
-            startMemorization();
-          }
-        }, waitTime * 1000);
+          document.getElementById("memoryDisplay").textContent = "";
+          // 次ラウンドの正解対象としてセット
+          prevNumber = currentNumber;
+          round++;
+          startRound();
+        }, 3000);
+      } else {
+        // 第2ラウンド以降：入力フェーズ付き
+        document.getElementById("prompt").textContent = "直前の数字を入力してね！";
+        currentNumber = generateRandomNumber(digitCount);
+        displayMemoryNumber(currentNumber, "数字を覚えてね！");
+        allowInput = false;
+        setTimeout(() => {
+          document.getElementById("memoryDisplay").textContent = "";
+          allowInput = true;
+        }, 3000);
       }
-
-      function promptInput() {
-        gameMessage.textContent = "直前のひとつ前の数字を入力してね！";
+    }
+    
+    // キーパッド入力処理
+    function appendDigit(digit) {
+      if (!allowInput) return;
+      const inputField = document.getElementById("userInput");
+      inputField.value += digit.toString();
+      if (inputField.value.length === digitCount) {
+        setTimeout(checkAnswer, 200);
       }
-
-      function checkAnswer(userInput) {
-        const correctAnswer = numberHistory[numberHistory.length - 2];
-        if (userInput === correctAnswer) {
-          score++;
-          scoreBoard.textContent = "Score: " + score;
-          const li = document.createElement("li");
-          li.textContent = correctAnswer;
-          historyList.appendChild(li);
-          startMemorization();
-        } else {
-          gameMessage.textContent = `不正解！正しい答えは ${correctAnswer} だった。初めからやり直します！`;
-          setTimeout(resetGame, 2000);
-        }
+    }
+    
+    // 入力された数字と正解（prevNumber）の照合
+    function checkAnswer() {
+      const inputField = document.getElementById("userInput");
+      if (inputField.value === prevNumber) {
+        score++;
+        document.getElementById("score").textContent = "Score: " + score;
+        addToHistory(prevNumber);
+        document.getElementById("status").textContent = "正解！";
+        // 次回の正解対象は今回の記憶数字
+        prevNumber = currentNumber;
+        round++;
+        inputField.value = "";
+        allowInput = false;
+        setTimeout(() => {
+          document.getElementById("status").textContent = "";
+          startRound();
+        }, 500);
+      } else {
+        document.getElementById("status").textContent = "不正解！ 正しい答えは " + prevNumber;
+        setTimeout(endGame, 2000);
       }
-
-      keypadButtons.forEach(button => {
-        button.addEventListener("click", () => {
-          const value = button.getAttribute("data-value");
-          inputDisplay.value += value;
-
-          if (inputDisplay.value.length === numberHistory[numberHistory.length - 2]?.length) {
-            checkAnswer(inputDisplay.value);
-          }
-        });
-      });
-
-      function resetGame() {
-        score = 0;
-        round = 0;
-        numberHistory.length = 0;
-        scoreBoard.textContent = "Score: 0";
-        historyList.innerHTML = "";
-        settingsDiv.classList.remove("hidden");
-        gameDiv.classList.add("hidden");
-      }
-
-      startGameButton.addEventListener("click", () => {
-        digitCount = parseInt(digitCountSelect.value, 10);
-        settingsDiv.classList.add("hidden");
-        gameDiv.classList.remove("hidden");
-        startMemorization();
-      });
-    });
+    }
+    
+    // 履歴に正解だった数字を追加（10列表示）
+    function addToHistory(num) {
+      const historyContainer = document.getElementById("historyContainer");
+      const span = document.createElement("span");
+      span.textContent = num;
+      span.className = "history-number";
+      historyContainer.appendChild(span);
+    }
   </script>
 </body>
 </html>
