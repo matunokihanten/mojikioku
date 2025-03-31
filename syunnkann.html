@@ -1,138 +1,261 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>瞬間記憶ゲーム</title>
-    <style>
-        .container {
-            display: grid;
-            grid-template-columns: repeat(4, 80px);
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .box {
-            width: 80px;
-            height: 80px;
-            background-color: lightgray;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
-        .box.active {
-            background-color: red;
-        }
-        .box.tapped {
-            background-color: darkred; /* タップされた赤 */
-        }
-        .message {
-            text-align: center;
-            font-size: 24px;
-            margin-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>メモリーゲーム - 時間設定付き</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 30px;
+    }
+    /* コンテナによりグリッドとボタン、設定項目を同じ画面内に配置 */
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #flashDurationSelector {
+      margin: 20px;
+      font-size: 1em;
+    }
+    .grid {
+      width: 400px;
+      margin: 20px;
+      display: grid;
+      grid-gap: 10px;
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%; /* 正方形のセルにするため */
+      background-color: lightgray;
+      border: 2px solid #333;
+      position: relative;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+    .cell.active {
+      background-color: yellow;
+    }
+    .cell.correct {
+      background-color: lightgreen;
+    }
+    .cell.wrong {
+      background-color: tomato;
+    }
+    .cell-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #controls {
+      margin: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin: 0 10px;
+      cursor: pointer;
+    }
+    #levelDisplay {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    #message {
+      font-size: 1.1em;
+      margin: 10px;
+      height: 1.5em;
+    }
+  </style>
 </head>
 <body>
-    <h1>瞬間記憶ゲーム</h1>
-    <button onclick="resetGame()">ゲーム開始</button>
-    <div class="container" id="gameContainer"></div>
-    <div class="message" id="message"></div> <!-- 正解の文字を表示する場所 -->
+  <h1>メモリーゲーム</h1>
+  <div id="container">
+    <div id="levelDisplay">Level: 1</div>
+    <div id="message"></div>
+    <!-- マスが光る時間をラジオボタンで選択 -->
+    <div id="flashDurationSelector">
+      <span>マスが光る時間: </span>
+      <label><input type="radio" name="flashDuration" value="1000">1秒</label>
+      <label><input type="radio" name="flashDuration" value="2000">2秒</label>
+      <label><input type="radio" name="flashDuration" value="3000" checked>3秒</label>
+      <label><input type="radio" name="flashDuration" value="4000">4秒</label>
+      <label><input type="radio" name="flashDuration" value="5000">5秒</label>
+    </div>
+    <div id="grid" class="grid"></div>
+    <div id="controls">
+      <button id="startButton">スタート</button>
+      <button id="exitButton">終了</button>
+    </div>
+  </div>
 
-    <script>
-        let gridSize = 4; // グリッドのサイズ (4x4)
-        let displayTime = 2000; // 赤玉を表示する時間 (ミリ秒)
-        let activeIndex = []; // 赤玉の位置
-        let score = 0; // スコア
-        let answeredCount = 0; // タップされた赤玉の数
+  <script>
+    let level = 1;         // 現在のレベル
+    let gridSize = 2;      // 初期は 2×2 のグリッド
+    let patternCount = 2;  // 初期の光るセル数
+    let cells = [];        // グリッド内のセル要素
+    let patternCells = []; // 正解パターン（セルのインデックス）
+    let userSelections = []; // ユーザーの選択履歴
+    let flashing = false;      // パターン表示中のフラグ
+    let patternFinished = false; // パターン提示終了のフラグ
 
-        function createGrid() {
-            const gameContainer = document.getElementById('gameContainer');
-            gameContainer.innerHTML = ''; // リセット
-            gameContainer.style.gridTemplateColumns = `repeat(${gridSize}, 80px)`;
+    // DOM の取得
+    const grid = document.getElementById('grid');
+    const startButton = document.getElementById('startButton');
+    const exitButton = document.getElementById('exitButton');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const message = document.getElementById('message');
 
-            for (let i = 0; i < gridSize * gridSize; i++) {
-                const box = document.createElement('div');
-                box.classList.add('box');
-                box.setAttribute('data-index', i);
-                box.addEventListener('click', checkAnswer);
-                gameContainer.appendChild(box);
+    // ラジオボタンから光る時間（ミリ秒）を取得する関数
+    function getFlashDuration() {
+      const radios = document.getElementsByName("flashDuration");
+      for (let i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+          return parseInt(radios[i].value);
+        }
+      }
+      return 1000; // デフォルトは1秒
+    }
+
+    // 難易度設定：レベルに応じてグリッドサイズと光るセルの数を調整
+    function updateDifficulty() {
+      // グリッドサイズは、3レベルごとに1ずつ増やす（最大6×6）
+      gridSize = Math.min(2 + Math.floor((level - 1) / 3), 6);
+      // 光るセル数は、レベルアップごとに1ずつ増加（グリッドに収まる範囲で）
+      patternCount = 2 + (level - 1);
+      if (patternCount > gridSize * gridSize) {
+        patternCount = gridSize * gridSize;
+      }
+      levelDisplay.textContent = `Level: ${level} (グリッド: ${gridSize}×${gridSize}, 光る数: ${patternCount})`;
+    }
+
+    // グリッド作成：クリックイベントを設定し、セルを生成
+    function setupGrid() {
+      grid.innerHTML = "";
+      cells = [];
+      grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      const totalCells = gridSize * gridSize;
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', function() {
+          if (!flashing && patternFinished) {
+            const idx = parseInt(cell.dataset.index);
+            if (userSelections.includes(idx)) return;  // 重複クリックの回避
+            userSelections.push(idx);
+            cell.classList.add('active');
+            if (userSelections.length === patternCount) {
+              checkAnswer();
             }
+          }
+        });
+        const inner = document.createElement('div');
+        inner.className = "cell-content";
+        cell.appendChild(inner);
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+      grid.style.pointerEvents = 'auto';
+    }
+
+    // パターン提示：全対象セルを同時に点灯し、選択された秒数後に一斉に消灯
+    function flashPattern() {
+      flashing = true;
+      patternFinished = false;
+      message.textContent = "覚えて……";
+      const totalCells = gridSize * gridSize;
+      patternCells = [];
+      while (patternCells.length < patternCount) {
+        const r = Math.floor(Math.random() * totalCells);
+        if (!patternCells.includes(r)) {
+          patternCells.push(r);
         }
+      }
+      // 一斉に全対象セルを点灯
+      patternCells.forEach(idx => {
+        cells[idx].classList.add('active');
+      });
+      // 選択された秒数後（ミリ秒）に一斉消灯
+      const flashDuration = getFlashDuration();
+      setTimeout(() => {
+        patternCells.forEach(idx => {
+          cells[idx].classList.remove('active');
+        });
+        flashing = false;
+        patternFinished = true;
+        message.textContent = "クリックしてパターンを選んでください";
+      }, flashDuration);
+    }
 
-        function startGame() {
-            answeredCount = 0; // タップされた数をリセット
-            createGrid();
-            activeIndex = generateRandomActive(); // ランダムな赤玉の位置を生成
-            showActiveBoxes();
-            document.getElementById('message').textContent = '';
+    // ユーザーの入力結果を判定し、正解ならレベルアップ、不正解ならレベルを下げる（最低レベルは1）
+    function checkAnswer() {
+      patternFinished = false;
+      const sortedUser = [...userSelections].sort((a, b) => a - b);
+      const sortedPattern = [...patternCells].sort((a, b) => a - b);
+      const isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedPattern);
+
+      // 選択したセルへフィードバックを表示
+      userSelections.forEach(idx => {
+        if (patternCells.includes(idx)) {
+          cells[idx].classList.add('correct');
+        } else {
+          cells[idx].classList.add('wrong');
         }
-
-        function resetGame() {
-            gridSize = 4; // 初期レベルに戻す
-            displayTime = 2000; // 初期表示時間に戻す
-            score = 0; // スコアをリセット
-            startGame();
+      });
+      // 正解セルで未選択のものにもフィードバック（赤表示など）
+      patternCells.forEach(idx => {
+        if (!userSelections.includes(idx)) {
+          cells[idx].classList.add('wrong');
         }
-
-        function generateRandomActive() {
-            const count = Math.min(3 + Math.floor(score / 5), gridSize * gridSize); // スコアに応じて赤玉の数を増やす
-            const indices = [];
-            while (indices.length < count) {
-                const randomIndex = Math.floor(Math.random() * gridSize * gridSize);
-                if (!indices.includes(randomIndex)) {
-                    indices.push(randomIndex);
-                }
-            }
-            return indices;
+      });
+      setTimeout(() => {
+        if (isCorrect) {
+          message.textContent = "正解！ 次のレベルへ";
+          level++;
+        } else {
+          message.textContent = "間違い！ レベルを下げます";
+          if (level > 1) {
+            level--;
+          }
         }
+        setTimeout(nextLevel, 1000);
+      }, 500);
+    }
 
-        function showActiveBoxes() {
-            const boxes = document.querySelectorAll('.box');
-            activeIndex.forEach(index => {
-                boxes[index].classList.add('active');
-            });
+    // 次のレベルへ準備
+    function nextLevel() {
+      userSelections = [];
+      updateDifficulty();
+      setupGrid();
+      flashPattern();
+    }
 
-            // 一定時間後に非表示にする
-            setTimeout(() => {
-                activeIndex.forEach(index => {
-                    boxes[index].classList.remove('active');
-                });
-            }, displayTime);
-        }
+    // 終了処理：ゲーム中ならグリッド操作を無効化し、メッセージを表示
+    function exitGame() {
+      flashing = false;
+      patternFinished = false;
+      message.textContent = "ゲームを終了しました。お疲れ様でした！";
+      grid.style.pointerEvents = 'none';
+      userSelections = [];
+    }
 
-        function checkAnswer(event) {
-            const clickedIndex = parseInt(event.target.getAttribute('data-index'));
-            const message = document.getElementById('message');
-            const box = event.target;
+    // スタートボタン：ゲーム開始・再スタート
+    startButton.addEventListener('click', function() {
+      level = 1;
+      updateDifficulty();
+      setupGrid();
+      userSelections = [];
+      grid.style.pointerEvents = 'auto';
+      flashPattern();
+    });
 
-            if (activeIndex.includes(clickedIndex) && !box.classList.contains('tapped')) {
-                // 正解の場合
-                score++;
-                answeredCount++;
-                box.classList.add('tapped'); // タップ済みのスタイルを適用
-                message.textContent = `正解！スコア: ${score}`;
-                message.style.color = 'green';
-
-                // 全ての赤玉をタップしたら次のラウンドへ
-                if (answeredCount === activeIndex.length) {
-                    message.textContent = `クリア！次のレベルへ スコア: ${score}`;
-                    setTimeout(() => {
-                        if (score % 5 === 0) {
-                            // 5の倍数スコアで難易度を上げる
-                            gridSize = Math.min(gridSize + 1, 6); // グリッドサイズを大きくする
-                            displayTime = Math.max(500, displayTime - 100); // 表示時間を短くする
-                            message.textContent = `難易度アップ！ グリッド: ${gridSize}x${gridSize}, 表示時間: ${displayTime}ms`;
-                        }
-                        startGame(); // 次のラウンドを開始
-                    }, 1000);
-                }
-            } else {
-                // 不正解の場合
-                message.textContent = `不正解！スコア: ${score}`;
-                message.style.color = 'red';
-                setTimeout(startGame, 1000); // 次のラウンドを開始
-            }
-        }
-    </script>
+    // 終了ボタンのイベントリスナー
+    exitButton.addEventListener('click', function() {
+      exitGame();
+    });
+  </script>
 </body>
 </html>
