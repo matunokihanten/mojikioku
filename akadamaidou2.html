@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moving Balls</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0; /* 背景色を追加して立体感を際立たせる */
+        }
+        .ball {
+            background: radial-gradient(circle at 30% 30%, #ff8080, red, #800000); /* 立体的なグラデーション */
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.4); /* 影を追加して立体感を強調 */
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        #ballCount {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="numBalls">Number of Balls: </label>
+        <input type="range" id="numBalls" min="1" max="300" value="20">
+        <span id="numBallsValue">20</span><br>
+        <label for="speed">Speed: </label>
+        <input type="range" id="speed" min="1" max="50" value="2">
+        <span id="speedValue">2</span><br>
+        <label for="size">Size: </label>
+        <input type="range" id="size" min="10" max="100" value="50">
+        <span id="sizeValue">50</span>
+    </div>
+    <div id="ballCount">
+        Balls Left: <span id="ballsLeft">20</span>
+    </div>
+    <script>
+        let numBalls = 20;
+        let speed = 2;
+        let size = 50;
+        let balls = [];
+        let maxX = window.innerWidth;
+        let maxY = window.innerHeight;
+
+        const numBallsInput = document.getElementById('numBalls');
+        const speedInput = document.getElementById('speed');
+        const sizeInput = document.getElementById('size');
+        const numBallsValue = document.getElementById('numBallsValue');
+        const speedValue = document.getElementById('speedValue');
+        const sizeValue = document.getElementById('sizeValue');
+        const ballsLeft = document.getElementById('ballsLeft');
+
+        function updateBallCount() {
+            ballsLeft.textContent = balls.length;
+        }
+
+        function createBalls() {
+            balls.forEach(ball => ball.remove());
+            balls = [];
+            for (let i = 0; i < numBalls; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                ball.style.width = `${size}px`;
+                ball.style.height = `${size}px`;
+                ball.style.left = `${Math.random() * (maxX - size)}px`;
+                ball.style.top = `${Math.random() * (maxY - size)}px`;
+                ball.dx = (Math.random() * 2 - 1) * speed;
+                ball.dy = (Math.random() * 2 - 1) * speed;
+                ball.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent default touch behavior
+                    ball.remove();
+                    balls = balls.filter(b => b !== ball);
+                    updateBallCount();
+                }, { passive: false });
+                ball.addEventListener('click', () => {
+                    ball.remove();
+                    balls = balls.filter(b => b !== ball);
+                    updateBallCount();
+                });
+                document.body.appendChild(ball);
+                balls.push(ball);
+            }
+            updateBallCount();
+        }
+
+        function moveBalls() {
+            balls.forEach(ball => {
+                let x = parseFloat(ball.style.left);
+                let y = parseFloat(ball.style.top);
+
+                x += ball.dx;
+                y += ball.dy;
+
+                if (x < 0 || x > maxX - size) {
+                    ball.dx = -ball.dx;
+                }
+                if (y < 0 || y > maxY - size) {
+                    ball.dy = -ball.dy;
+                }
+
+                ball.style.left = `${x}px`;
+                ball.style.top = `${y}px`;
+            });
+
+            requestAnimationFrame(moveBalls);
+        }
+
+        numBallsInput.addEventListener('input', () => {
+            numBalls = numBallsInput.value;
+            numBallsValue.textContent = numBalls;
+            createBalls();
+        });
+
+        speedInput.addEventListener('input', () => {
+            speed = speedInput.value;
+            speedValue.textContent = speed;
+            // ボールの速度が変わるだけなので、既存のボールの速度を更新
+            balls.forEach(ball => {
+                const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                if (currentSpeed > 0) {
+                    ball.dx = (ball.dx / currentSpeed) * speed;
+                    ball.dy = (ball.dy / currentSpeed) * speed;
+                } else { // 速度が0の場合の対策
+                    ball.dx = (Math.random() * 2 - 1) * speed;
+                    ball.dy = (Math.random() * 2 - 1) * speed;
+                }
+            });
+        });
+
+        sizeInput.addEventListener('input', () => {
+            size = sizeInput.value;
+            sizeValue.textContent = size;
+            // サイズ変更時に既存のボールを更新
+            balls.forEach(ball => {
+                ball.style.width = `${size}px`;
+                ball.style.height = `${size}px`;
+                // ボールが画面外に出ないように位置を調整する可能性もあるが、今回は単純にサイズ変更のみ
+            });
+        });
+
+        createBalls();
+        moveBalls();
+
+        window.addEventListener('resize', () => {
+            maxX = window.innerWidth;
+            maxY = window.innerHeight;
+            createBalls(); // 画面サイズ変更時にボールを再生成
+        });
+    </script>
+</body>
+</html>
