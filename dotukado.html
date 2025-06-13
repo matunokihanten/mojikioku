@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>ドッツカード</title>
     <style>
         body {
@@ -9,19 +10,29 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: white;
+            background-color: black; /* 宇宙空間に合うように背景色を黒に */
+            color: white; /* テキスト色を白に */
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
         }
         #canvas {
             position: relative;
             width: 400px;
             height: 400px;
-            border: 1px solid black;
+            border: 1px solid white; /* 境界線を白に変更 */
             margin-bottom: 20px;
+            overflow: hidden;
+            /* 宇宙空間の背景画像を設定 */
+            background-image: url('http://googleusercontent.com/generated_image_content/0'); /* 画像URLを挿入 */
+            background-size: cover; /* キャンバス全体に画像をフィット */
         }
         .dot {
             position: absolute;
-            background-color: red;
+            /* 光沢のある球体に見せるためのスタイル */
+            background: radial-gradient(circle at 70% 40%, #ff0000, #800000);
             border-radius: 50%;
+            width: 60px; /* デフォルトのサイズ */
+            height: 60px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* 影を濃く */
         }
         .inputs {
             display: flex;
@@ -38,27 +49,38 @@
             margin-right: 10px;
         }
         .buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            grid-template-rows: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 5px;
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
         }
         .buttons button {
-            margin: 5px;
-            width: 40px;
-            height: 40px;
-        }
-        .row {
-            display: flex;
-            justify-content: center;
+            margin: 0;
             width: 100%;
+            height: 40px;
+            box-sizing: border-box;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.8); /* ボタンの背景を半透明に */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .buttons button:hover {
+            background-color: rgba(255, 255, 255, 1); /* ホバー時の背景色 */
         }
         #practiceResult {
             font-size: 24px;
             margin-top: 10px;
+            color: blue;
+            font-weight: bold;
         }
         #result {
-            font-size: 16px; /* 文字を小さく */
+            font-size: 20px;
             margin-top: 10px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -81,11 +103,11 @@
         <div class="input-row">
             <div>
                 <label for="minDots">最小の玉の数:</label>
-                <input type="number" id="minDots" value="1" min="1" max="50">
+                <input type="number" id="minDots" value="1" min="1" max="100">
             </div>
             <div>
                 <label for="maxDots">最大の玉の数:</label>
-                <input type="number" id="maxDots" value="10" min="1" max="50">
+                <input type="number" id="maxDots" value="10" min="1" max="100">
             </div>
         </div>
         <div>
@@ -100,7 +122,7 @@
         <p id="practiceResult"></p>
     </div>
     <div id="canvas"></div>
-    <p id="result"></p> <!-- 正解の文字を表示する場所 -->
+    <p id="result"></p>
     <div class="buttons"></div>
     <button onclick="drawDots()">スタート</button>
     <button onclick="practice()">練習</button>
@@ -108,114 +130,159 @@
 
     <script>
         let practiceTimeout;
+        let correctDotsCount = 0;
 
         function drawDots() {
             const canvas = document.getElementById("canvas");
             const backgroundColor = document.getElementById("backgroundColor").value;
             canvas.style.backgroundColor = backgroundColor;
             canvas.innerHTML = "";
-            const minDots = parseInt(document.getElementById("minDots").value);
-            const maxDots = parseInt(document.getElementById("maxDots").value);
+
+            let minDots = parseInt(document.getElementById("minDots").value);
+            let maxDots = parseInt(document.getElementById("maxDots").value);
+
+            if (minDots > maxDots) {
+                [minDots, maxDots] = [maxDots, minDots];
+                document.getElementById("minDots").value = minDots;
+                document.getElementById("maxDots").value = maxDots;
+            }
+
             const numDots = Math.floor(Math.random() * (maxDots - minDots + 1)) + minDots;
+            correctDotsCount = numDots;
             const dotSize = parseInt(document.getElementById("dotSize").value);
-            const dots = [];
+            const placedDots = [];
 
             for (let i = 0; i < numDots; i++) {
                 let x, y, overlap;
+                let attempts = 0;
+                const maxAttempts = 200;
+
                 do {
                     overlap = false;
                     x = Math.random() * (canvas.clientWidth - dotSize);
                     y = Math.random() * (canvas.clientHeight - dotSize);
-                    for (const dot of dots) {
+
+                    for (const dot of placedDots) {
                         const dx = dot.x - x;
                         const dy = dot.y - y;
                         const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance < dotSize) {
+                        if (distance < dotSize * 0.9) {
                             overlap = true;
                             break;
                         }
                     }
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        console.warn("Could not place a dot without significant overlap. Skipping this dot.");
+                        break;
+                    }
                 } while (overlap);
 
-                dots.push({ x, y });
+                if (!overlap) {
+                    placedDots.push({ x, y });
 
-                const dot = document.createElement("div");
-                dot.classList.add("dot");
-                dot.style.width = `${dotSize}px`;
-                dot.style.height = `${dotSize}px`;
-                dot.style.left = `${x}px`;
-                dot.style.top = `${y}px`;
-
-                canvas.appendChild(dot);
+                    const dotElement = document.createElement("div");
+                    dotElement.classList.add("dot");
+                    dotElement.style.width = `${dotSize}px`;
+                    dotElement.style.height = `${dotSize}px`;
+                    dotElement.style.left = `${x}px`;
+                    dotElement.style.top = `${y}px`;
+                    canvas.appendChild(dotElement);
+                }
             }
 
-            const buttons = document.querySelector('.buttons');
-            buttons.innerHTML = "";
+            const buttonsContainer = document.querySelector('.buttons');
+            buttonsContainer.innerHTML = "";
             for (let i = minDots; i <= maxDots; i++) {
                 const button = document.createElement("button");
                 button.textContent = i;
-                button.onclick = () => checkAnswer(i, numDots);
-                buttons.appendChild(button);
+                button.onclick = () => checkAnswer(i, correctDotsCount);
+                buttonsContainer.appendChild(button);
             }
 
             document.getElementById("result").textContent = "";
+            document.getElementById("practiceResult").textContent = "";
         }
 
         function checkAnswer(selected, correct) {
-            const result = document.getElementById("result");
-            result.textContent = selected === correct ? "正解！" : `不正解。正しい玉の数は ${correct} です。`;
-            if (selected === correct) setTimeout(drawDots, 1000);
+            const resultDisplay = document.getElementById("result");
+            if (selected === correct) {
+                resultDisplay.textContent = "正解！";
+                resultDisplay.style.color = "green";
+                setTimeout(drawDots, 1000);
+            } else {
+                resultDisplay.textContent = `不正解。正しい玉の数は ${correct} です。`;
+                resultDisplay.style.color = "red";
+            }
         }
 
         function practice() {
+            stopPractice();
             const canvas = document.getElementById("canvas");
             const dotSize = 20;
-            let currentDot = 1;
+            let currentDotCount = 1;
             const practiceInterval = parseFloat(document.getElementById("practiceInterval").value) * 1000;
             document.getElementById("stopPracticeButton").style.display = "block";
+            document.getElementById("result").textContent = "";
 
-            function showDot(dotCount) {
+            function showDot(count) {
                 canvas.innerHTML = "";
-                for (let i = 0; i < dotCount; i++) {
-                    const dot = document.createElement("div");
-                    dot.classList.add("dot");
-                    dot.style.width = `${dotSize}px`;
-                    dot.style.height = `${dotSize}px`;
+                const placedDotsInPractice = [];
+
+                for (let i = 0; i < count; i++) {
+                    const dotElement = document.createElement("div");
+                    dotElement.classList.add("dot");
+                     // 練習モードの玉も光沢を持たせる
+                    dotElement.style.background = 'radial-gradient(circle at 70% 40%, #ff0000, #800000)';
+                    dotElement.style.width = `${dotSize}px`;
+                    dotElement.style.height = `${dotSize}px`;
 
                     let x, y, overlap;
+                    let attempts = 0;
+                    const maxAttempts = 200;
+
                     do {
                         overlap = false;
                         x = Math.random() * (canvas.clientWidth - dotSize);
                         y = Math.random() * (canvas.clientHeight - dotSize);
-                        for (let j = 0; j < canvas.children.length; j++) {
-                            const existingDot = canvas.children[j];
-                            const existingX = parseFloat(existingDot.style.left);
-                            const existingY = parseFloat(existingDot.style.top);
-                            const distance = Math.sqrt(Math.pow(x - existingX, 2) + Math.pow(y - existingY, 2));
+
+                        for (const existingDotPos of placedDotsInPractice) {
+                            const dx = existingDotPos.x - x;
+                            const dy = existingDotPos.y - y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
                             if (distance < dotSize * 1.2) {
                                 overlap = true;
                                 break;
                             }
                         }
+                        attempts++;
+                        if (attempts > maxAttempts) {
+                            console.warn("Could not place a dot in practice mode without significant overlap. Skipping.");
+                            break;
+                        }
                     } while (overlap);
 
-                    dot.style.left = `${x}px`;
-                    dot.style.top = `${y}px`;
-                    canvas.appendChild(dot);
+                    if (!overlap) {
+                        placedDotsInPractice.push({ x, y });
+                        dotElement.style.left = `${x}px`;
+                        dotElement.style.top = `${y}px`;
+                        canvas.appendChild(dotElement);
+                    }
                 }
-                document.getElementById("practiceResult").textContent = `玉の数: ${dotCount}`;
+                document.getElementById("practiceResult").textContent = `玉の数: ${count}`;
             }
 
-            function nextDot() {
-                if (currentDot <= 100) {
-                    showDot(currentDot++);
-                    practiceTimeout = setTimeout(nextDot, practiceInterval);
+            function nextDotInPractice() {
+                const maxPracticeDots = parseInt(document.getElementById("maxDots").value);
+                if (currentDotCount <= maxPracticeDots) {
+                    showDot(currentDotCount++);
+                    practiceTimeout = setTimeout(nextDotInPractice, practiceInterval);
                 } else {
                     stopPractice();
                 }
             }
 
-            nextDot();
+            nextDotInPractice();
         }
 
         function stopPractice() {
