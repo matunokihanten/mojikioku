@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ドッツカード</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #0a0a0a, #2c003e); /* 宇宙空間に合うようにグラデーション背景 */
+            color: #E0E0E0; /* テキスト色を明るいグレーに */
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            margin: 0;
+            overflow: hidden; /* スクロールバー非表示 */
+        }
+
+        /* 星のパターンを追加 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(white 1px, transparent 1px), radial-gradient(white 1px, transparent 1px);
+            background-size: 50px 50px, 50px 50px;
+            background-position: 0 0, 25px 25px;
+            opacity: 0.1; /* 星の透明度 */
+            pointer-events: none; /* クリックイベントを妨げない */
+        }
+
+        #canvas {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 2px solid #66FFFF; /* 発光感のある境界線 */
+            box-shadow: 0 0 15px #66FFFF; /* 境界線に光の影 */
+            margin-bottom: 20px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.4); /* 半透明の黒背景 */
+            border-radius: 10px; /* 角を丸く */
+        }
+        .dot {
+            position: absolute;
+            /* より光沢のある球体に見せるためのスタイル */
+            background: radial-gradient(circle at 70% 30%, #ff6b6b, #e60000, #800000); /* 中心を明るく、外側を暗く */
+            border-radius: 50%;
+            width: 60px; /* デフォルトのサイズ */
+            height: 60px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 5px rgba(0, 0, 0, 0.5); /* 強い発光と影 */
+        }
+        .inputs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        .input-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .input-row > div {
+            margin: 0 15px; /* マージンを調整 */
+        }
+        .inputs label {
+            color: #ADD8E6; /* 明るい青のラベル色 */
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .inputs input[type="number"],
+        .inputs select {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #66FFFF;
+            color: #E0E0E0;
+            padding: 8px;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            width: 80px; /* 幅を調整 */
+        }
+        .inputs input[type="number"]:focus,
+        .inputs select:focus {
+            border-color: #00FFFF;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(10, minmax(40px, 1fr)); /* 10列表示 */
+            gap: 8px; /* ボタン間の隙間を広げる */
+            width: 90%;
+            max-width: 700px; /* 最大幅を調整 */
+            margin: 20px auto;
+        }
+        .buttons button {
+            margin: 0;
+            width: 100%;
+            height: 45px; /* ボタンの高さを少し高く */
+            box-sizing: border-box;
+            font-size: 1.1em; /* フォントサイズを少し大きく */
+            font-weight: bold;
+            background-color: rgba(102, 255, 255, 0.2); /* ボタンの背景を半透明のシアンに */
+            color: #E0E0E0;
+            border: 1px solid #66FFFF;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+        }
+        .buttons button:hover {
+            background-color: rgba(102, 255, 255, 0.4); /* ホバー時の背景色 */
+            transform: translateY(-2px); /* 少し浮き上がる効果 */
+            box-shadow: 0 0 15px rgba(102, 255, 255, 0.6);
+        }
+        .buttons button:active {
+            transform: translateY(0);
+        }
+
+        button { /* スタート、練習、練習終了ボタン */
+            background-color: #4CAF50; /* 緑系の色 */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        #stopPracticeButton {
+            background-color: #f44336; /* 赤系の色 */
+        }
+        #stopPracticeButton:hover {
+            background-color: #da190b;
+        }
+
+        #practiceResult {
+            font-size: 28px; /* 少し大きく */
+            margin-top: 15px;
+            color: #00FFFF; /* シアンに */
+            font-weight: bold;
+            text-shadow: 0 0 10px #00FFFF; /* 発光エフェクト */
+        }
+        #result {
+            font-size: 24px; /* 少し大きく */
+            margin-top: 15px;
+            font-weight: bold;
+            text-shadow: 0 0 8px; /* 後で色設定 */
+        }
+        #result[style*="green"] {
+            color: #32CD32; /* ライムグリーン */
+            text-shadow: 0 0 10px #32CD32;
+        }
+        #result[style*="red"] {
+            color: #FF6347; /* トマトレッド */
+            text-shadow: 0 0 10px #FF6347;
+        }
+    </style>
+</head>
+<body>
+    <div class="inputs">
+        <div class="input-row">
+            <div>
+                <label for="dotSize">玉のサイズ:</label>
+                <input type="number" id="dotSize" value="60" min="10" max="100">
+            </div>
+            <div>
+                <label for="backgroundColor">背景色:</label>
+                <select id="backgroundColor">
+                    <option value="white">白</option>
+                    <option value="black" selected>黒</option>
+                    <option value="blue">青</option>
+                </select>
+            </div>
+        </div>
+        <div class="input-row">
+            <div>
+                <label for="minDots">最小の玉の数:</label>
+                <input type="number" id="minDots" value="1" min="1" max="100">
+            </div>
+            <div>
+                <label for="maxDots">最大の玉の数:</label>
+                <input type="number" id="maxDots" value="10" min="1" max="100">
+            </div>
+        </div>
+        <div>
+            <label for="practiceInterval">練習の表示時間 (秒):</label>
+            <select id="practiceInterval">
+                <option value="0.1" selected>0.1</option>
+                <option value="0.2">0.2</option>
+                <option value="0.5">0.5</option>
+                <option value="1.0">1.0</option>
+            </select>
+        </div>
+        <p id="practiceResult"></p>
+    </div>
+    <div id="canvas"></div>
+    <p id="result"></p>
+    <div class="buttons"></div>
+    <div>
+        <button onclick="drawDots()">スタート</button>
+        <button onclick="practice()">練習</button>
+        <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
+    </div>
+
+    <script>
+        let practiceTimeout;
+        let correctDotsCount = 0;
+
+        function drawDots() {
+            const canvas = document.getElementById("canvas");
+            const backgroundColor = document.getElementById("backgroundColor").value;
+            canvas.style.backgroundColor = backgroundColor === 'black' ? 'rgba(0, 0, 0, 0.4)' : backgroundColor; // 元のCSSの半透明を維持
+            canvas.innerHTML = "";
+
+            let minDots = parseInt(document.getElementById("minDots").value);
+            let maxDots = parseInt(document.getElementById("maxDots").value);
+
+            if (minDots > maxDots) {
+                [minDots, maxDots] = [maxDots, minDots];
+                document.getElementById("minDots").value = minDots;
+                document.getElementById("maxDots").value = maxDots;
+            }
+
+            const numDots = Math.floor(Math.random() * (maxDots - minDots + 1)) + minDots;
+            correctDotsCount = numDots;
+            let dotSize = parseInt(document.getElementById("dotSize").value);
+            const placedDots = [];
+
+            // キャンバスのサイズと玉のサイズを考慮して、最大数を概算し、必要なら玉のサイズを調整
+            const maxPossibleDots = Math.floor((canvas.clientWidth / (dotSize * 1.5)) * (canvas.clientHeight / (dotSize * 1.5)));
+            if (numDots > maxPossibleDots && dotSize > 10) { // 最低サイズ10pxまで縮小
+                dotSize = Math.max(10, Math.floor(Math.sqrt((canvas.clientWidth * canvas.clientHeight) / (numDots * 2.5)))); // 2.5は調整係数
+                console.log(`Dot size adjusted to: ${dotSize}px for ${numDots} dots`);
+            }
+
+
+            for (let i = 0; i < numDots; i++) {
+                let x, y, overlap;
+                let attempts = 0;
+                const maxAttempts = 500; // 試行回数を増やす
+
+                do {
+                    overlap = false;
+                    // 玉がキャンバスの境界内に完全に収まるように調整
+                    x = Math.random() * (canvas.clientWidth - dotSize);
+                    y = Math.random() * (canvas.clientHeight - dotSize);
+
+                    for (const dot of placedDots) {
+                        const dx = dot.x - x;
+                        const dy = dot.y - y;
+                        // 距離を厳しくして重なりを減らす (dotSize * 1.05 など)
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < dotSize * 1.0) { // 玉のサイズ分は確実に離す
+                            overlap = true;
+                            break;
+                        }
+                    }
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        console.warn("Could not place a dot without significant overlap after many attempts. Placing with potential overlap.");
+                        // 重複を許容して配置を試みるか、スキップするか
+                        break; // このドットの配置を諦める
+                    }
+                } while (overlap);
+
+                if (!overlap || attempts > maxAttempts) { // overlapがないか、試行回数超過したら配置
+                    placedDots.push({ x, y });
+
+                    const dotElement = document.createElement("div");
+                    dotElement.classList.add("dot");
+                    dotElement.style.width = `${dotSize}px`;
+                    dotElement.style.height = `${dotSize}px`;
+                    dotElement.style.left = `${x}px`;
+                    dotElement.style.top = `${y}px`;
+                    canvas.appendChild(dotElement);
+                }
+            }
+
+            const buttonsContainer = document.querySelector('.buttons');
+            buttonsContainer.innerHTML = "";
+            for (let i = minDots; i <= maxDots; i++) {
+                const button = document.createElement("button");
+                button.textContent = i;
+                button.onclick = () => checkAnswer(i, correctDotsCount);
+                buttonsContainer.appendChild(button);
+            }
+
+            document.getElementById("result").textContent = "";
+            document.getElementById("practiceResult").textContent = "";
+        }
+
+        function checkAnswer(selected, correct) {
+            const resultDisplay = document.getElementById("result");
+            if (selected === correct) {
+                resultDisplay.textContent = "正解！";
+                resultDisplay.style.color = "green";
+                setTimeout(drawDots, 1000);
+            } else {
+                resultDisplay.textContent = `不正解。正しい玉の数は ${correct} です。`;
+                resultDisplay.style.color = "red";
+            }
+        }
+
+        function practice() {
+            stopPractice();
+            const canvas = document.getElementById("canvas");
+            const dotSize = 20; // 練習モードの玉のサイズは固定
+            let currentDotCount = 1;
+            const practiceInterval = parseFloat(document.getElementById("practiceInterval").value) * 1000;
+            document.getElementById("stopPracticeButton").style.display = "inline-block"; // ボタン表示をflexbox対応に
+            document.getElementById("result").textContent = "";
+
+            function showDot(count) {
+                canvas.innerHTML = "";
+                const placedDotsInPractice = [];
+
+                for (let i = 0; i < count; i++) {
+                    const dotElement = document.createElement("div");
+                    dotElement.classList.add("dot");
+                    // 練習モードの玉も光沢を持たせる
+                    dotElement.style.background = 'radial-gradient(circle at 70% 40%, #ff6b6b, #e60000, #800000)';
+                    dotElement.style.width = `${dotSize}px`;
+                    dotElement.style.height = `${dotSize}px`;
+                    dotElement.style.boxShadow = '0 0 10px rgba(255, 0, 0, 0.6)'; // 練習モードの発光を少し控えめに
+
+                    let x, y, overlap;
+                    let attempts = 0;
+                    const maxAttempts = 200;
+
+                    do {
+                        overlap = false;
+                        x = Math.random() * (canvas.clientWidth - dotSize);
+                        y = Math.random() * (canvas.clientHeight - dotSize);
+
+                        for (const existingDotPos of placedDotsInPractice) {
+                            const dx = existingDotPos.x - x;
+                            const dy = existingDotPos.y - y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < dotSize * 1.2) { // 練習モードは少し余裕を持たせて重なりを避ける
+                                overlap = true;
+                                break;
+                            }
+                        }
+                        attempts++;
+                        if (attempts > maxAttempts) {
+                            console.warn("Could not place a dot in practice mode without significant overlap. Skipping.");
+                            break;
+                        }
+                    } while (overlap);
+
+                    if (!overlap) {
+                        placedDotsInPractice.push({ x, y });
+                        dotElement.style.left = `${x}px`;
+                        dotElement.style.top = `${y}px`;
+                        canvas.appendChild(dotElement);
+                    }
+                }
+                document.getElementById("practiceResult").textContent = `玉の数: ${count}`;
+            }
+
+            function nextDotInPractice() {
+                const maxPracticeDots = parseInt(document.getElementById("maxDots").value);
+                if (currentDotCount <= maxPracticeDots) {
+                    showDot(currentDotCount++);
+                    practiceTimeout = setTimeout(nextDotInPractice, practiceInterval);
+                } else {
+                    stopPractice();
+                }
+            }
+
+            nextDotInPractice();
+        }
+
+        function stopPractice() {
+            clearTimeout(practiceTimeout);
+            document.getElementById("canvas").innerHTML = "";
+            document.getElementById("practiceResult").textContent = "";
+            document.getElementById("stopPracticeButton").style.display = "none";
+        }
+    </script>
+</body>
+</html>
