@@ -72,13 +72,14 @@
     }
     /* 数字表示エリア：指示文の真下・固定高さ・中央表示 */
     #numberDisplay {
-      font-size: 3em;
+      font-size: 7.5em; /* 2.5倍に拡大 */
+      font-weight: bold; /* 太字に設定 */
       margin-bottom: 20px;
-      height: 80px;
+      height: 200px; /* フォントサイズに合わせて調整 */
       display: flex;
       align-items: center;
       justify-content: center;
-      line-height: 80px;
+      line-height: 1; /* フォントサイズに合わせて調整 */
     }
     /* プロンプト */
     #prompt {
@@ -170,7 +171,6 @@
   </style>
 </head>
 <body>
-  <!-- 設定画面 -->
   <div id="settingsContainer" class="container">
     <h1>数字記憶ゲーム</h1>
     <label for="digitSelect">桁数選択:</label>
@@ -184,11 +184,8 @@
     <button id="startButton">ゲーム開始</button>
   </div>
 
-  <!-- ゲーム画面 -->
   <div id="gameContainer" class="container">
-    <!-- 固定の指示文 -->
     <div id="instruction">数字を覚えてね</div>
-    <!-- 数字表示エリア（固定高さ・中央表示） -->
     <div id="numberDisplay">&nbsp;</div>
     <div id="prompt"></div>
     <input type="text" id="userInput" readonly>
@@ -198,7 +195,7 @@
     <button id="showAnswerButton">答え</button>
     <button id="endButton">終了</button>
   </div>
-  
+
   <script>
     // ゲーム状態管理用グローバル変数
     let digitCount = 2;
@@ -208,12 +205,12 @@
     let currentNumber = ""; // 次回の正解候補
     let allowInput = false;
     let answerRevealed = false;
-    
+
     // イベントリスナー設定
     document.getElementById("startButton").addEventListener("click", startGame);
     document.getElementById("endButton").addEventListener("click", endGame);
     document.getElementById("showAnswerButton").addEventListener("click", showAnswer);
-    
+
     // ゲーム開始：設定画面からゲーム画面へ切り替え
     function startGame() {
       digitCount = parseInt(document.getElementById("digitSelect").value, 10);
@@ -223,20 +220,20 @@
       currentNumber = "";
       allowInput = false;
       answerRevealed = false;
-      
+
       document.getElementById("numberDisplay").innerHTML = "&nbsp;";
       document.getElementById("prompt").textContent = "";
       document.getElementById("userInput").value = "";
       document.getElementById("historyContainer").innerHTML = "";
       document.getElementById("status").textContent = "";
-      
+
       document.getElementById("settingsContainer").style.display = "none";
       document.getElementById("gameContainer").style.display = "block";
-      
+
       createKeypad();
       startRound();
     }
-    
+
     // 終了処理：リセットして設定画面に戻す
     function endGame() {
       score = 0;
@@ -245,17 +242,17 @@
       currentNumber = "";
       allowInput = false;
       answerRevealed = false;
-      
+
       document.getElementById("numberDisplay").innerHTML = "&nbsp;";
       document.getElementById("prompt").textContent = "";
       document.getElementById("userInput").value = "";
       document.getElementById("historyContainer").innerHTML = "";
       document.getElementById("status").textContent = "";
-      
+
       document.getElementById("gameContainer").style.display = "none";
       document.getElementById("settingsContainer").style.display = "block";
     }
-    
+
     // 答えボタン押下：正解(prevNumber)を青色で表示し、入力開始まで保持
     function showAnswer() {
       if (!allowInput) return;
@@ -264,7 +261,7 @@
       statusElem.textContent = "答え: " + prevNumber;
       statusElem.style.color = "blue";
     }
-    
+
     // キーパッド生成
     function createKeypad() {
       const keypad = document.getElementById("keypad");
@@ -280,19 +277,19 @@
       btn0.addEventListener("click", () => appendDigit(0));
       keypad.appendChild(btn0);
     }
-    
+
     // 数字生成（例：2桁なら 10〜99）
     function generateRandomNumber(digits) {
       const min = Math.pow(10, digits - 1);
       const max = Math.pow(10, digits) - 1;
       return String(Math.floor(Math.random() * (max - min + 1)) + min);
     }
-    
+
     // 記憶フェーズ：数字を表示する（numberDisplay領域） 
     function displayNumber(num) {
       document.getElementById("numberDisplay").textContent = num;
     }
-    
+
     // 各ラウンド開始
     function startRound() {
       if (round === 1) {
@@ -316,7 +313,7 @@
         }, 3000);
       }
     }
-    
+
     // キーパッド入力処理
     function appendDigit(digit) {
       if (!allowInput) return;
@@ -330,7 +327,7 @@
         setTimeout(checkAnswer, 200);
       }
     }
-    
+
     // 入力内容と正解(prevNumber)の判定
     function checkAnswer() {
       const inputField = document.getElementById("userInput");
@@ -353,7 +350,7 @@
         setTimeout(endGame, 2000);
       }
     }
-    
+
     // 履歴に正解数字を追加（10列グリッド）
     function addToHistory(num) {
       const historyContainer = document.getElementById("historyContainer");
