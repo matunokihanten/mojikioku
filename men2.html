@@ -2,136 +2,295 @@
 <html lang="ja">
 <head>
 
-<script type="text/javascript" src="//rot7.a8.net/jsa/2fb96cb08061f55473999ba83d3a5430/c6f057b86584942e415435ffb1fa93d4.js"></script>
+<script type="text/javascript" src="//rot7.a8.net/jsa/2fb96cb08061f55444999ba83d3a5430/c6f057b86584942e415435ffb1fa93d4.js"></script>
 
   <meta charset="UTF-8">
   <title>ラーメン作りゲーム（単一注文・レイアウト調整版）</title>
   <style>
     :root {
-      --button-padding: 10px 20px;   /* ボタン内余白 */
-      --button-font-size: 18px;       /* ボタンのフォントサイズ */
+      --button-padding: 15px 30px;   /* ボタン内余白をさらに増やす */
+      --button-font-size: 24px;       /* ボタンのフォントサイズをさらに大きく */
+      --input-font-size: 22px;        /* 入力フィールドのフォントサイズ */
+      --label-font-size: 20px;        /* ラベルのフォントサイズ */
     }
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      background-color: #f4f4f4;
     }
     #game-container {
-      max-width: 900px;
+      max-width: 1000px; /* 最大幅をさらに広げる */
       margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     /* スタート前のオプション */
     #start-options {
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 25px; /* マージンを増やす */
+      font-size: 20px; /* オプションの文字サイズも調整 */
+    }
+    #start-options label, #start-options select {
+      margin: 0 15px; /* マージンを増やす */
+      padding: 8px;
+      font-size: 18px;
     }
     /* 伝票表示エリア */
     #ticket {
-      border: 1px solid #ccc;
+      border: 2px solid #aadddd;
       background-color: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      padding: 15px;
-      margin: 20px auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 25px; /* パディングを増やす */
+      margin: 30px auto; /* マージンを調整 */
       text-align: center;
-      font-size: 22px;
+      font-size: 32px; /* 文字サイズをさらに大きく */
+      font-weight: bold;
       white-space: pre-line;
-      width: 80%;
+      width: 90%; /* 幅をさらに広げる */
+      border-radius: 8px;
     }
     #timer-display {
       text-align: center;
-      font-size: 18px;
-      margin-top: 5px;
+      font-size: 26px; /* さらに大きく */
+      font-weight: bold;
+      margin-top: 15px;
+      color: #d9534f;
       display: none;
     }
     #scoreboard {
       text-align: center;
-      font-size: 18px;
-      margin-top: 10px;
+      font-size: 28px; /* さらに大きく */
+      font-weight: bold;
+      margin-top: 20px;
+      color: #5cb85c;
+    }
+    #difficulty-status {
+      text-align: center;
+      font-size: 22px; /* 少し大きく */
+      font-weight: bold;
+      margin-top: 8px;
+      color: #007bff;
+      display: none;
     }
     #message {
-      font-size: 20px;
+      font-size: 28px; /* さらに大きく */
       text-align: center;
-      margin-top: 20px;
+      margin-top: 30px;
+      font-weight: bold;
     }
     .order-block {
-      border: 1px solid #aaa;
-      padding: 10px;
-      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      padding: 20px; /* パディングを増やす */
+      margin-bottom: 25px;
+      border-radius: 8px;
     }
     .order-block h3 {
       margin-top: 0;
       text-align: center;
+      font-size: 26px; /* さらに大きく */
+      color: #333;
     }
     /* メニューボタン群グリッド */
     .menu-button-group {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* ボタンの最小幅を増やす */
+      gap: 15px; /* 隙間を広げる */
+      margin-bottom: 25px;
     }
     /* 各ボタン全般 */
     .option-button {
       padding: var(--button-padding);
       font-size: var(--button-font-size);
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-grow: 1; /* flexアイテムとして均等に幅をとる */
+    }
+    .option-button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+    .option-button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     /* カテゴリごとの色分け */
     .menu-button {
-      background-color: #f0f0f0;
+      background-color: #e0e0e0;
+      color: #333;
+    }
+    .menu-button.black-ramen {
+      background-color: #c0c0c0;
+      color: #333;
     }
     .spiciness-button {
-      background-color: #ff6666;
+      background-color: #d9534f;
       color: #fff;
     }
     .noodle-button {
-      background-color: #66cc66;
+      background-color: #5cb85c;
       color: #fff;
     }
     /* 入力フィールド行：3列で1行配置 */
     .fields-row {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 20px; /* 隙間を広げる */
+      margin-top: 20px;
     }
     .field-item {
       flex: 1;
+      min-width: 280px; /* 最小幅を増やす */
       display: flex;
       flex-direction: column;
     }
     .field-item label {
-      margin-bottom: 5px;
+      margin-bottom: 10px; /* マージンを増やす */
       font-weight: bold;
+      font-size: var(--label-font-size); /* 変数を適用 */
+      color: #555;
     }
     .field-item input {
-      padding: 8px;
-      font-size: 16px;
-      width: 100%;
+      padding: 12px; /* パディングを増やす */
+      font-size: var(--input-font-size); /* 変数を適用 */
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: calc(100% - 24px); /* パディング分を考慮 (左右12pxずつ) */
+      box-sizing: border-box;
     }
+    .field-item .option-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px; /* ボタン間の隙間を増やす */
+      margin-top: 12px;
+    }
+    .field-item .option-buttons .option-button {
+      flex: 1;
+      min-width: 90px; /* 少し大きめに */
+      padding: 12px 18px; /* パディングを増やす */
+      font-size: 18px; /* 大きく */
+    }
+
     /* 下部のボタンエリア */
     #start-button {
       font-size: var(--button-font-size);
       padding: var(--button-padding);
-      margin: 10px;
+      margin: 25px;
       cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: background-color 0.2s ease, transform 0.1s ease;
     }
+    #start-button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
+    #start-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
     #action-buttons {
       text-align: center;
-      margin-top: 10px;
-      display: none;
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px; /* ボタン間の隙間を増やす */
     }
-    /* 下部ボタン：終了、ヒント、答え、完了 */
-    #exit-button, #hint-button, #answer-button, #submit-button {
+    /* 下部ボタン全般 */
+    #exit-button, #hint-button, #answer-button, #submit-button,
+    #difficulty-up-button, #difficulty-down-button {
       font-size: var(--button-font-size);
       padding: var(--button-padding);
-      margin: 10px;
+      margin: 5px; /* マージンを維持 */
       cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    #exit-button { background-color: #f0ad4e; color: #fff; }
+    #exit-button:hover { background-color: #ec971f; transform: translateY(-2px); }
+    #exit-button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+    #hint-button { background-color: #17a2b8; color: #fff; }
+    #hint-button:hover { background-color: #138496; transform: translateY(-2px); }
+    #hint-button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    #hint-button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+    #answer-button { background-color: #6c757d; color: #fff; }
+    #answer-button:hover { background-color: #5a6268; transform: translateY(-2px); }
+    #answer-button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    #answer-button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+    #submit-button { background-color: #28a745; color: #fff; }
+    #submit-button:hover { background-color: #218838; transform: translateY(-2px); }
+    #submit-button:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+    /* 難易度調整ボタンのスタイル */
+    #difficulty-up-button, #difficulty-down-button {
+      background-color: #6f42c1;
+      color: #fff;
+    }
+    #difficulty-up-button:hover, #difficulty-down-button:hover {
+      background-color: #5931a9;
+      transform: translateY(-2px);
+    }
+    #difficulty-up-button:active, #difficulty-down-button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    /* 小画面向けの調整 */
+    @media (max-width: 768px) {
+      :root {
+        --button-padding: 10px 18px;
+        --button-font-size: 16px;
+        --input-font-size: 16px;
+        --label-font-size: 16px;
+      }
+      #game-container {
+        padding: 15px;
+      }
+      #ticket {
+        font-size: 22px;
+        padding: 15px;
+      }
+      #timer-display, #scoreboard, #message, #difficulty-status {
+        font-size: 18px;
+      }
+      .menu-button-group {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* さらに縮小 */
+        gap: 8px;
+      }
+      .field-item {
+        min-width: 100%;
+      }
+      .field-item .option-buttons .option-button {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
+      #action-buttons button {
+        display: block;
+        width: 80%;
+        margin: 8px auto; /* マージンを調整 */
+      }
     }
   </style>
 </head>
 <body>
   <div id="game-container">
-    <!-- スタート前のオプション -->
     <div id="start-options">
       <label for="difficulty-select">難易度:</label>
       <select id="difficulty-select">
@@ -147,26 +306,22 @@
         <option value="lightpink">ライトピンク</option>
       </select>
     </div>
-    <!-- スタートボタン -->
     <div style="text-align: center;">
       <button id="start-button" onclick="startGame()">スタート</button>
     </div>
-    <!-- スコアボード -->
     <div id="scoreboard">正解数: 0</div>
-    <!-- 伝票表示エリア -->
+    <div id="difficulty-status">現在の難易度: 普通</div>
     <div id="ticket" style="display:none;"></div>
-    <!-- タイマー表示 -->
     <div id="timer-display"></div>
-    <!-- 注文入力エリア -->
     <div id="orders-input-container" style="display:none;"></div>
-    <!-- 下部のボタンエリア：【終了】 → 【ヒント】 → 【答え】 → 【完了】 -->
     <div id="action-buttons">
       <button id="exit-button" onclick="exitGame()">終了</button>
+      <button id="difficulty-up-button" onclick="adjustDifficulty(1)">難易度UP</button>
+      <button id="difficulty-down-button" onclick="adjustDifficulty(-1)">難易度DOWN</button>
       <button id="hint-button" onclick="useHint()">ヒント</button>
       <button id="answer-button" onclick="showAnswer()">答え</button>
       <button id="submit-button" onclick="submitOrder()">完了</button>
     </div>
-    <!-- メッセージ表示 -->
     <div id="message"></div>
   </div>
 
@@ -179,39 +334,54 @@
     let ticketDisplayTimeBase;      // 基本表示時間（難易度により変動）
     const MIN_TICKET_DISPLAY_TIME = 4000; // 最低表示時間 (4,000ms)
     let hintUsed = false;           // ヒント使用済みフラグ
+    let ticketIsVisible = false;    // 伝票が表示されているかどうかのフラグ
+
+    const difficulties = ["easy", "normal", "hard"]; // 難易度の種類
+    let currentDifficultyIndex = 1; // 現在の難易度 (0:easy, 1:normal, 2:hard)
 
     // 各オプションの配列
-    const menus = [
+    // 基本メニュー
+    const baseMenus = [
       "担々麺", "きのこ入り担々麺", "ねぎ担々麺", "叉焼入り担々麺",
-      "もやし入り担々麺", "ﾄﾝｶﾂ入り担々麺", "豚角煮入り担々麺",
+      "もやし入り担々麺", "ﾄﾝｶﾂ入り担々麺", "豚角煮入り担々麺"
+    ];
+    // 黒担々麺系メニュー (normal以上で使用)
+    const blackMenus = [
       "黒担々麺", "黒きのこ担々麺", "黒ねぎ担々麺", "黒叉焼担々麺",
       "黒もやし担々麺", "黒ﾄﾝｶﾂ担々麺", "黒角煮担々麺"
     ];
+    // hardモードで追加されるメニュー
+    const hardAdditionalMenus = [
+      "味噌担々麺", "塩担々麺", "醤油担々麺", "濃厚担々麺"
+    ];
+
     const spicinessLevels = ["ちょい辛", "並辛", "大辛", "激辛"];
     const noodleOptions = ["普通", "硬め", "柔らかめ"];
 
+    let currentAvailableMenus = []; // 現在の難易度で使用されるメニューリスト
+
     // ゲーム開始
     function startGame() {
-      const difficulty = document.getElementById("difficulty-select").value;
+      const initialDifficulty = document.getElementById("difficulty-select").value;
+      currentDifficultyIndex = difficulties.indexOf(initialDifficulty); // 初期難易度を設定
+      
+      updateDifficultySettings(); // 難易度に応じた設定を更新（メニューリストと表示時間）
+
       const theme = document.getElementById("theme-select").value;
       
-      // 難易度に応じた表示時間設定
-      if (difficulty === "easy") {
-        ticketDisplayTimeBase = 12000;
-      } else if (difficulty === "normal") {
-        ticketDisplayTimeBase = 10000;
-      } else if (difficulty === "hard") {
-        ticketDisplayTimeBase = 8000;
-      }
-      
       // テーマによる背景色変更
-      let bgColor = "#fff";
+      let bgColor = "#fff"; // デフォルトの背景色
       if (theme === "lightblue") {
-        bgColor = "#add8e6";
+        bgColor = "#e0f7fa"; /* 明るい水色 */
+        document.getElementById("ticket").style.borderColor = "#a7d9e4";
       } else if (theme === "lightgreen") {
-        bgColor = "#90ee90";
+        bgColor = "#e8f5e9"; /* 明るい緑色 */
+        document.getElementById("ticket").style.borderColor = "#aed6b2";
       } else if (theme === "lightpink") {
-        bgColor = "#ffb6c1";
+        bgColor = "#fce4ec"; /* 明るいピンク */
+        document.getElementById("ticket").style.borderColor = "#f7b2c5";
+      } else { /* defaultの場合も枠線を設定 */
+        document.getElementById("ticket").style.borderColor = "#aadddd";
       }
       document.getElementById("ticket").style.backgroundColor = bgColor;
       document.getElementById("orders-input-container").style.backgroundColor = bgColor;
@@ -219,14 +389,78 @@
       // オプション非表示および各エリア表示
       document.getElementById("start-options").style.display = "none";
       document.getElementById("start-button").style.display = "none";
-      document.getElementById("action-buttons").style.display = "block";
+      document.getElementById("action-buttons").style.display = "flex";
       document.getElementById("ticket").style.display = "block";
       document.getElementById("orders-input-container").style.display = "block";
       document.getElementById("message").innerText = "";
+      document.getElementById("difficulty-status").style.display = "block";
       
       correctCount = 0;
       updateScoreboard();
+      
+      // UIを再生成して新しいメニューリストを反映
+      const container = document.getElementById("orders-input-container");
+      while (container.firstChild) { // 既存のUIをクリア
+          container.removeChild(container.firstChild);
+      }
+      generateOrdersInputUI(); // 新しいメニューリストでUIを生成
+      
       showTicket();
+    }
+
+    // 難易度に応じた設定（メニューリスト、伝票表示時間）を更新する
+    function updateDifficultySettings() {
+      const difficulty = difficulties[currentDifficultyIndex];
+
+      // 伝票表示時間の基準値を更新
+      if (difficulty === "easy") {
+        ticketDisplayTimeBase = 12000;
+        currentAvailableMenus = baseMenus.slice(0, 4); // 最初の4つだけ
+      } else if (difficulty === "normal") {
+        ticketDisplayTimeBase = 10000;
+        currentAvailableMenus = baseMenus.concat(blackMenus); // 基本 + 黒担々麺
+      } else if (difficulty === "hard") {
+        ticketDisplayTimeBase = 8000;
+        currentAvailableMenus = baseMenus.concat(blackMenus, hardAdditionalMenus); // 全てのメニュー
+      }
+      updateDifficultyStatus(); // 難易度表示を更新
+    }
+
+    // 難易度を調整する関数
+    function adjustDifficulty(change) {
+      currentDifficultyIndex += change;
+      if (currentDifficultyIndex < 0) {
+        currentDifficultyIndex = difficulties.length - 1; // 最小値を超えたら最大値へ
+      } else if (currentDifficultyIndex >= difficulties.length) {
+        currentDifficultyIndex = 0; // 最大値を超えたら最小値へ
+      }
+      updateDifficultySettings(); // 難易度に応じた設定を更新（メニューリストと表示時間）
+      
+      document.getElementById("message").innerText = `難易度が「${getDifficultyName(difficulties[currentDifficultyIndex])}」に変更されました！`;
+      document.getElementById("message").style.color = "blue"; // 変更メッセージは青
+
+      // メニューボタンUIを再生成して、新しいメニューリストを反映させる
+      const container = document.getElementById("orders-input-container");
+      while (container.firstChild) { // 既存のUIをクリア
+          container.removeChild(container.firstChild);
+      }
+      generateOrdersInputUI(); // 新しいメニューリストでUIを生成
+    }
+
+    // 難易度表示を更新する関数
+    function updateDifficultyStatus() {
+      const difficultyName = getDifficultyName(difficulties[currentDifficultyIndex]);
+      document.getElementById("difficulty-status").innerText = `現在の難易度: ${difficultyName}`;
+    }
+
+    // 難易度名を取得するヘルパー関数
+    function getDifficultyName(difficultyValue) {
+      switch(difficultyValue) {
+        case "easy": return "簡単";
+        case "normal": return "普通";
+        case "hard": return "難しい";
+        default: return "";
+      }
     }
 
     // 伝票出題（常に1注文、タイマー付き）
@@ -239,13 +473,15 @@
       document.getElementById("answer-button").disabled = false;
       
       const orderCount = 1; // 1件固定
+      // 難易度と正解数に応じた伝票表示時間
       let dynamicDisplayTime = Math.max(ticketDisplayTimeBase - (correctCount * 500), MIN_TICKET_DISPLAY_TIME);
       
       // 1注文の出題
       currentTickets = [];
       let ticketText = "";
       for (let i = 0; i < orderCount; i++) {
-        let randomMenu = menus[Math.floor(Math.random() * menus.length)];
+        // 現在の難易度で利用可能なメニューからランダムに選択
+        let randomMenu = currentAvailableMenus[Math.floor(Math.random() * currentAvailableMenus.length)];
         let randomSpiciness = spicinessLevels[Math.floor(Math.random() * spicinessLevels.length)];
         let randomNoodle = noodleOptions[Math.floor(Math.random() * noodleOptions.length)];
         let order = {
@@ -254,15 +490,16 @@
           noodle: randomNoodle
         };
         currentTickets.push(order);
-        ticketText += "注文 " + (i+1) + ": " 
-                    + randomMenu + "　(" 
-                    + randomSpiciness + ")　(" 
+        ticketText += "注文 " + (i+1) + ": \n" /* 改行を挿入 */
+                    + randomMenu + "\n(" /* 改行を挿入 */
+                    + randomSpiciness + ")\n(" /* 改行を挿入 */
                     + randomNoodle + ")\n";
       }
       
       const ticketDiv = document.getElementById("ticket");
       ticketDiv.innerText = ticketText;
       ticketDiv.style.display = "block";
+      ticketIsVisible = true; // 伝票が表示されたことを記録
       
       // カウントダウン開始
       const timerDisplay = document.getElementById("timer-display");
@@ -274,25 +511,33 @@
         timerDisplay.innerText = "残り時間: " + (remaining/1000).toFixed(1) + "秒";
         if (remaining <= 0) {
           clearInterval(countdownInterval);
-          timerDisplay.style.display = "none";
+          // 伝票を非表示にするが、入力は継続可能
+          ticketDiv.style.display = "none"; 
+          ticketIsVisible = false; // 伝票が非表示になったことを記録
+          timerDisplay.style.display = "none"; // タイマー表示も消す
         }
       }, 100);
       
-      // 伝票非表示タイマー
-      ticketTimer = setTimeout(() => { 
-        ticketDiv.style.display = "none"; 
-      }, dynamicDisplayTime);
-      
-      // 注文入力UI生成
-      generateOrdersInputUI();
+      clearInputFields(); // 新しい問題が出たら入力フィールドをクリア
+    }
+
+    // 入力フィールドをクリアする関数
+    function clearInputFields() {
+      document.getElementById("order-0-menu").value = "";
+      document.getElementById("order-0-spiciness").value = "";
+      document.getElementById("order-0-noodle").value = "";
     }
 
     // 注文入力UI生成  
     // 上部に【メニューボタン群】、その下に3列1行のフィールド（メニュー、辛さ、硬さ）
     function generateOrdersInputUI() {
       const container = document.getElementById("orders-input-container");
-      container.innerHTML = "";
-      
+      // UIが既に存在する場合は、一度クリアしてから再生成する
+      // この関数はadjustDifficultyからも呼ばれるため、常に最新のメニューリストで生成する必要がある
+      while (container.firstChild) {
+          container.removeChild(container.firstChild);
+      }
+
       const orderBlock = document.createElement("div");
       orderBlock.className = "order-block";
       
@@ -301,49 +546,26 @@
       header.innerText = "注文 1";
       orderBlock.appendChild(header);
       
-      // メニューボタン群（グループを2つに分割：通常メニュー・黒担々麺類）
-      const menuButtonGroupContainer = document.createElement("div");
-      // 通常メニュー群
-      const normalGrid = document.createElement("div");
-      normalGrid.className = "menu-button-group";
-      const normalMenus = menus.filter(m => !m.startsWith("黒"));
-      normalMenus.forEach(menu => {
+      // メニューボタン群（すべてのメニューを一つのグリッドに）
+      const menuButtonGroup = document.createElement("div");
+      menuButtonGroup.className = "menu-button-group";
+      
+      // 現在の難易度で利用可能なメニューからボタンを生成
+      currentAvailableMenus.forEach(menu => {
         const btn = document.createElement("button");
         btn.innerText = menu;
         btn.className = "option-button menu-button";
+        // ここでメニューの種類に応じてクラスを追加
+        if (menu.startsWith("黒")) {
+          btn.classList.add("black-ramen");
+        }
         btn.onclick = function() {
           document.getElementById("order-0-menu").value = menu;
         };
-        normalGrid.appendChild(btn);
+        menuButtonGroup.appendChild(btn);
       });
-      // パディング：通常メニューグループは必ず2行（8セル）になるように不足分を埋める
-      const normalPadding = 8 - normalMenus.length;
-      for (let i = 0; i < normalPadding; i++) {
-        const pad = document.createElement("div");
-        pad.innerText = "";
-        normalGrid.appendChild(pad);
-      }
       
-      menuButtonGroupContainer.appendChild(normalGrid);
-      
-      // 黒担々麺類群（こちらは2行目以降、すなわち3行目から表示）
-      const blackGrid = document.createElement("div");
-      blackGrid.className = "menu-button-group";
-      const blackMenus = menus.filter(m => m.startsWith("黒"));
-      blackMenus.forEach(menu => {
-        const btn = document.createElement("button");
-        btn.innerText = menu;
-        btn.className = "option-button menu-button";
-        // 右寄せ配置
-        btn.style.justifySelf = "end";
-        btn.onclick = function() {
-          document.getElementById("order-0-menu").value = menu;
-        };
-        blackGrid.appendChild(btn);
-      });
-      menuButtonGroupContainer.appendChild(blackGrid);
-      
-      orderBlock.appendChild(menuButtonGroupContainer);
+      orderBlock.appendChild(menuButtonGroup);
       
       // フィールド行：3列1行（メニュー、辛さ、硬さ）
       const fieldsRow = document.createElement("div");
@@ -359,6 +581,7 @@
       inputMenu.type = "text";
       inputMenu.id = "order-0-menu";
       inputMenu.placeholder = "メニューを選択";
+      inputMenu.readOnly = true; /* 直接入力させず、ボタンから選択させる */
       fieldMenu.appendChild(inputMenu);
       fieldsRow.appendChild(fieldMenu);
       
@@ -372,8 +595,9 @@
       inputSpiciness.type = "text";
       inputSpiciness.id = "order-0-spiciness";
       inputSpiciness.placeholder = "辛さを選択";
+      inputSpiciness.readOnly = true; /* 直接入力させず、ボタンから選択させる */
       fieldSpiciness.appendChild(inputSpiciness);
-      // 辛さボタン群（水平レイアウト）
+      // 辛さボタン群
       const spicinessButtons = document.createElement("div");
       spicinessButtons.className = "option-buttons";
       spicinessLevels.forEach(level => {
@@ -398,6 +622,7 @@
       inputNoodle.type = "text";
       inputNoodle.id = "order-0-noodle";
       inputNoodle.placeholder = "硬さを選択";
+      inputNoodle.readOnly = true; /* 直接入力させず、ボタンから選択させる */
       fieldNoodle.appendChild(inputNoodle);
       // 硬さボタン群
       const noodleButtons = document.createElement("div");
@@ -439,7 +664,7 @@
         updateScoreboard();
         messageDiv.innerText = "正解です！次の問題です！";
         messageDiv.style.color = "green";
-        showTicket();
+        showTicket(); // 次の問題へ
       } else {
         messageDiv.innerText = "不正解：全ての項目を正しく入力してください！";
         messageDiv.style.color = "red";
@@ -448,24 +673,34 @@
 
     // ヒントボタン：伝票を追加で3秒間再表示（1ラウンド1回）
     function useHint() {
-      if (hintUsed) return;
+      if (hintUsed) return; // 既にヒント使用済みなら何もしない
       hintUsed = true;
       document.getElementById("hint-button").disabled = true;
+      
+      // 現在のタイマーをクリア
       if (ticketTimer) clearTimeout(ticketTimer);
       if (countdownInterval) clearInterval(countdownInterval);
       
       const ticketDiv = document.getElementById("ticket");
-      ticketDiv.style.display = "block";
+      ticketDiv.style.display = "block"; // 伝票を表示
+      ticketIsVisible = true; // 伝票が表示されたことを記録
       
-      ticketTimer = setTimeout(() => { ticketDiv.style.display = "none"; }, 3000);
+      const hintDisplayTime = 3000; // ヒント表示時間 (3秒)
       
+      // 伝票を一定時間後に非表示にするタイマーをセット
+      ticketTimer = setTimeout(() => { 
+        ticketDiv.style.display = "none"; 
+        ticketIsVisible = false; // 伝票が非表示になったことを記録
+      }, hintDisplayTime);
+      
+      // ヒント用のカウントダウンタイマーを開始
       const timerDisplay = document.getElementById("timer-display");
       timerDisplay.style.display = "block";
       let startTime = Date.now();
       countdownInterval = setInterval(() => {
         let elapsed = Date.now() - startTime;
-        let remaining = Math.max(3000 - elapsed, 0);
-        timerDisplay.innerText = "残り時間: " + (remaining/1000).toFixed(1) + "秒";
+        let remaining = Math.max(hintDisplayTime - elapsed, 0);
+        timerDisplay.innerText = "ヒント残り時間: " + (remaining/1000).toFixed(1) + "秒";
         if (remaining <= 0) {
           clearInterval(countdownInterval);
           timerDisplay.style.display = "none";
@@ -475,6 +710,7 @@
 
     // 答えボタン：現在の伝票（答え）を再表示しタイマー停止
     function showAnswer() {
+      // 現在のタイマーをクリア
       if (ticketTimer) {
         clearTimeout(ticketTimer);
         ticketTimer = null;
@@ -482,10 +718,12 @@
       if (countdownInterval) {
         clearInterval(countdownInterval);
         countdownInterval = null;
-        document.getElementById("timer-display").style.display = "none";
+        document.getElementById("timer-display").style.display = "none"; // タイマー表示を消す
       }
-      document.getElementById("ticket").style.display = "block";
-      document.getElementById("answer-button").disabled = true;
+      
+      document.getElementById("ticket").style.display = "block"; // 伝票を永続的に表示
+      ticketIsVisible = true; // 伝票が表示されたことを記録
+      document.getElementById("answer-button").disabled = true; // 答えボタンを無効化
     }
 
     // スコアボード更新
@@ -501,10 +739,18 @@
       document.getElementById("ticket").style.display = "none";
       document.getElementById("orders-input-container").style.display = "none";
       document.getElementById("message").innerText = "";
+      document.getElementById("timer-display").style.display = "none";
+      document.getElementById("difficulty-status").style.display = "none";
       if (ticketTimer) clearTimeout(ticketTimer);
       if (countdownInterval) clearInterval(countdownInterval);
       correctCount = 0;
       updateScoreboard();
+      
+      // UIをリセットして、難易度選択に応じて再生成できるようにする
+      const container = document.getElementById("orders-input-container");
+      while (container.firstChild) {
+          container.removeChild(container.firstChild);
+      }
     }
   </script>
 </body>
