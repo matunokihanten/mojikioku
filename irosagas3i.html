@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>色を探すゲーム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .controls {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls label {
+            font-weight: bold;
+            color: #555;
+            margin-right: 5px;
+        }
+        .controls select, .controls button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .controls select:focus, .controls button:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+        }
+        .controls button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .controls button:hover:not(:disabled) {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #endButton {
+            background-color: #dc3545;
+        }
+        #endButton:hover:not(:disabled) {
+            background-color: #c82333;
+        }
+
+        #timer {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(50px, 1fr)); /* 5列に固定 */
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px; /* パネルが大きくなりすぎないように最大幅も設定 */
+            min-height: 300px; /* ボックスがないときも高さを確保 */
+            display: flex; /* 初期画面メッセージを中央に */
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .box {
+            background-color: rgb(255, 0, 0);
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1; /* 正方形を維持 */
+        }
+        .box:hover:not(.disabled) {
+            transform: scale(1.05);
+        }
+        .box:active:not(.disabled) {
+            transform: scale(0.95);
+        }
+        .box.disabled {
+            cursor: default;
+            opacity: 0.8;
+        }
+        .message {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            min-width: 150px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(5px);
+        }
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #resultMessage.correct {
+            color: #28a745;
+        }
+        #resultMessage.incorrect {
+            color: #dc3545;
+        }
+        #score {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        #totalScore {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.3);
+            margin-top: 5px;
+        }
+        /* 初期画面のメッセージ */
+        #initialMessage {
+            font-size: 1.2em;
+            color: #555;
+        }
+
+        .box.correct-answer::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 70%);
+            transform: rotate(45deg);
+            animation: light-sweep 0.8s forwards;
+        }
+        @keyframes light-sweep {
+            0% { transform: translate(-100%, -100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(100%, 100%) rotate(45deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>色を探すゲーム</h1>
+
+    <div class="controls">
+        <div>
+            <label for="colorSelect">基本色:</label>
+            <select id="colorSelect">
+                <option value="red">赤</option>
+                <option value="blue">青</option>
+                <option value="yellow">黄</option>
+                <option value="purple">紫</option>
+                <option value="green">緑</option>
+                <option value="grey">グレー</option>
+            </select>
+        </div>
+        <div>
+            <label for="level">レベル:</label>
+            <select id="level">
+                <option value="1">レベル 1</option>
+                <option value="2">レベル 2</option>
+                <option value="3">レベル 3</option>
+                <option value="4">レベル 4</option>
+                <option value="5">レベル 5</option>
+                <option value="6">レベル 6</option>
+                <option value="7">レベル 7</option>
+                <option value="8">レベル 8</option>
+                <option value="9">レベル 9</option>
+                <option value="10">レベル 10</option>
+            </select>
+        </div>
+        <button id="startButton" onclick="startGame()">開始</button>
+        <button id="endButton" onclick="endGame()">終了</button>
+    </div>
+
+    <div id="timer">残り時間: 10秒</div>
+    <div class="container" id="gameContainer">
+        <p id="initialMessage">上の設定を選んで「開始」ボタンを押してください。</p>
+    </div>
+    <div class="message" id="resultMessage"></div>
+    <div class="message" id="score">正解数: 0</div>
+    <div class="message" id="totalScore">総合スコア: 0</div>
+
+    <script>
+        let correctCount = 0;
+        let totalGameScore = 0;
+        let isDuringFeedback = false;
+        let gameActive = false;
+        let feedbackTimeoutId = null;
+        let timerInterval = null;
+        const timeLimit = 10;
+        let timeLeft = timeLimit;
+
+        const startButton = document.getElementById('startButton');
+        const endButton = document.getElementById('endButton');
+        const colorSelect = document.getElementById('colorSelect');
+        const levelSelect = document.getElementById('level');
+        const resultMessage = document.getElementById('resultMessage');
+        const scoreDisplay = document.getElementById('score');
+        const totalScoreDisplay = document.getElementById('totalScore');
+        const gameContainer = document.getElementById('gameContainer');
+        const timerDisplay = document.getElementById('timer');
+        const initialMessage = document.getElementById('initialMessage');
+
+        // --- 初期設定 ---
+        endButton.disabled = true;
+        timerDisplay.style.display = 'none';
+        updateScoreDisplay();
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `正解数: ${correctCount}`;
+            totalScoreDisplay.textContent = `総合スコア: ${totalGameScore}`;
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+
+                if (gameActive && !isDuringFeedback) {
+                    handleIncorrectAnswer(-100);
+                }
+            }
+        }
+
+        function handleIncorrectAnswer(penaltyScore = 0) {
+            isDuringFeedback = true;
+            disableBoxes(true);
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            showMessage('不正解！', 'incorrect');
+            totalGameScore = Math.max(0, totalGameScore + penaltyScore);
+            updateScoreDisplay();
+
+            const targetIndex = gameContainer.dataset.targetIndex;
+            if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
+                const correctBox = gameContainer.children[targetIndex];
+                correctBox.style.outline = '4px solid gold';
+                correctBox.style.transform = 'scale(1.1)';
+            }
+
+            feedbackTimeoutId = setTimeout(() => {
+                if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
+                    const correctBox = gameContainer.children[targetIndex];
+                    correctBox.style.outline = '';
+                    correctBox.style.transform = '';
+                    correctBox.classList.remove('correct-answer');
+                }
+                generateProblem();
+            }, 1000);
+        }
+
+        function startGame() {
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+
+            correctCount = 0;
+            totalGameScore = 0;
+            updateScoreDisplay();
+            hideMessage();
+
+            startButton.textContent = 'リスタート';
+            endButton.disabled = false;
+            gameActive = true;
+            timerDisplay.style.display = 'block';
+            initialMessage.style.display = 'none';
+
+            generateProblem();
+        }
+
+        function endGame() {
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+
+            gameActive = false;
+            isDuringFeedback = false;
+            correctCount = 0;
+            totalGameScore = 0;
+            updateScoreDisplay();
+            hideMessage();
+
+            gameContainer.innerHTML = '';
+            initialMessage.style.display = 'block';
+            gameContainer.style.display = 'flex';
+            gameContainer.appendChild(initialMessage); // 初期メッセージを再追加
+
+            startButton.textContent = '開始';
+            endButton.disabled = true;
+            timerDisplay.textContent = `残り時間: ${timeLimit}秒`;
+            timerDisplay.style.display = 'none';
+        }
+
+        function showMessage(text, type) {
+            resultMessage.textContent = text;
+            resultMessage.className = 'message show';
+            if (type) resultMessage.classList.add(type);
+        }
+
+        function hideMessage() {
+            resultMessage.className = 'message';
+        }
+
+        function disableBoxes(disable) {
+            const boxes = gameContainer.children;
+            // `initialMessage` がある場合、それがグリッドの子として数えられないようにする
+            if (gameContainer.style.display === 'grid') { // ボックスが表示されている状態
+                for (let i = 0; i < boxes.length; i++) {
+                    if (boxes[i].id === 'initialMessage') continue; // initialMessageはスキップ
+                    if (disable) {
+                        boxes[i].classList.add('disabled');
+                    } else {
+                        boxes[i].classList.remove('disabled');
+                    }
+                }
+            }
+        }
+
+        function generateProblem() {
+            gameContainer.innerHTML = ''; // 前の問題をリセット
+            initialMessage.style.display = 'none'; // 初期メッセージを非表示
+            gameContainer.style.display = 'grid'; // ボックス表示のためgridに
+
+            hideMessage();
+            isDuringFeedback = false;
+            disableBoxes(false);
+
+            timeLeft = timeLimit;
+            timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+
+            const selectedColor = colorSelect.value;
+            const level = parseInt(levelSelect.value);
+
+            const boxCount = 35; // 5列 x 7行 = 35
+            let baseColor;
+
+            switch (selectedColor) {
+                case 'red':
+                    baseColor = { r: 255, g: 0, b: 0 };
+                    break;
+                case 'blue':
+                    baseColor = { r: 0, g: 0, b: 255 };
+                    break;
+                case 'yellow':
+                    baseColor = { r: 255, g: 255, b: 0 };
+                    break;
+                case 'purple':
+                    baseColor = { r: 128, g: 0, b: 128 };
+                    break;
+                case 'green':
+                    baseColor = { r: 0, g: 255, b: 0 };
+                    break;
+                case 'grey':
+                    baseColor = { r: 150, g: 150, b: 150 };
+                    break;
+                default:
+                    baseColor = { r: 255, g: 0, b: 0 };
+            }
+
+            let colorDifference;
+            if (level === 10) {
+                colorDifference = 5;
+            } else if (level === 9) {
+                colorDifference = 10;
+            } else if (level === 8) {
+                colorDifference = 20;
+            } else if (level === 7) {
+                colorDifference = 40;
+            } else if (level === 6) {
+                colorDifference = 60;
+            } else if (level === 5) {
+                colorDifference = 80;
+            } else if (level === 4) {
+                colorDifference = 100;
+            } else if (level === 3) {
+                colorDifference = 120;
+            } else if (level === 2) {
+                colorDifference = 150;
+            } else if (level === 1) {
+                colorDifference = 200;
+            }
+
+            const targetColor = {
+                r: Math.max(0, baseColor.r - colorDifference),
+                g: Math.max(0, baseColor.g - colorDifference),
+                b: Math.max(0, baseColor.b - colorDifference)
+            };
+
+            const targetIndex = Math.floor(Math.random() * boxCount);
+            gameContainer.dataset.targetIndex = targetIndex;
+
+            for (let i = 0; i < boxCount; i++) {
+                const box = document.createElement('div');
+                box.classList.add('box');
+
+                if (i === targetIndex) {
+                    box.style.backgroundColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
+                    box.onclick = () => {
+                        if (isDuringFeedback || !gameActive) return;
+                        isDuringFeedback = true;
+                        disableBoxes(true);
+                        
+                        if (timerInterval) {
+                            clearInterval(timerInterval);
+                            timerInterval = null;
+                        }
+
+                        showMessage('正解！', 'correct');
+                        box.classList.add('correct-answer');
+
+                        correctCount++;
+                        const currentLevel = parseInt(levelSelect.value);
+                        const scoreGained = 100 + (timeLeft * 10) + (currentLevel * 50);
+                        totalGameScore += scoreGained;
+                        updateScoreDisplay();
+
+                        feedbackTimeoutId = setTimeout(() => {
+                            generateProblem();
+                        }, 1000);
+                    };
+                } else {
+                    box.style.backgroundColor = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
+                    box.onclick = () => {
+                        if (isDuringFeedback || !gameActive) return;
+                        handleIncorrectAnswer(-50);
+                    };
+                }
+                gameContainer.appendChild(box);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            endGame();
+        });
+    </script>
+</body>
+</html>
