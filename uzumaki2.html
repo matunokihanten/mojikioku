@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D調整可能な渦巻き</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: linear-gradient(135deg, #0c0c0c, #1a1a2e);
+      color: white;
+      text-align: center;
+      margin: 20px;
+      min-height: 100vh;
+    }
+    canvas {
+      background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+      border: 2px solid #333;
+      border-radius: 10px;
+      display: block;
+      margin: 20px auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .controls {
+      max-width: 800px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+    .slider-container {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.2);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    input[type="color"] {
+      width: 60px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 {
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>3D調整可能な渦巻き</h1>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <div class="controls">
+    <div class="slider-container">
+      <label for="speedSlider">回転スピード: <span id="speedDisplay">30</span> 度/秒</label>
+      <input type="range" id="speedSlider" min="1" max="10000" step="1" value="30">
+    </div>
+    
+    <div class="slider-container">
+      <label for="thicknessSlider">線の太さ: <span id="thicknessDisplay">3</span></label>
+      <input type="range" id="thicknessSlider" min="1" max="20" step="1" value="3">
+    </div>
+    
+    <div class="slider-container">
+      <label for="gapSlider">線と線の隙間: <span id="gapDisplay">8</span></label>
+      <input type="range" id="gapSlider" min="1" max="30" step="1" value="8">
+    </div>
+    
+    <div class="slider-container">
+      <label for="depthSlider">3D深度: <span id="depthDisplay">100</span></label>
+      <input type="range" id="depthSlider" min="20" max="200" step="10" value="100">
+    </div>
+    
+    <div class="slider-container">
+      <label for="layersSlider">渦巻き層数: <span id="layersDisplay">8</span></label>
+      <input type="range" id="layersSlider" min="3" max="15" step="1" value="8">
+    </div>
+    
+    <div class="slider-container">
+      <label for="tiltSlider">傾斜角度: <span id="tiltDisplay">30</span>°</label>
+      <input type="range" id="tiltSlider" min="0" max="60" step="5" value="30">
+    </div>
+    
+    <div class="slider-container">
+      <label for="colorPicker">ベース色:</label>
+      <input type="color" id="colorPicker" value="#4ecdc4">
+    </div>
+    
+    <div class="slider-container">
+      <div class="checkbox-container">
+        <input type="checkbox" id="gradientToggle" checked>
+        <label for="gradientToggle">レインボーグラデーション</label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // コントロール要素
+    const speedSlider = document.getElementById('speedSlider');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const thicknessSlider = document.getElementById('thicknessSlider');
+    const thicknessDisplay = document.getElementById('thicknessDisplay');
+    const gapSlider = document.getElementById('gapSlider');
+    const gapDisplay = document.getElementById('gapDisplay');
+    const colorPicker = document.getElementById('colorPicker');
+    const gradientToggle = document.getElementById('gradientToggle');
+    const depthSlider = document.getElementById('depthSlider');
+    const depthDisplay = document.getElementById('depthDisplay');
+    const layersSlider = document.getElementById('layersSlider');
+    const layersDisplay = document.getElementById('layersDisplay');
+    const tiltSlider = document.getElementById('tiltSlider');
+    const tiltDisplay = document.getElementById('tiltDisplay');
+
+    // パラメータ
+    let rotationSpeed = 30;
+    let lineThickness = 3;
+    let lineGap = 8;
+    let lineColor = '#4ecdc4';
+    let useGradient = true;
+    let depth3D = 100;
+    let spiralLayers = 8;
+    let tiltAngle = 30;
+    let rotationAngle = 0;
+    let lastTime = null;
+
+    // 3D座標を2D座標に変換
+    function project3D(x, y, z, tilt) {
+      const tiltRad = (tilt * Math.PI) / 180;
+      const cosT = Math.cos(tiltRad);
+      const sinT = Math.sin(tiltRad);
+      
+      // Y軸回転とZ軸での奥行き効果
+      const projectedY = y * cosT - z * sinT;
+      const scale = 1 / (1 + z / 1000); // 遠近感
+      
+      return {
+        x: x * scale,
+        y: projectedY * scale,
+        scale: scale
+      };
+    }
+
+    // 渦巻きを描画
+    function drawSpiral(angle) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 背景グラデーション
+      const bgGradient = ctx.createRadialGradient(
+        canvas.width/2, canvas.height/2, 0,
+        canvas.width/2, canvas.height/2, 400
+      );
+      bgGradient.addColorStop(0, 'rgba(26, 26, 46, 0.8)');
+      bgGradient.addColorStop(1, 'rgba(0, 0, 0, 1)');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+
+      // 複数の層で3D効果を作成
+      for (let layer = 0; layer < spiralLayers; layer++) {
+        const layerOffset = (layer / spiralLayers) * depth3D - depth3D/2;
+        const layerAngle = angle + (layer * 0.3);
+        
+        ctx.save();
+        ctx.rotate(layerAngle);
+        
+        const numTurns = 8;
+        const maxRadius = 250;
+        const steps = 800;
+        
+        for (let segment = 0; segment < steps; segment += lineGap) {
+          ctx.beginPath();
+          
+          for (let i = segment; i < Math.min(segment + lineGap - 1, steps); i++) {
+            const t = i / steps;
+            const theta = t * numTurns * Math.PI * 2;
+            const radius = maxRadius * t * t; // 二次関数で内側を密に
+            
+            const x3D = radius * Math.cos(theta);
+            const y3D = radius * Math.sin(theta);
+            const z3D = layerOffset + Math.sin(theta * 3) * 20; // 波状の奥行き
+            
+            const projected = project3D(x3D, y3D, z3D, tiltAngle);
+            
+            if (i === segment) {
+              ctx.moveTo(projected.x, projected.y);
+            } else {
+              ctx.lineTo(projected.x, projected.y);
+            }
+          }
+          
+          // 色と透明度の設定
+          let alpha = 0.3 + (layer / spiralLayers) * 0.7;
+          let strokeStyle;
+          
+          if (useGradient) {
+            const hue = (layer * 60 + segment * 2 + angle * 2) % 360;
+            strokeStyle = `hsla(${hue}, 80%, 65%, ${alpha})`;
+          } else {
+            const rgb = hexToRgb(lineColor);
+            strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+          }
+          
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineThickness * (0.5 + layer / spiralLayers);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          // グロー効果
+          ctx.shadowColor = strokeStyle;
+          ctx.shadowBlur = 5 + layer;
+          
+          ctx.stroke();
+        }
+        
+        ctx.restore();
+      }
+      
+      ctx.restore();
+    }
+
+    // 16進数カラーをRGBに変換
+    function hexToRgb(hex) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return { r, g, b };
+    }
+
+    // アニメーションループ
+    function animate(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const delta = timestamp - lastTime;
+      lastTime = timestamp;
+
+      rotationAngle += (rotationSpeed * Math.PI / 180) * (delta / 1000);
+      drawSpiral(rotationAngle);
+      requestAnimationFrame(animate);
+    }
+
+    // イベントリスナー
+    speedSlider.addEventListener('input', () => {
+      rotationSpeed = parseInt(speedSlider.value);
+      speedDisplay.textContent = speedSlider.value;
+    });
+
+    thicknessSlider.addEventListener('input', () => {
+      lineThickness = parseInt(thicknessSlider.value);
+      thicknessDisplay.textContent = thicknessSlider.value;
+    });
+
+    gapSlider.addEventListener('input', () => {
+      lineGap = parseInt(gapSlider.value);
+      gapDisplay.textContent = gapSlider.value;
+    });
+
+    colorPicker.addEventListener('input', () => {
+      lineColor = colorPicker.value;
+    });
+
+    gradientToggle.addEventListener('change', () => {
+      useGradient = gradientToggle.checked;
+    });
+
+    depthSlider.addEventListener('input', () => {
+      depth3D = parseInt(depthSlider.value);
+      depthDisplay.textContent = depthSlider.value;
+    });
+
+    layersSlider.addEventListener('input', () => {
+      spiralLayers = parseInt(layersSlider.value);
+      layersDisplay.textContent = layersSlider.value;
+    });
+
+    tiltSlider.addEventListener('input', () => {
+      tiltAngle = parseInt(tiltSlider.value);
+      tiltDisplay.textContent = tiltSlider.value;
+    });
+
+    // アニメーション開始
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
