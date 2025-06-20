@@ -16,30 +16,35 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* 全体のパディングを調整 */
             box-sizing: border-box;
+            overflow-y: auto; /* 念のため縦方向のスクロールを許可 */
         }
         h1 {
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
+            margin-bottom: 15px; /* マージンを調整 */
+            font-size: 2em; /* フォントサイズ調整 */
         }
         .controls {
             background-color: rgba(255, 255, 255, 0.9);
-            padding: 15px 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 15px; /* マージンを調整 */
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px; /* 隙間を調整 */
             align-items: center;
             justify-content: center;
+            width: 100%; /* 幅を調整 */
+            max-width: 500px; /* 最大幅を設定 */
         }
         .controls label {
             font-weight: bold;
             color: #555;
             margin-right: 5px;
+            white-space: nowrap; /* テキストの折り返しを防ぐ */
         }
         .controls select, .controls button {
             padding: 8px 12px;
@@ -49,6 +54,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0; /* 縮小させない */
         }
         .controls select:focus, .controls button:focus {
             outline: none;
@@ -90,21 +96,22 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(5, minmax(50px, 1fr)); /* 5列に固定 */
-            gap: 8px;
+            grid-template-columns: repeat(5, minmax(0, 1fr)); /* 5列に固定、最小幅0で柔軟に */
+            gap: 5px; /* 隙間を調整 */
             justify-content: center;
             margin-top: 10px;
-            padding: 15px;
+            padding: 10px; /* パディングを調整 */
             background-color: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 600px; /* パネルが大きくなりすぎないように最大幅も設定 */
-            min-height: 300px; /* ボックスがないときも高さを確保 */
+            width: 95vw; /* ビューポート幅の95% */
+            max-width: 400px; /* 5x5マスが大きくなりすぎないよう最大幅を設定 */
+            min-height: 250px; /* ボックスがないときも高さを確保 */
             display: flex; /* 初期画面メッセージを中央に */
             align-items: center;
             justify-content: center;
             text-align: center;
+            box-sizing: border-box; /* パディングを幅に含める */
         }
         .box {
             background-color: rgb(255, 0, 0);
@@ -117,6 +124,7 @@
             width: 100%;
             height: auto;
             aspect-ratio: 1 / 1; /* 正方形を維持 */
+            touch-action: manipulation; /* タッチデバイスでの遅延をなくす */
         }
         .box:hover:not(.disabled) {
             transform: scale(1.05);
@@ -130,10 +138,10 @@
         }
         .message {
             text-align: center;
-            font-size: 20px;
+            font-size: 18px; /* フォントサイズ調整 */
             font-weight: bold;
-            margin-top: 15px;
-            padding: 10px 15px;
+            margin-top: 10px; /* マージン調整 */
+            padding: 8px 12px; /* パディング調整 */
             border-radius: 8px;
             background-color: rgba(255, 255, 255, 0.9);
             box-shadow: 0 1px 5px rgba(0,0,0,0.1);
@@ -141,6 +149,7 @@
             transition: all 0.3s ease;
             opacity: 0;
             transform: translateY(5px);
+            box-sizing: border-box;
         }
         .message.show {
             opacity: 1;
@@ -154,12 +163,12 @@
         }
         #score {
             font-size: 16px;
-            margin-top: 10px;
+            margin-top: 8px; /* マージン調整 */
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         #totalScore {
-            font-size: 24px;
+            font-size: 22px; /* フォントサイズ調整 */
             font-weight: bold;
             color: #fff;
             text-shadow: 2px 2px 3px rgba(0,0,0,0.3);
@@ -167,8 +176,9 @@
         }
         /* 初期画面のメッセージ */
         #initialMessage {
-            font-size: 1.2em;
+            font-size: 1.1em; /* フォントサイズ調整 */
             color: #555;
+            padding: 10px; /* パディング追加 */
         }
 
         .box.correct-answer::after {
@@ -186,6 +196,49 @@
             0% { transform: translate(-100%, -100%) rotate(45deg); opacity: 0; }
             50% { opacity: 1; }
             100% { transform: translate(100%, 100%) rotate(45deg); opacity: 0; }
+        }
+
+        /* スマートフォン向け調整 */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            .controls {
+                flex-direction: column; /* 縦並びにする */
+                gap: 10px;
+                padding: 10px;
+            }
+            .controls > div {
+                width: 100%; /* 各要素を全幅にする */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .controls select, .controls button {
+                width: auto; /* 幅を自動に */
+                flex-grow: 1; /* 均等に広がる */
+                font-size: 13px;
+                padding: 7px 10px;
+            }
+            .container {
+                gap: 4px; /* 隙間をさらに狭く */
+                padding: 8px;
+                max-width: 320px; /* スマホ向けに最大幅を調整 */
+                min-height: 200px;
+            }
+            .box {
+                border-radius: 4px;
+            }
+            .message {
+                font-size: 16px;
+                padding: 7px 10px;
+            }
+            #score {
+                font-size: 15px;
+            }
+            #totalScore {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -271,7 +324,7 @@
                 timerInterval = null;
 
                 if (gameActive && !isDuringFeedback) {
-                    handleIncorrectAnswer(-100);
+                    handleIncorrectAnswer(-100); // タイムアップによる不正解
                 }
             }
         }
@@ -292,6 +345,7 @@
             const targetIndex = gameContainer.dataset.targetIndex;
             if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
                 const correctBox = gameContainer.children[targetIndex];
+                // 正解のマスを視覚的に強調
                 correctBox.style.outline = '4px solid gold';
                 correctBox.style.transform = 'scale(1.1)';
             }
@@ -299,17 +353,17 @@
             feedbackTimeoutId = setTimeout(() => {
                 if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
                     const correctBox = gameContainer.children[targetIndex];
-                    correctBox.style.outline = '';
-                    correctBox.style.transform = '';
-                    correctBox.classList.remove('correct-answer');
+                    correctBox.style.outline = ''; // ハイライトを解除
+                    correctBox.style.transform = ''; // スケールを解除
+                    correctBox.classList.remove('correct-answer'); // アニメーションクラスを解除
                 }
                 generateProblem();
             }, 1000);
         }
 
         function startGame() {
-            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
-            if (timerInterval) clearInterval(timerInterval);
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId); // 既存のフィードバックタイマーがあればクリア
+            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
             timerInterval = null;
 
             correctCount = 0;
@@ -321,14 +375,14 @@
             endButton.disabled = false;
             gameActive = true;
             timerDisplay.style.display = 'block';
-            initialMessage.style.display = 'none';
+            initialMessage.style.display = 'none'; // 初期メッセージを非表示
 
             generateProblem();
         }
 
         function endGame() {
-            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
-            if (timerInterval) clearInterval(timerInterval);
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId); // 既存のフィードバックタイマーがあればクリア
+            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
             timerInterval = null;
 
             gameActive = false;
@@ -338,9 +392,9 @@
             updateScoreDisplay();
             hideMessage();
 
-            gameContainer.innerHTML = '';
-            initialMessage.style.display = 'block';
-            gameContainer.style.display = 'flex';
+            gameContainer.innerHTML = ''; // マスをすべて削除
+            initialMessage.style.display = 'block'; // 初期メッセージを表示
+            gameContainer.style.display = 'flex'; // 初期メッセージを中央表示するためflexに
             gameContainer.appendChild(initialMessage); // 初期メッセージを再追加
 
             startButton.textContent = '開始';
@@ -351,20 +405,22 @@
 
         function showMessage(text, type) {
             resultMessage.textContent = text;
-            resultMessage.className = 'message show';
-            if (type) resultMessage.classList.add(type);
+            resultMessage.className = 'message show'; // showクラスを追加して表示
+            if (type) resultMessage.classList.add(type); // 正解/不正解のクラスを追加
         }
 
         function hideMessage() {
-            resultMessage.className = 'message';
+            resultMessage.className = 'message'; // showクラスを削除して非表示
         }
 
         function disableBoxes(disable) {
             const boxes = gameContainer.children;
             // `initialMessage` がある場合、それがグリッドの子として数えられないようにする
-            if (gameContainer.style.display === 'grid') { // ボックスが表示されている状態
+            // ここでの `gameContainer.style.display === 'grid'` は、マスが表示されている状態を示す
+            if (gameContainer.style.display === 'grid') {
                 for (let i = 0; i < boxes.length; i++) {
-                    if (boxes[i].id === 'initialMessage') continue; // initialMessageはスキップ
+                    // initialMessageはスキップ (DOMから削除されているはずだが念のため)
+                    if (boxes[i].id === 'initialMessage') continue; 
                     if (disable) {
                         boxes[i].classList.add('disabled');
                     } else {
@@ -381,17 +437,17 @@
 
             hideMessage();
             isDuringFeedback = false;
-            disableBoxes(false);
+            disableBoxes(false); // ボックスのクリックを有効にする
 
-            timeLeft = timeLimit;
+            timeLeft = timeLimit; // 残り時間をリセット
             timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(updateTimer, 1000);
+            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
+            timerInterval = setInterval(updateTimer, 1000); // 新しいタイマーを開始
 
             const selectedColor = colorSelect.value;
             const level = parseInt(levelSelect.value);
 
-            const boxCount = 35; // 5列 x 7行 = 35
+            const boxCount = 25; // 5列 x 5行 = 25
             let baseColor;
 
             switch (selectedColor) {
@@ -414,10 +470,11 @@
                     baseColor = { r: 150, g: 150, b: 150 };
                     break;
                 default:
-                    baseColor = { r: 255, g: 0, b: 0 };
+                    baseColor = { r: 255, g: 0, b: 0 }; // デフォルトは赤
             }
 
             let colorDifference;
+            // レベルに応じて色の差を設定（レベルが高いほど差が小さい）
             if (level === 10) {
                 colorDifference = 5;
             } else if (level === 9) {
@@ -438,27 +495,33 @@
                 colorDifference = 150;
             } else if (level === 1) {
                 colorDifference = 200;
+            } else {
+                colorDifference = 80; // 未定義レベルのフォールバック
             }
 
+
+            // ターゲット色の算出
+            // RGB値を0-255の範囲に収める
             const targetColor = {
-                r: Math.max(0, baseColor.r - colorDifference),
-                g: Math.max(0, baseColor.g - colorDifference),
-                b: Math.max(0, baseColor.b - colorDifference)
+                r: Math.min(255, Math.max(0, baseColor.r - colorDifference)),
+                g: Math.min(255, Math.max(0, baseColor.g - colorDifference)),
+                b: Math.min(255, Math.max(0, baseColor.b - colorDifference))
             };
 
-            const targetIndex = Math.floor(Math.random() * boxCount);
-            gameContainer.dataset.targetIndex = targetIndex;
+            const targetIndex = Math.floor(Math.random() * boxCount); // 正解のマスをランダムに決定
+            gameContainer.dataset.targetIndex = targetIndex; // 正解インデックスをデータ属性に保存
 
             for (let i = 0; i < boxCount; i++) {
                 const box = document.createElement('div');
                 box.classList.add('box');
 
                 if (i === targetIndex) {
+                    // 正解のマス
                     box.style.backgroundColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
                     box.onclick = () => {
-                        if (isDuringFeedback || !gameActive) return;
+                        if (isDuringFeedback || !gameActive) return; // フィードバック中またはゲーム非アクティブ中はクリック無効
                         isDuringFeedback = true;
-                        disableBoxes(true);
+                        disableBoxes(true); // 他のボックスのクリックを一時的に無効化
                         
                         if (timerInterval) {
                             clearInterval(timerInterval);
@@ -466,29 +529,32 @@
                         }
 
                         showMessage('正解！', 'correct');
-                        box.classList.add('correct-answer');
+                        box.classList.add('correct-answer'); // 正解時のアニメーション
 
                         correctCount++;
                         const currentLevel = parseInt(levelSelect.value);
+                        // スコア計算: 基本点 + 残り時間ボーナス + レベルボーナス
                         const scoreGained = 100 + (timeLeft * 10) + (currentLevel * 50);
                         totalGameScore += scoreGained;
                         updateScoreDisplay();
 
                         feedbackTimeoutId = setTimeout(() => {
-                            generateProblem();
+                            generateProblem(); // 次の問題を生成
                         }, 1000);
                     };
                 } else {
+                    // 不正解のマス
                     box.style.backgroundColor = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
                     box.onclick = () => {
-                        if (isDuringFeedback || !gameActive) return;
-                        handleIncorrectAnswer(-50);
+                        if (isDuringFeedback || !gameActive) return; // フィードバック中またはゲーム非アクティブ中はクリック無効
+                        handleIncorrectAnswer(-50); // 不正解、50点減点
                     };
                 }
                 gameContainer.appendChild(box);
             }
         }
 
+        // ページロード時にゲームを終了状態にする
         document.addEventListener('DOMContentLoaded', () => {
             endGame();
         });
