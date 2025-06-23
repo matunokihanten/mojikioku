@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3Dメモリーゲーム - 進化版</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 30px 0;
+      background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); /* グラデーション背景 */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-size: 2.5em;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    #container {
+      background-color: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+      max-width: 600px; /* 最大幅を設定 */
+      box-sizing: border-box;
+      position: relative; /* 子要素の配置のため */
+    }
+    #levelDisplay {
+      font-size: 1.4em;
+      margin-bottom: 15px;
+      color: #555;
+      font-weight: bold;
+    }
+    #message {
+      font-size: 1.2em;
+      margin: 10px 0 20px 0;
+      height: 1.5em;
+      color: #444;
+      font-weight: 500;
+    }
+
+    /* 設定項目のスタイル */
+    #settings {
+        margin-bottom: 25px;
+        display: flex;
+        flex-wrap: wrap; /* 小さい画面で折り返す */
+        justify-content: center;
+        gap: 20px;
+        width: 100%;
+        padding: 10px 0;
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+    }
+    #flashDurationSelector, #gameModeSelector {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        font-size: 0.95em;
+        color: #666;
+    }
+    #flashDurationSelector span, #gameModeSelector span {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    input[type="radio"] {
+        margin-right: 5px;
+    }
+    label {
+        margin-bottom: 4px;
+        cursor: pointer;
+    }
+
+    /* 3Dグリッドとセルのスタイル */
+    .grid {
+      width: 100%; /* 親要素に合わせる */
+      max-width: 400px; /* グリッドの最大幅 */
+      margin: 20px auto;
+      display: grid;
+      grid-gap: 12px; /* 少し広めに */
+      transform-style: preserve-3d; /* 子要素が3D空間内に配置されるように */
+      perspective: 1000px; /* 視点からの距離を設定 */
+      padding: 10px; /* 影がはみ出さないように */
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%; /* 正方形のセルにするため */
+      background-color: #e0e0e0;
+      border: none; /* ボーダーをなくす */
+      border-radius: 8px; /* 角を丸く */
+      position: relative;
+      transition: background-color 0.3s ease-out, transform 0.3s ease-out, box-shadow 0.3s ease-out;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.8) inset; /* 立体的な影 */
+      transform: translateZ(0); /* ハードウェアアクセラレーションを有効に */
+    }
+    .cell:hover:not(.active):not(.correct):not(.wrong) {
+      transform: translateZ(10px) translateY(-2px); /* ホバーで少し浮き上がる */
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.9) inset;
+    }
+    .cell.active {
+      background-color: #ffeb3b; /* 明るい黄色 */
+      transform: translateZ(30px) translateY(-5px) scale(1.05); /* Z軸手前に移動、少し拡大 */
+      box-shadow: 0 0 25px 10px rgba(255,235,59,0.8), 0 0 15px rgba(0,0,0,0.6); /* 強い発光と影 */
+      z-index: 10; /* 手前に表示 */
+    }
+    .cell.correct {
+      background-color: #8bc34a; /* より鮮やかな緑 */
+      transform: scale(1.1) rotateY(15deg); /* 少し拡大して回転 */
+      box-shadow: 0 0 20px 8px rgba(139,195,74,0.8), 0 0 10px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    .cell.wrong {
+      background-color: #f44336; /* 濃い赤 */
+      transform: translateX(-5px) rotateZ(-2deg); /* 少し揺らす */
+      animation: shake 0.3s ease-in-out; /* 揺れるアニメーション */
+      box-shadow: 0 0 15px 5px rgba(244,67,54,0.7), 0 0 10px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0) translateZ(0); }
+      25% { transform: translateX(-5px) translateZ(10px); }
+      50% { transform: translateX(5px) translateZ(0); }
+      75% { transform: translateX(-5px) translateZ(10px); }
+      100% { transform: translateX(0) translateZ(0); }
+    }
+    .cell-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2em; /* 必要であればセル内のコンテンツ用 */
+      color: rgba(0,0,0,0.3);
+      font-weight: bold;
+    }
+
+    /* コントロールボタンのスタイル */
+    #controls {
+      margin-top: 25px;
+      display: flex;
+      gap: 15px;
+    }
+    button {
+      padding: 12px 25px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    button:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 600px) {
+        body {
+            padding: 15px 0;
+        }
+        h1 {
+            font-size: 2em;
+        }
+        #container {
+            padding: 20px;
+        }
+        #levelDisplay {
+            font-size: 1.2em;
+        }
+        #message {
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+        #settings {
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        #flashDurationSelector, #gameModeSelector {
+            align-items: center;
+        }
+        .grid {
+            grid-gap: 8px;
+            max-width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+        }
+    }
+  </style>
+</head>
+<body>
+  <h1>メモリーゲーム</h1>
+  <div id="container">
+    <div id="levelDisplay">Level: 1 (グリッド: 2×2, 光る数: 2)</div>
+    <div id="message">準備ができました！スタートボタンを押してください。</div>
+
+    <div id="settings">
+      <div id="flashDurationSelector">
+        <span>マスが光る時間: </span>
+        <label><input type="radio" name="flashDuration" value="1000">1秒</label>
+        <label><input type="radio" name="flashDuration" value="2000">2秒</label>
+        <label><input type="radio" name="flashDuration" value="3000" checked>3秒</label>
+        <label><input type="radio" name="flashDuration" value="4000">4秒</label>
+        <label><input type="radio" name="flashDuration" value="5000">5秒</label>
+      </div>
+
+      <div id="gameModeSelector">
+        <span>ゲームモード: </span>
+        <label><input type="radio" name="gameMode" value="position" checked>位置記憶</label>
+        <label><input type="radio" name="gameMode" value="sequence">順番記憶</label>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div id="controls">
+      <button id="startButton">スタート</button>
+      <button id="exitButton">終了</button>
+    </div>
+  </div>
+
+  <script>
+    let level = 1;         // 現在のレベル
+    let gridSize = 2;      // 初期は 2×2 のグリッド
+    let patternCount = 2;  // 初期の光るセル数
+    let cells = [];        // グリッド内のセル要素
+    let patternCells = []; // 正解パターン（セルのインデックス）
+    let userSelections = []; // ユーザーの選択履歴
+    let flashing = false;      // パターン表示中のフラグ
+    let patternFinished = false; // パターン提示終了のフラグ
+    let gameMode = 'position'; // 'position' or 'sequence'
+
+    // DOM の取得
+    const grid = document.getElementById('grid');
+    const startButton = document.getElementById('startButton');
+    const exitButton = document.getElementById('exitButton');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const message = document.getElementById('message');
+    const flashDurationRadios = document.getElementsByName("flashDuration");
+    const gameModeRadios = document.getElementsByName("gameMode");
+
+    // 効果音のプリロード (オプション)
+    // const correctSound = new Audio('path/to/correct.mp3');
+    // const wrongSound = new Audio('path/to/wrong.mp3');
+    // const clickSound = new Audio('path/to/click.mp3');
+    // const flashSound = new Audio('path/to/flash.mp3'); // セルが光る音
+
+    // ラジオボタンから光る時間（ミリ秒）を取得する関数
+    function getFlashDuration() {
+      for (let i = 0; i < flashDurationRadios.length; i++) {
+        if (flashDurationRadios[i].checked) {
+          return parseInt(flashDurationRadios[i].value);
+        }
+      }
+      return 3000; // デフォルトは3秒
+    }
+
+    // 難易度設定：レベルに応じてグリッドサイズと光るセルの数を調整
+    function updateDifficulty() {
+      // グリッドサイズは、3レベルごとに1ずつ増やす（最大6×6）
+      gridSize = Math.min(2 + Math.floor((level - 1) / 3), 6);
+      // 光るセル数は、レベルアップごとに1ずつ増加（グリッドに収まる範囲で）
+      patternCount = 2 + (level - 1);
+      if (patternCount > gridSize * gridSize) {
+        patternCount = gridSize * gridSize;
+      }
+      levelDisplay.textContent = `Level: ${level} (グリッド: ${gridSize}×${gridSize}, 光る数: ${patternCount})`;
+    }
+
+    // グリッド作成：クリックイベントを設定し、セルを生成
+    function setupGrid() {
+      grid.innerHTML = "";
+      cells = [];
+      grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      const totalCells = gridSize * gridSize;
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', handleCellClick); // イベントリスナーを分離
+        const inner = document.createElement('div');
+        inner.className = "cell-content";
+        // inner.textContent = i + 1; // デバッグ用や演出用
+        cell.appendChild(inner);
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+      grid.style.pointerEvents = 'auto'; // グリッドの操作を有効化
+      startButton.disabled = false; // スタートボタン有効化
+      exitButton.disabled = false; // 終了ボタン有効化
+    }
+
+    // セルクリック時の処理
+    function handleCellClick(event) {
+      if (!flashing && patternFinished) {
+        const cell = event.currentTarget;
+        const idx = parseInt(cell.dataset.index);
+        // clickSound.play(); // クリック音 (オプション)
+
+        if (userSelections.includes(idx)) {
+          // 重複クリックは許可しないが、フィードバックは与えない
+          return;
+        }
+
+        userSelections.push(idx);
+        cell.classList.add('active'); // クリックしたセルを光らせる
+
+        if (userSelections.length === patternCount) {
+          checkAnswer();
+        } else if (gameMode === 'sequence') {
+          // 順番記憶モードの場合、一クリックごとに正解をチェック
+          if (userSelections[userSelections.length - 1] !== patternCells[userSelections.length - 1]) {
+            // 間違ったセルをクリックした場合、即座に不正解
+            flashing = true; // 他のクリックを無効化
+            patternFinished = false;
+            userSelections.forEach(selectedIdx => { // ユーザーが選択したものをフィードバック
+                if (patternCells.includes(selectedIdx)) {
+                    cells[selectedIdx].classList.add('correct');
+                } else {
+                    cells[selectedIdx].classList.add('wrong');
+                }
+            });
+            // 正解パターンで未選択のものも赤く表示
+            patternCells.forEach(patIdx => {
+                if (!userSelections.includes(patIdx)) {
+                    cells[patIdx].classList.add('wrong');
+                }
+            });
+            message.textContent = "残念！不正解です。";
+            // wrongSound.play(); // 不正解音
+            setTimeout(() => {
+                if (level > 1) { level--; }
+                message.textContent = `間違い！レベルを${level}に下げます。`;
+                setTimeout(nextLevel, 1000); // 少し待ってから次のレベルへ
+            }, 1500); // 不正解表示を少し長くする
+            return;
+          }
+        }
+      }
+    }
+
+    // パターン提示：全対象セルを同時に点灯し、選択された秒数後に一斉に消灯
+    function flashPattern() {
+      flashing = true;
+      patternFinished = false;
+      message.textContent = "よく見て、パターンを覚えてください……";
+      disableSettingsAndButtons(true); // 設定とボタンを無効化
+
+      const totalCells = gridSize * gridSize;
+      patternCells = []; // パターンを生成
+      while (patternCells.length < patternCount) {
+        const r = Math.floor(Math.random() * totalCells);
+        if (!patternCells.includes(r)) {
+          patternCells.push(r);
+        }
+      }
+
+      if (gameMode === 'sequence') {
+        // 順番記憶モード：セルを順番に光らせる
+        let delay = 0;
+        const flashDuration = getFlashDuration();
+        const pauseBetweenFlashes = 250; // 各セル間の休止時間
+
+        patternCells.forEach((idx, i) => {
+          setTimeout(() => {
+            cells[idx].classList.add('active');
+            // flashSound.play(); // 光る音 (オプション)
+          }, delay);
+          setTimeout(() => {
+            cells[idx].classList.remove('active');
+            if (i === patternCells.length - 1) { // 最後のセルが光り終えたら
+              flashing = false;
+              patternFinished = true;
+              message.textContent = "クリックしてパターンを選んでください";
+              disableSettingsAndButtons(false); // 設定とボタンを有効化
+            }
+          }, delay + flashDuration);
+          delay += flashDuration + pauseBetweenFlashes;
+        });
+      } else {
+        // 位置記憶モード：一斉に全対象セルを点灯
+        patternCells.forEach(idx => {
+          cells[idx].classList.add('active');
+        });
+        // flashSound.play(); // 光る音 (オプション)
+        const flashDuration = getFlashDuration();
+        setTimeout(() => {
+          patternCells.forEach(idx => {
+            cells[idx].classList.remove('active');
+          });
+          flashing = false;
+          patternFinished = true;
+          message.textContent = "クリックしてパターンを選んでください";
+          disableSettingsAndButtons(false); // 設定とボタンを有効化
+        }, flashDuration);
+      }
+    }
+
+    // ユーザーの入力結果を判定し、正解ならレベルアップ、不正解ならレベルを下げる（最低レベルは1）
+    function checkAnswer() {
+      patternFinished = false; // 判定中は新たなクリックを受け付けない
+      let isCorrect = false;
+
+      if (gameMode === 'sequence') {
+        // 順番記憶モードの判定
+        isCorrect = userSelections.every((val, index) => val === patternCells[index]);
+      } else {
+        // 位置記憶モードの判定
+        const sortedUser = [...userSelections].sort((a, b) => a - b);
+        const sortedPattern = [...patternCells].sort((a, b) => a - b);
+        isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedPattern);
+      }
+
+      // 選択したセルへフィードバックを表示
+      userSelections.forEach(idx => {
+        if (patternCells.includes(idx)) {
+          cells[idx].classList.add('correct');
+          cells[idx].classList.remove('active'); // active状態を解除
+        } else {
+          cells[idx].classList.add('wrong');
+          cells[idx].classList.remove('active');
+        }
+      });
+      // 正解セルで未選択のものにもフィードバック（赤表示など）
+      patternCells.forEach(idx => {
+        if (!userSelections.includes(idx)) {
+          cells[idx].classList.add('wrong');
+        }
+      });
+
+      // 結果メッセージ表示とレベル調整
+      setTimeout(() => {
+        if (isCorrect) {
+          message.textContent = "正解！ 次のレベルへ進みます！";
+          // correctSound.play(); // 正解音 (オプション)
+          level++;
+        } else {
+          message.textContent = "残念！不正解です。";
+          // wrongSound.play(); // 不正解音 (オプション)
+          if (level > 1) {
+            level--;
+          }
+        }
+        setTimeout(nextLevel, 1500); // 結果表示を少し長く見せてから次へ
+      }, 700); // 選択したセルのアニメーションを見るための短い遅延
+    }
+
+    // 次のレベルへ準備
+    function nextLevel() {
+      userSelections = []; // ユーザーの選択履歴をクリア
+      clearCellFeedback(); // セルの色をリセット
+      updateDifficulty(); // 難易度を更新
+      setupGrid(); // グリッドを再生成
+      flashPattern(); // 新しいパターンを提示
+    }
+
+    // セルのフィードバック色をリセットする
+    function clearCellFeedback() {
+        cells.forEach(cell => {
+            cell.classList.remove('active', 'correct', 'wrong');
+        });
+    }
+
+    // 終了処理：ゲーム中ならグリッド操作を無効化し、メッセージを表示
+    function exitGame() {
+      flashing = false;
+      patternFinished = false;
+      message.textContent = "ゲームを終了しました。お疲れ様でした！";
+      grid.style.pointerEvents = 'none'; // グリッドを操作不可に
+      userSelections = [];
+      clearCellFeedback();
+      disableSettingsAndButtons(false); // 設定とボタンを有効化
+      startButton.disabled = false; // スタートボタンを再度有効化
+    }
+
+    // 設定とボタンの有効/無効を切り替える
+    function disableSettingsAndButtons(isDisabled) {
+        for (let i = 0; i < flashDurationRadios.length; i++) {
+            flashDurationRadios[i].disabled = isDisabled;
+        }
+        for (let i = 0; i < gameModeRadios.length; i++) {
+            gameModeRadios[i].disabled = isDisabled;
+        }
+        startButton.disabled = isDisabled; // ゲーム中はスタートできないように
+        exitButton.disabled = isDisabled ? true : false; // 終了ボタンは常に押せるように（あるいはゲーム中は押せないように調整）
+    }
+
+
+    // イベントリスナー設定
+    startButton.addEventListener('click', function() {
+      level = 1; // ゲーム開始時はレベル1から
+      gameMode = document.querySelector('input[name="gameMode"]:checked').value; // 選択されたゲームモードを取得
+      updateDifficulty(); // 難易度を初期設定
+      setupGrid(); // グリッドをセットアップ
+      userSelections = []; // 選択履歴をクリア
+      grid.style.pointerEvents = 'auto'; // グリッド操作を有効に
+      flashPattern(); // パターン表示開始
+    });
+
+    exitButton.addEventListener('click', function() {
+      exitGame();
+    });
+
+    // ページロード時の初期設定
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDifficulty(); // 初期レベル表示
+        setupGrid(); // 初期グリッド作成
+        exitGame(); // ゲーム開始前の状態にリセット
+        message.textContent = "準備ができました！スタートボタンを押してください。";
+    });
+  </script>
+</body>
+</html>
