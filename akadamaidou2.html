@@ -8,7 +8,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #f0f0f0; /* 背景色を追加して立体感を際立たせる */
+            background-color: #f0f0f0; /* 初期値の背景色。JavaScriptで変更されます */
         }
         .ball {
             background: radial-gradient(circle at 30% 30%, #ff8080, red, #800000); /* 立体的なグラデーション */
@@ -49,6 +49,16 @@
         <label for="size">Size: </label>
         <input type="range" id="size" min="10" max="100" value="50">
         <span id="sizeValue">50</span>
+        <br><br>
+        <div id="bgColorControls">
+            <label>Background Color:</label><br>
+            <input type="radio" id="bgWhite" name="bgColor" value="white" checked>
+            <label for="bgWhite">White</label>
+            <input type="radio" id="bgBlack" name="bgColor" value="black">
+            <label for="bgBlack">Black</label>
+            <input type="radio" id="bgBlue" name="bgColor" value="blue">
+            <label for="bgBlue">Blue</label>
+        </div>
     </div>
     <div id="ballCount">
         Balls Left: <span id="ballsLeft">20</span>
@@ -68,6 +78,9 @@
         const speedValue = document.getElementById('speedValue');
         const sizeValue = document.getElementById('sizeValue');
         const ballsLeft = document.getElementById('ballsLeft');
+
+        // 背景色ラジオボタンの要素を取得
+        const bgColorRadios = document.querySelectorAll('input[name="bgColor"]');
 
         function updateBallCount() {
             ballsLeft.textContent = balls.length;
@@ -133,13 +146,12 @@
         speedInput.addEventListener('input', () => {
             speed = speedInput.value;
             speedValue.textContent = speed;
-            // ボールの速度が変わるだけなので、既存のボールの速度を更新
             balls.forEach(ball => {
                 const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
                 if (currentSpeed > 0) {
                     ball.dx = (ball.dx / currentSpeed) * speed;
                     ball.dy = (ball.dy / currentSpeed) * speed;
-                } else { // 速度が0の場合の対策
+                } else {
                     ball.dx = (Math.random() * 2 - 1) * speed;
                     ball.dy = (Math.random() * 2 - 1) * speed;
                 }
@@ -149,13 +161,21 @@
         sizeInput.addEventListener('input', () => {
             size = sizeInput.value;
             sizeValue.textContent = size;
-            // サイズ変更時に既存のボールを更新
             balls.forEach(ball => {
                 ball.style.width = `${size}px`;
                 ball.style.height = `${size}px`;
-                // ボールが画面外に出ないように位置を調整する可能性もあるが、今回は単純にサイズ変更のみ
             });
         });
+
+        // 背景色ラジオボタンのイベントリスナー
+        bgColorRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                document.body.style.backgroundColor = event.target.value;
+            });
+        });
+
+        // 初期背景色を白に設定
+        document.body.style.backgroundColor = 'white';
 
         createBalls();
         moveBalls();
@@ -163,7 +183,7 @@
         window.addEventListener('resize', () => {
             maxX = window.innerWidth;
             maxY = window.innerHeight;
-            createBalls(); // 画面サイズ変更時にボールを再生成
+            createBalls();
         });
     </script>
 </body>
