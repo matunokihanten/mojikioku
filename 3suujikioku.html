@@ -695,4 +695,25 @@
       inputField.value = ""; // 入力フィールドをクリア
       allowInput = false; // 入力を一時的に不可にする
       setTimeout(() => {
-        statusElem.textCo
+        statusElem.textContent = ""; // ステータス表示をクリア
+        statusElem.style.textShadow = "none";
+        startRound(); // 次のラウンドを開始
+      }, 1500); // 正誤表示後、少し待ってから次のラウンドへ
+    }
+
+    // 履歴に正解数字を追加（10列グリッド）
+    function addToHistory(num, isCorrect) {
+      const historyContainer = document.getElementById("historyContainer");
+      const span = document.createElement("span");
+      span.textContent = num;
+      span.className = "history-number";
+      if (isCorrect) {
+        span.classList.add("correct");
+      } else {
+        span.classList.add("incorrect");
+      }
+      historyContainer.appendChild(span);
+    }
+  </script>
+</body>
+</html>
