@@ -272,6 +272,16 @@
       overflow: hidden;
     }
 
+    #keypad button.clear-button {
+      background: linear-gradient(135deg, #FFC107, #FF9800); /* オレンジ系の色 */
+      color: #333;
+    }
+
+    #keypad button.clear-button:hover {
+      background: linear-gradient(135deg, #FFD700, #FFB300);
+      transform: scale(1.1) rotate(5deg);
+    }
+
     #keypad button::before {
       content: '';
       position: absolute;
@@ -580,6 +590,16 @@
         keypad.appendChild(btn);
       }
       
+      // クリアボタンを追加 (10キーの代わりに配置)
+      const clearBtn = document.createElement("button");
+      clearBtn.textContent = "C";
+      clearBtn.className = "clear-button"; // クリアボタン用のスタイルクラス
+      clearBtn.addEventListener("click", () => {
+        clearInput();
+        restartAnimation(clearBtn, "statusBounce 0.3s ease-out");
+      });
+      keypad.appendChild(clearBtn);
+
       // 0のボタン
       const btn0 = document.createElement("button");
       btn0.textContent = "0";
@@ -665,6 +685,16 @@
       if (inputField.value.length === digitCount) {
         setTimeout(checkAnswer, 200); // 入力完了後、少し待ってから判定
       }
+    }
+
+    // 入力内容をクリアする
+    function clearInput() {
+      if (!allowInput) return;
+      document.getElementById("userInput").value = "";
+      const statusElem = document.getElementById("status");
+      statusElem.textContent = ""; // ステータスメッセージもクリア
+      statusElem.style.textShadow = "none";
+      answerRevealed = false; // クリアしたら答え表示もリセット
     }
 
     // 入力内容と正解(prevNumber)の判定
