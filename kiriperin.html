@@ -1,262 +1,697 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>クリペリン検査アプリ - 改良版</title>
+  <meta charset="UTF-8" />
+  <title>クリペリン検査 Professional</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    /* 全体設定 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
-    #time-remaining {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-    #fatigue-level {
-      font-size: 18px;
-      margin: 10px 0;
-    }
-    #score {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 10px 0;
-    }
-    .highlight {
-      color: green;
-      font-weight: bold;
-    }
-    #question {
-      font-size: 22px;
-      margin: 20px 0;
-    }
-    /* 入力表示エリア */
-    #answer-display {
-      font-size: 24px;
-      height: 40px;
-      margin: 10px auto;
-      border: 1px solid #ccc;
-      width: 200px;
-      text-align: center;
-      line-height: 40px;
-    }
-    /* 数値キーパッド */
-    #numpad {
+
+    /* メインコンテナ */
+    .container {
+      max-width: 1200px;
+      width: 100%;
       margin: 20px auto;
-      width: 220px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 25px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    #numpad button {
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
-      margin: 5px;
+
+    /* ヘッダー */
+    .header {
+      text-align: center;
+      color: #333;
+      margin-bottom: 40px;
     }
-    #clear-btn {
-      width: 125px; /* クリアボタンの幅を調整 */
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 15px;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+      color: #4a4a4a;
+    }
+    .header p {
+      font-size: 1.1em;
+      color: #666;
+    }
+
+    /* メインパネル */
+    .main-panel {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    /* テストエリア */
+    .test-area {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* 初期メッセージ */
+    .initial-message {
+      font-size: 1.5em;
+      color: #7f8c8d;
+      padding: 40px 20px;
+      text-align: center;
+      min-height: 150px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .display-input-pair-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 25px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .line-row-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+
+    .line-display-row {
+      display: flex;
+      justify-content: center;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 3.5em;
+      font-weight: bold;
+      color: #2c3e50;
+      line-height: 1.2;
+      margin-bottom: 5px;
+      gap: 0.8em;
+      flex-wrap: wrap; 
+    }
+
+    .line-number {
+      min-width: 0.7em;
+      text-align: center;
+      padding: 0 0.15em;
+      transition: all 0.2s ease-in-out;
+    }
+    
+    /* ★改善点: 計算対象の数字を光らせるスタイル */
+    .highlight-number {
+      color: #f39c12;
+      transform: scale(1.15);
+      text-shadow: 0 0 10px rgba(243, 156, 18, 0.8);
+    }
+
+    .input-grid-row {
+      display: flex;
+      justify-content: center;
+      gap: 1.55em;
+      flex-wrap: wrap;
+    }
+
+    .input-box {
+      width: 2.5em; 
+      height: 2.5em;
+      border: 4px solid #3498db;
+      border-radius: 12px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.1em;
+      text-align: center;
+      background: #ecf0f1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+      font-weight: bold;
+      color: #2c3e50;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    .input-box.correct { background: #2ecc71; color: white; border-color: #27ae60; }
+    .input-box.incorrect { background: #e74c3c; color: white; border-color: #c0392b; }
+    .input-box.current {
+      border-color: #f39c12;
+      background: #fff;
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.7), 0 0 25px rgba(243, 156, 18, 0.3);
+      transform: scale(1.1);
+    }
+
+    .number-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      max-width: 360px;
+      margin: 0 auto 30px;
+    }
+
+    .number-btn {
+      width: 100px;
+      height: 75px;
+      font-size: 30px;
+      border: none;
+      border-radius: 15px;
+      background: linear-gradient(145deg, #3498db, #2980b9);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
+      box-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+    }
+    .number-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 20px rgba(52, 152, 219, 0.4);
+    }
+    .number-btn:active {
+      transform: translateY(0);
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ★改善点: ボタン押下時のフィードバック */
+    .number-btn--pressed {
+        transform: translateY(0) scale(0.95) !important;
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.3) !important;
+        filter: brightness(0.9);
+    }
+
+    .control-panel { display: flex; justify-content: center; gap: 25px; margin-bottom: 30px; }
+    .btn { padding: 18px 35px; font-size: 20px; border: none; border-radius: 30px; cursor: pointer; transition: all 0.3s ease; font-weight: bold; box-shadow: 5px 5px 10px rgba(0,0,0,0.2); }
+    .btn-primary { background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; }
+    .btn-secondary { background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; }
+    .btn:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0,0,0,0.25); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .status-bar { background: #34495e; color: white; padding: 20px; border-radius: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; }
+    .timer { font-size: 1.8em; font-weight: bold; color: #f39c12; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+    .progress-bar { background: #ecf0f1; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 25px; }
+    .progress-fill { background: linear-gradient(90deg, #3498db, #2ecc71); height: 100%; transition: width 0.3s ease; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px; }
+    .stat-card { background: linear-gradient(145deg, #f8f9fa, #e9ecef); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid #dee2e6; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .stat-value { font-size: 3em; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+    .stat-label { color: #7f8c8d; font-size: 1em; }
+
+    .analysis-panel { background: linear-gradient(145deg, #fdfdfd, #f1f2f6); padding: 30px; border-radius: 20px; margin-top: 30px; border: 1px solid #e1e8ed; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
+    .analysis-title { font-size: 1.8em; color: #2c3e50; margin-bottom: 25px; text-align: center; font-weight: bold; }
+    .trait-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+    .trait-item { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid #3498db; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    .trait-name { font-weight: bold; color: #2c3e50; margin-bottom: 8px; font-size: 1.1em; }
+    .trait-value { color: #7f8c8d; font-size: 0.95em; line-height: 1.5; }
+
+    .chart-container { margin-top: 40px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .hidden { display: none; }
+    .difficulty-selector { margin-bottom: 30px; text-align: center; }
+    .difficulty-btn { padding: 12px 25px; margin: 0 8px; border: 3px solid #3498db; background: white; color: #3498db; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-size: 1.1em; font-weight: bold; }
+    .difficulty-btn.active { background: #3498db; color: white; box-shadow: 0 5px 10px rgba(52, 152, 219, 0.3); }
+    .difficulty-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media (max-width: 768px) {
+      body { padding: 10px; }
+      .container { padding: 20px; margin: 10px auto; }
+      .header h1 { font-size: 2.2em; }
+      .line-display-row { font-size: 2.5em; gap: 0.7em; }
+      .line-number { padding: 0 0.1em; }
+      .input-box { width: 2.0em; height: 2.0em; font-size: 0.9em; border-width: 3px; }
+      .input-grid-row { gap: 1.35em; }
+      .number-pad { gap: 10px; max-width: 280px; }
+      .number-btn { width: 75px; height: 55px; font-size: 22px; }
+      .btn { padding: 12px 25px; font-size: 16px; }
+      .status-bar { font-size: 1em; padding: 15px; }
+      .timer { font-size: 1.5em; }
+      .stats-grid, .trait-grid { grid-template-columns: 1fr; }
+      .stat-value { font-size: 2.5em; }
+      .analysis-title { font-size: 1.4em; }
+      .analysis-panel, .chart-container { padding: 20px; }
+      .initial-message { font-size: 1.2em; }
     }
   </style>
 </head>
 <body>
-  <h1>クリペリン検査アプリ - 改良版</h1>
-  <div id="time-remaining">残り時間: 60秒</div>
-  <div id="fatigue-level">疲労度: 低</div>
-  <div id="score">スコア: 0</div>
-  <p id="question"></p>
-  <!-- 入力した数字を表示する領域 -->
-  <div id="answer-display"></div>
-  <!-- 0～9の数字ボタン＋「クリア」「OK」ボタン -->
-  <div id="numpad">
-    <button class="num-btn" data-num="1">1</button>
-    <button class="num-btn" data-num="2">2</button>
-    <button class="num-btn" data-num="3">3</button><br>
-    <button class="num-btn" data-num="4">4</button>
-    <button class="num-btn" data-num="5">5</button>
-    <button class="num-btn" data-num="6">6</button><br>
-    <button class="num-btn" data-num="7">7</button>
-    <button class="num-btn" data-num="8">8</button>
-    <button class="num-btn" data-num="9">9</button><br>
-    <button id="clear-btn">消</button>
-    <button class="num-btn" data-num="0">0</button>
-    <button id="ok-btn">OK</button>
+  <div class="container">
+    <div class="header"><h1>🧠 クリペリン検査 Professional</h1><p>高精度心理測定システム</p></div>
+    <div class="main-panel">
+      <div class="difficulty-selector">
+        <button class="difficulty-btn active" data-difficulty="easy">初級</button>
+        <button class="difficulty-btn" data-difficulty="medium">中級</button>
+        <button class="difficulty-btn" data-difficulty="hard">上級</button>
+      </div>
+      <div class="status-bar">
+        <div><span>行数: <span id="lineCount">0</span>/15</span></div>
+        <div class="timer" id="timer">準備完了</div>
+        <div><span>正答率: <span id="accuracy">0%</span></span></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="test-area">
+        <div class="display-input-pair-container" id="displayInputPairContainer"></div>
+        <div class="number-pad">
+          <button class="number-btn" data-num="1">1</button><button class="number-btn" data-num="2">2</button><button class="number-btn" data-num="3">3</button>
+          <button class="number-btn" data-num="4">4</button><button class="number-btn" data-num="5">5</button><button class="number-btn" data-num="6">6</button>
+          <button class="number-btn" data-num="7">7</button><button class="number-btn" data-num="8">8</button><button class="number-btn" data-num="9">9</button>
+          <button class="number-btn" data-num="0">0</button><button class="number-btn" data-num="back">←</button><button class="number-btn" data-num="next">→</button>
+        </div>
+      </div>
+      <div class="control-panel">
+        <button class="btn btn-primary" id="startBtn">検査開始</button>
+        <button class="btn btn-secondary" id="resetBtn">リセット</button>
+      </div>
+    </div>
+    <div class="stats-grid" id="statsGrid" style="display: none;"></div>
+    <div class="analysis-panel hidden" id="analysisPanel">
+      <h3 class="analysis-title">🔍 心理特性分析結果</h3>
+      <div class="trait-grid" id="traitGrid"></div>
+    </div>
+    <div class="chart-container hidden" id="chartContainer"><canvas id="performanceChart"></canvas></div>
   </div>
-  <button id="start-btn">スタート</button>
-  <button id="reset-btn">リセット</button>
-  <p id="result"></p>
 
   <script>
-    let currentAnswer;
-    let score = 0;
-    let consecutiveCorrect = 0; // 連続正解数
-    let timeLeft = 60;          // 初期制限時間
-    let level = 1;              // 初期レベル
-    let timer;
-    let currentInput = "";
+    class KraepelinTest {
+      constructor() {
+        this.currentLineNumbers = [];
+        this.answers = [];
+        this.currentIndex = 0;
+        this.lineCount = 0;
+        this.totalLines = 15;
+        this.timeLimit = 60000;
+        this.startTime = null;
+        this.lineStartTime = null;
+        this.scores = [];
+        this.durations = [];
+        this.difficulty = 'easy';
+        this.inputBoxes = [];
+        this.numberSpans = []; // ★改善点: 数字のDOM要素を保持
+        this.isTestActive = false;
+        this.timerInterval = null;
+        this.remainingTime = 0;
+        this.performanceChart = null;
 
-    const timeRemainingElement = document.getElementById('time-remaining');
-    const fatigueLevelElement = document.getElementById('fatigue-level');
-    const questionElement = document.getElementById('question');
-    const answerDisplay = document.getElementById('answer-display');
-    const startBtn = document.getElementById('start-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const resultElement = document.getElementById('result');
-    const scoreElement = document.getElementById('score');
-    const numBtns = document.querySelectorAll('.num-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const okBtn = document.getElementById('ok-btn');
-
-    function updateTimerDisplay() {
-      timeRemainingElement.textContent = `残り時間: ${timeLeft}秒`;
-    }
-
-    function updateFatigueLevel() {
-      fatigueLevelElement.style.color = '';
-      if (score <= 5) {
-        fatigueLevelElement.textContent = `疲労度: 低`;
-        fatigueLevelElement.className = 'highlight';
-        fatigueLevelElement.style.color = 'green';
-      } else if (score <= 10) {
-        fatigueLevelElement.textContent = `疲労度: 中`;
-        fatigueLevelElement.className = 'highlight';
-        fatigueLevelElement.style.color = 'orange';
-      } else {
-        fatigueLevelElement.textContent = `疲労度: 高`;
-        fatigueLevelElement.className = 'highlight';
-        fatigueLevelElement.style.color = 'red';
+        this.initializeElements();
+        this.bindEvents();
+        this.setDifficulty(this.difficulty);
       }
-    }
 
-    function updateScoreDisplay() {
-      scoreElement.textContent = `スコア: ${score}`;
-    }
+      initializeElements() {
+        this.displayInputPairContainer = document.getElementById('displayInputPairContainer');
+        this.startBtn = document.getElementById('startBtn');
+        this.resetBtn = document.getElementById('resetBtn');
+        this.timer = document.getElementById('timer');
+        this.lineCountEl = document.getElementById('lineCount');
+        this.accuracyEl = document.getElementById('accuracy');
+        this.progressFill = document.getElementById('progressFill');
+        this.statsGrid = document.getElementById('statsGrid');
+        this.analysisPanel = document.getElementById('analysisPanel');
+        this.chartContainer = document.getElementById('chartContainer');
+        this.traitGrid = document.getElementById('traitGrid');
+      }
 
-    function updateAnswerDisplay() {
-      answerDisplay.textContent = currentInput;
-    }
+      bindEvents() {
+        document.querySelectorAll('.number-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            this.handleNumberInput(btn.dataset.num);
+            this.pressButtonEffect(btn); // ★改善点: クリック時にもエフェクト
+          });
+        });
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.addEventListener('click', () => this.setDifficulty(btn.dataset.difficulty)));
+        this.startBtn.addEventListener('click', () => this.startTest());
+        this.resetBtn.addEventListener('click', () => this.resetTest());
+        document.addEventListener('keydown', (e) => this.handleKeyInput(e));
+      }
 
-    function generateQuestion() {
-      let num1, num2, operator;
-      do {
-        num1 = Math.floor(Math.random() * 10 * level);
-        num2 = Math.floor(Math.random() * 10 * level);
-        if (level === 1) {
-          operator = '+';
-          currentAnswer = num1 + num2;
-        } else if (level === 2) {
-          operator = '-';
-          currentAnswer = num1 - num2;
+      setDifficulty(difficulty) {
+        this.difficulty = difficulty;
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
+        switch(this.difficulty) {
+          case 'easy': this.timeLimit = 90000; break;
+          case 'medium': this.timeLimit = 60000; break;
+          case 'hard': this.timeLimit = 45000; break;
+        }
+        this.resetTest();
+      }
+
+      generateNewLine() {
+        const maxNum = this.difficulty === 'hard' ? 9 : this.difficulty === 'medium' ? 8 : 7;
+        const questionsPerVisualRow = this.calculateQuestionsPerVisualRow();
+        const totalNumbers = questionsPerVisualRow + 1;
+        this.currentLineNumbers = Array.from({ length: totalNumbers }, () => Math.floor(Math.random() * maxNum) + 1);
+        this.answers = new Array(this.currentLineNumbers.length - 1).fill('');
+        this.currentIndex = 0;
+        this.renderLineAndInputBoxes();
+        this.highlightCurrentInput();
+      }
+
+      calculateQuestionsPerVisualRow() {
+        const viewportWidth = window.innerWidth;
+        if (viewportWidth > 1200) return 24;
+        if (viewportWidth > 992) return 18;
+        if (viewportWidth > 768) return 15;
+        if (viewportWidth > 576) return 12;
+        return 8;
+      }
+
+      renderLineAndInputBoxes() {
+        this.displayInputPairContainer.innerHTML = '';
+        this.inputBoxes = [];
+        this.numberSpans = []; // リセット
+        const questionsPerVisualRow = this.calculateQuestionsPerVisualRow();
+        let currentNumberIndex = 0, currentAnswerIndex = 0;
+        const totalQuestions = this.currentLineNumbers.length - 1;
+
+        while (currentAnswerIndex < totalQuestions) {
+          const lineRowWrapper = document.createElement('div');
+          lineRowWrapper.classList.add('line-row-wrapper');
+          const lineDisplayRow = document.createElement('div');
+          lineDisplayRow.classList.add('line-display-row');
+          const inputGridRow = document.createElement('div');
+          inputGridRow.classList.add('input-grid-row');
+          const answersInThisRow = Math.min(questionsPerVisualRow, totalQuestions - currentAnswerIndex);
+
+          for (let j = 0; j < answersInThisRow + 1; j++) {
+            if (currentNumberIndex + j < this.currentLineNumbers.length) {
+              const numSpan = document.createElement('span');
+              numSpan.classList.add('line-number');
+              numSpan.textContent = this.currentLineNumbers[currentNumberIndex + j];
+              this.numberSpans.push(numSpan); // ★改善点: Spanを配列に保存
+              lineDisplayRow.appendChild(numSpan);
+            }
+          }
+          for (let j = 0; j < answersInThisRow; j++) {
+            const box = document.createElement('div');
+            box.className = 'input-box';
+            this.inputBoxes.push(box);
+            inputGridRow.appendChild(box);
+          }
+          lineRowWrapper.appendChild(lineDisplayRow);
+          lineRowWrapper.appendChild(inputGridRow);
+          this.displayInputPairContainer.appendChild(lineRowWrapper);
+          currentNumberIndex += answersInThisRow;
+          currentAnswerIndex += answersInThisRow;
+        }
+      }
+
+      highlightCurrentInput() {
+        // ★改善点: 数字のハイライト処理
+        this.numberSpans.forEach(span => span.classList.remove('highlight-number'));
+        this.inputBoxes.forEach((box, index) => {
+          box.classList.remove('current');
+          if (index === this.currentIndex) {
+            box.classList.add('current');
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+        if (this.isTestActive && this.currentIndex < this.numberSpans.length - 1) {
+          this.numberSpans[this.currentIndex].classList.add('highlight-number');
+          this.numberSpans[this.currentIndex + 1].classList.add('highlight-number');
+        }
+      }
+
+      handleNumberInput(input) {
+        if (!this.isTestActive) return;
+        if (input === 'back') {
+          if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.answers[this.currentIndex] = '';
+            this.inputBoxes[this.currentIndex].textContent = '';
+            this.inputBoxes[this.currentIndex].classList.remove('correct', 'incorrect');
+          }
+        } else if (input === 'next') {
+          if (this.currentIndex < this.answers.length - 1) {
+            this.currentIndex++;
+          }
         } else {
-          operator = '×';
-          currentAnswer = num1 * num2;
+          if (this.currentIndex < this.answers.length) {
+            this.answers[this.currentIndex] = input;
+            this.inputBoxes[this.currentIndex].textContent = input;
+            this.checkAnswer(this.currentIndex);
+            if (this.currentIndex < this.answers.length - 1) {
+              this.currentIndex++;
+            } else if (this.answers.every(answer => answer !== '')) {
+              setTimeout(() => this.finishLine(), 500);
+            }
+          }
         }
-      } while (currentAnswer >= 100 || currentAnswer < 0);
-      questionElement.textContent = `${num1} ${operator} ${num2} = ?`;
-    }
+        this.highlightCurrentInput();
+      }
+      
+      handleKeyInput(e) {
+        if (!this.isTestActive) return;
+        let targetBtn;
+        if (e.key >= '0' && e.key <= '9') {
+          this.handleNumberInput(e.key);
+          targetBtn = document.querySelector(`.number-btn[data-num="${e.key}"]`);
+        } else if (e.key === 'Backspace' || e.key === 'ArrowLeft') {
+          this.handleNumberInput('back');
+          targetBtn = document.querySelector('.number-btn[data-num="back"]');
+          e.preventDefault();
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter') { // ★改善点: Enterキーを追加
+          this.handleNumberInput('next');
+          targetBtn = document.querySelector('.number-btn[data-num="next"]');
+          e.preventDefault();
+        }
+        if (targetBtn) this.pressButtonEffect(targetBtn);
+      }
+      
+      // ★改善点: ボタン押下エフェクト用の関数
+      pressButtonEffect(btn) {
+          if (!btn) return;
+          btn.classList.add('number-btn--pressed');
+          setTimeout(() => {
+              btn.classList.remove('number-btn--pressed');
+          }, 150);
+      }
 
-    function checkLevelUp() {
-      if (score === 5) {
-        level = 2;
-      } else if (score === 10) {
-        level = 3;
+      checkAnswer(index) {
+        const expected = (this.currentLineNumbers[index] + this.currentLineNumbers[index + 1]) % 10;
+        const userAnswer = parseInt(this.answers[index]);
+        if (userAnswer === expected) {
+          this.inputBoxes[index].classList.add('correct');
+          this.inputBoxes[index].classList.remove('incorrect');
+        } else {
+          this.inputBoxes[index].classList.add('incorrect');
+          this.inputBoxes[index].classList.remove('correct');
+        }
+      }
+
+      startTest() {
+        if (this.isTestActive) return;
+        this.isTestActive = true;
+        this.startTime = Date.now();
+        this.lineStartTime = Date.now();
+        this.remainingTime = this.timeLimit;
+        this.lineCount = 0;
+        this.scores = [];
+        this.durations = [];
+        this.startBtn.disabled = true;
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = true);
+        this.startTimer();
+        this.generateNewLine();
+        this.updateStats();
+      }
+
+      startTimer() {
+        clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+          this.remainingTime -= 1000;
+          const minutes = Math.floor(this.remainingTime / 60000);
+          const seconds = Math.floor((this.remainingTime % 60000) / 1000);
+          this.timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          if (this.remainingTime <= 0) this.finishLine();
+        }, 1000);
+      }
+
+      finishLine() {
+        if (!this.isTestActive) return;
+        const duration = (Date.now() - this.lineStartTime) / 1000;
+        let score = 0;
+        this.answers.forEach((answer, index) => {
+          if (answer !== '') {
+            const expected = (this.currentLineNumbers[index] + this.currentLineNumbers[index + 1]) % 10;
+            if (parseInt(answer) === expected) score++;
+          }
+        });
+        this.scores.push(score);
+        this.durations.push(duration);
+        this.lineCount++;
+        this.updateStats();
+        this.updateProgress();
+        if (this.lineCount >= this.totalLines || this.remainingTime <= 0) {
+          this.finishTest();
+        } else {
+          this.lineStartTime = Date.now();
+          setTimeout(() => this.generateNewLine(), 500);
+        }
+      }
+
+      updateStats() {
+        const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
+        const questionsPerLine = this.calculateQuestionsPerVisualRow();
+        const totalQuestions = this.scores.length * questionsPerLine;
+        const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(1) : 0;
+        this.lineCountEl.textContent = this.lineCount;
+        this.accuracyEl.textContent = accuracy + '%';
+      }
+
+      updateProgress() {
+        this.progressFill.style.width = (this.lineCount / this.totalLines) * 100 + '%';
+      }
+
+      finishTest() {
+        this.isTestActive = false;
+        clearInterval(this.timerInterval);
+        this.startBtn.disabled = false;
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = false);
+        this.timer.textContent = '完了';
+        this.showDetailedStats();
+        this.showAnalysis();
+        this.showChart();
+      }
+
+      showDetailedStats() {
+        const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
+        const questionsPerLine = this.calculateQuestionsPerVisualRow();
+        const totalQuestions = this.scores.length * questionsPerLine;
+        const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
+        const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(1) : 0;
+        this.statsGrid.innerHTML = `
+          <div class="stat-card"><div class="stat-value">${totalCorrect}</div><div class="stat-label">総正答数</div></div>
+          <div class="stat-card"><div class="stat-value">${accuracy}%</div><div class="stat-label">正答率</div></div>
+          <div class="stat-card"><div class="stat-value">${averageSpeed.toFixed(1)}秒</div><div class="stat-label">平均時間/行</div></div>
+          <div class="stat-card"><div class="stat-value">${this.lineCount}</div><div class="stat-label">完了行数</div></div>`;
+        this.statsGrid.style.display = 'grid';
+      }
+
+      showAnalysis() {
+        const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
+        const questionsPerLine = this.calculateQuestionsPerVisualRow();
+        const totalQuestions = this.scores.length * questionsPerLine;
+        const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
+        const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100) : 0;
+        const traits = this.analyzeTraits(averageSpeed, accuracy);
+        let traitsHTML = '';
+        traits.forEach(trait => {
+          traitsHTML += `<div class="trait-item"><div class="trait-name">${trait.name}</div><div class="trait-value">${trait.value}</div></div>`;
+        });
+        this.traitGrid.innerHTML = traitsHTML;
+        this.analysisPanel.classList.remove('hidden');
+      }
+
+      analyzeTraits(averageSpeed, accuracy) {
+        const traits = [];
+        if (averageSpeed < 30) traits.push({name: '🚀 発動性', value: '高い - 素早く作業を開始する傾向があります'});
+        else if (averageSpeed < 45) traits.push({name: '🚀 発動性', value: '中程度 - 適度な速度で作業を開始します'});
+        else traits.push({name: '🚀 発動性', value: '低い - 慎重に作業を開始する傾向があります'});
+        if (accuracy > 85) traits.push({name: '🎯 可塑性', value: '高い - 非常に正確な作業が可能です'});
+        else if (accuracy > 70) traits.push({name: '🎯 可塑性', value: '中程度 - 標準的な正確性を保持しています'});
+        else traits.push({name: '🎯 可塑性', value: '要改善 - 正確性の向上が期待されます'});
+        const speedVariance = this.calculateVariance(this.durations);
+        if (speedVariance < 5) traits.push({name: '⏱️ 持続性', value: '高い - 一貫したペースを維持できます'});
+        else if (speedVariance < 10) traits.push({name: '⏱️ 持続性', value: '中程度 - 概ね安定したペースです'});
+        else traits.push({name: '⏱️ 持続性', value: '変動大 - ペースの変動が見られます'});
+        const improvementTrend = this.calculateTrend(this.scores);
+        if (improvementTrend > 0.1) traits.push({name: '📈 亢進性', value: '高い - 時間と共にパフォーマンスが向上しています'});
+        else if (improvementTrend > -0.1) traits.push({name: '📈 亢進性', value: '安定 - 一定のパフォーマンスを維持しています'});
+        else traits.push({name: '📈 亢進性', value: '低下傾向 - 疲労の影響が見られます'});
+        return traits;
+      }
+
+      calculateVariance(arr) {
+        if (arr.length === 0) return 0;
+        const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+        return arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
+      }
+      calculateTrend(arr) {
+        if (arr.length < 2) return 0;
+        const firstHalf = arr.slice(0, Math.floor(arr.length / 2));
+        const secondHalf = arr.slice(Math.floor(arr.length / 2));
+        const firstAvg = firstHalf.length > 0 ? firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length : 0;
+        const secondAvg = secondHalf.length > 0 ? secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length : 0;
+        return secondAvg - firstAvg;
+      }
+
+      showChart() {
+        if (this.performanceChart) this.performanceChart.destroy();
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        this.performanceChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: this.scores.map((_, i) => `第${i + 1}行`),
+            datasets: [
+              { label: '正答数', data: this.scores, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', tension: 0.4, fill: true, yAxisID: 'y' },
+              { label: '所要時間(秒)', data: this.durations, borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.1)', tension: 0.4, fill: true, yAxisID: 'y1' }
+            ]
+          },
+          options: {
+            responsive: true, interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { display: true, title: { display: true, text: '実施回数' } },
+              y: { type: 'linear', display: true, position: 'left', title: { display: true, text: '正答数' }, min: 0, ticks: { stepSize: 1 } },
+              y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: '所要時間(秒)' }, grid: { drawOnChartArea: false }, min: 0 }
+            },
+            plugins: { title: { display: true, text: 'パフォーマンス推移' }, legend: { display: true } }
+          }
+        });
+        this.chartContainer.classList.remove('hidden');
+      }
+
+      resetTest() {
+        this.isTestActive = false;
+        clearInterval(this.timerInterval);
+        this.startBtn.disabled = false;
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = false);
+        this.timer.textContent = '準備完了';
+        this.lineCount = 0;
+        this.scores = [];
+        this.durations = [];
+        this.updateStats();
+        this.progressFill.style.width = '0%';
+        // ★改善点: より分かりやすい初期メッセージの表示
+        this.displayInputPairContainer.innerHTML = `<div class="initial-message">「検査開始」ボタンを押してください</div>`;
+        this.inputBoxes = [];
+        this.numberSpans = [];
+        this.statsGrid.style.display = 'none';
+        this.analysisPanel.classList.add('hidden');
+        this.chartContainer.classList.add('hidden');
+        if (this.performanceChart) {
+          this.performanceChart.destroy();
+          this.performanceChart = null;
+        }
       }
     }
 
-    function processAnswer() {
-      const userAnswer = parseInt(currentInput, 10);
-      if (!isNaN(userAnswer) && userAnswer === currentAnswer) {
-        score++;
-        consecutiveCorrect++;
-        checkLevelUp();
-        generateQuestion();
-        updateFatigueLevel();
-        updateScoreDisplay();
-        // 連続正解ボーナス
-        if (consecutiveCorrect % 3 === 0) {
-          score += 2;
-          updateScoreDisplay();
-        }
-        currentInput = "";
-        updateAnswerDisplay();
-      } else {
-        consecutiveCorrect = 0;
-        currentInput = "";
-        updateAnswerDisplay();
-      }
-    }
-
-    function startTest() {
-      if (timer) clearInterval(timer);
-      score = 0;
-      consecutiveCorrect = 0;
-      level = 1;
-      timeLeft = 60;
-      resultElement.textContent = '';
-      generateQuestion();
-      updateTimerDisplay();
-      updateFatigueLevel();
-      updateScoreDisplay();
-      currentInput = "";
-      updateAnswerDisplay();
-      // 有効化
-      numBtns.forEach(btn => btn.disabled = false);
-      clearBtn.disabled = false;
-      okBtn.disabled = false;
-
-      timer = setInterval(() => {
-        timeLeft--;
-        updateTimerDisplay();
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          questionElement.textContent = '終了！';
-          resultElement.textContent = `最終スコア: ${score}`;
-          // 無効化
-          numBtns.forEach(btn => btn.disabled = true);
-          clearBtn.disabled = true;
-          okBtn.disabled = true;
-        }
-      }, 1000);
-    }
-
-    numBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentInput += btn.getAttribute('data-num');
-        updateAnswerDisplay();
-        const userAnswer = parseInt(currentInput, 10);
-        if (!isNaN(userAnswer) && userAnswer === currentAnswer) {
-          processAnswer();
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+      const kraepelinTest = new KraepelinTest();
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (!kraepelinTest.isTestActive) kraepelinTest.resetTest(); 
+        }, 250);
       });
-    });
-
-    clearBtn.addEventListener('click', () => {
-      currentInput = "";
-      updateAnswerDisplay();
-    });
-
-    okBtn.addEventListener('click', () => {
-      processAnswer();
-    });
-
-    startBtn.addEventListener('click', startTest);
-
-    resetBtn.addEventListener('click', () => {
-      clearInterval(timer);
-      score = 0;
-      consecutiveCorrect = 0;
-      level = 1;
-      timeLeft = 60;
-      updateTimerDisplay();
-      updateFatigueLevel();
-      updateScoreDisplay();
-      fatigueLevelElement.style.color = 'green';
-      questionElement.textContent = '';
-      resultElement.textContent = '';
-      currentInput = "";
-      updateAnswerDisplay();
-      numBtns.forEach(btn => btn.disabled = true);
-      clearBtn.disabled = true;
-      okBtn.disabled = true;
     });
   </script>
 </body>
