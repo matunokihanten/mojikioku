@@ -312,7 +312,7 @@
 
         this.initializeElements();
         this.bindEvents();
-        this.setDifficulty(this.difficulty);
+        this.setDifficulty(this.difficulty); // 初期表示時に難易度を設定してリセット状態にする
       }
 
       initializeElements() {
@@ -336,7 +336,11 @@
             this.pressButtonEffect(btn); // ★改善点: クリック時にもエフェクト
           });
         });
-        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.addEventListener('click', () => this.setDifficulty(btn.dataset.difficulty)));
+        document.querySelectorAll('.difficulty-btn').forEach(btn => btn.addEventListener('click', (e) => {
+          this.setDifficulty(btn.dataset.difficulty);
+          // 難易度変更時にリセットをかける
+          this.resetTest(); 
+        }));
         this.startBtn.addEventListener('click', () => this.startTest());
         this.resetBtn.addEventListener('click', () => this.resetTest());
         document.addEventListener('keydown', (e) => this.handleKeyInput(e));
@@ -351,7 +355,7 @@
           case 'medium': this.timeLimit = 60000; break;
           case 'hard': this.timeLimit = 45000; break;
         }
-        this.resetTest();
+        // ここでは resetTest() を呼ばない。difficulty-btn のイベントリスナーで呼ぶ
       }
 
       generateNewLine() {
@@ -499,6 +503,16 @@
 
       startTest() {
         if (this.isTestActive) return;
+        
+        // 検査開始時に以前の結果を非表示にする
+        this.statsGrid.style.display = 'none';
+        this.analysisPanel.classList.add('hidden');
+        this.chartContainer.classList.add('hidden');
+        if (this.performanceChart) {
+          this.performanceChart.destroy();
+          this.performanceChart = null;
+        }
+
         this.isTestActive = true;
         this.startTime = Date.now();
         this.lineStartTime = Date.now();
@@ -549,8 +563,10 @@
 
       updateStats() {
         const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
-        const questionsPerLine = this.calculateQuestionsPerVisualRow();
-        const totalQuestions = this.scores.length * questionsPerLine;
+        // 現在の行の回答数も考慮して計算
+        const currentLineQuestionsAnswered = this.answers.filter(a => a !== '').length;
+        const totalQuestions = (this.scores.length * (this.currentLineNumbers.length - 1)) + currentLineQuestionsAnswered; // 完了した行の質問数 + 現在の行の回答済みの質問数
+
         const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(1) : 0;
         this.lineCountEl.textContent = this.lineCount;
         this.accuracyEl.textContent = accuracy + '%';
@@ -573,10 +589,11 @@
 
       showDetailedStats() {
         const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
-        const questionsPerLine = this.calculateQuestionsPerVisualRow();
-        const totalQuestions = this.scores.length * questionsPerLine;
+        const questionsPerLine = this.currentLineNumbers.length - 1; // 1行あたりの問題数
+        const totalQuestionsAttempted = this.scores.length * questionsPerLine; // 完了した行の総問題数
+        
         const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
-        const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100).toFixed(1) : 0;
+        const accuracy = totalQuestionsAttempted > 0 ? (totalCorrect / totalQuestionsAttempted * 100).toFixed(1) : 0;
         this.statsGrid.innerHTML = `
           <div class="stat-card"><div class="stat-value">${totalCorrect}</div><div class="stat-label">総正答数</div></div>
           <div class="stat-card"><div class="stat-value">${accuracy}%</div><div class="stat-label">正答率</div></div>
@@ -587,10 +604,11 @@
 
       showAnalysis() {
         const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
-        const questionsPerLine = this.calculateQuestionsPerVisualRow();
-        const totalQuestions = this.scores.length * questionsPerLine;
+        const questionsPerLine = this.currentLineNumbers.length - 1; // 1行あたりの問題数
+        const totalQuestionsAttempted = this.scores.length * questionsPerLine; // 完了した行の総問題数
+        
         const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
-        const accuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions * 100) : 0;
+        const accuracy = totalQuestionsAttempted > 0 ? (totalCorrect / totalQuestionsAttempted * 100) : 0;
         const traits = this.analyzeTraits(averageSpeed, accuracy);
         let traitsHTML = '';
         traits.forEach(trait => {
@@ -673,13 +691,9 @@
         this.displayInputPairContainer.innerHTML = `<div class="initial-message">「検査開始」ボタンを押してください</div>`;
         this.inputBoxes = [];
         this.numberSpans = [];
-        this.statsGrid.style.display = 'none';
-        this.analysisPanel.classList.add('hidden');
-        this.chartContainer.classList.add('hidden');
-        if (this.performanceChart) {
-          this.performanceChart.destroy();
-          this.performanceChart = null;
-        }
+        
+        // ここでは結果表示要素を非表示にしない。
+        // 結果は次の検査が開始されるまで維持される。
       }
     }
 
@@ -689,7 +703,14 @@
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          if (!kraepelinTest.isTestActive) kraepelinTest.resetTest(); 
+          // テストがアクティブでない場合のみリセット
+          if (!kraepelinTest.isTestActive) {
+              kraepelinTest.resetTest(); 
+          } else {
+              // テスト中の場合は表示のみ再描画
+              kraepelinTest.renderLineAndInputBoxes();
+              kraepelinTest.highlightCurrentInput();
+          }
         }, 250);
       });
     });
