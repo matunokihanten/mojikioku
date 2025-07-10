@@ -231,6 +231,49 @@
       margin-top: 0;
       color: #4ecdc4;
     }
+
+    .number-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3列 */
+      gap: 10px;
+      margin-top: 20px;
+      max-width: 350px; /* ボタンの幅を調整 */
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .number-buttons button {
+      font-size: 1.8rem; /* ボタンの数字を大きく */
+      padding: 15px 0;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .number-buttons button:hover {
+      background: #e0e0e0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .number-buttons button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .number-buttons .delete-button {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      grid-column: span 2; /* Deleteボタンを2列に広げる */
+    }
+    .number-buttons .delete-button:hover {
+      background: linear-gradient(45deg, #ff8c8c, #f0744d);
+    }
+    .number-buttons .zero-button {
+      grid-column: span 1; /* 0ボタンを1列に */
+    }
   </style>
 </head>
 <body>
@@ -256,10 +299,24 @@
     </div>
 
     <div class="input-section">
-      <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1" autocomplete="off">
+      <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1" autocomplete="off" readonly>
       <button id="submitGuess">🎯 回答</button>
       <button id="changeNumber">🔄 新しい問題</button>
       <button id="hintButton">💡 ヒント</button>
+    </div>
+
+    <div class="number-buttons">
+      <button class="num-button" data-value="1">1</button>
+      <button class="num-button" data-value="2">2</button>
+      <button class="num-button" data-value="3">3</button>
+      <button class="num-button" data-value="4">4</button>
+      <button class="num-button" data-value="5">5</button>
+      <button class="num-button" data-value="6">6</button>
+      <button class="num-button" data-value="7">7</button>
+      <button class="num-button" data-value="8">8</button>
+      <button class="num-button" data-value="9">9</button>
+      <button class="num-button zero-button" data-value="0">0</button>
+      <button class="delete-button" data-value="delete">DEL</button>
     </div>
 
     <div id="result"></div>
@@ -278,6 +335,7 @@
     const levelSelect = document.getElementById('levelSelect');
     const submitButton = document.getElementById('submitGuess');
     const hintButton = document.getElementById('hintButton');
+    const numberButtons = document.querySelectorAll('.num-button, .delete-button');
 
     let hiddenAnswer; // 出題される隠し数字（文字列）
     let hintUsed = false; // ヒント使用フラグ
@@ -314,6 +372,7 @@
       hintUsed = false;
       gameActive = true;
       submitButton.disabled = false;
+      guessInput.value = ""; // 新しい問題生成時に回答欄をクリア
       
       const mode = levelSelect.value;
 
@@ -422,7 +481,7 @@
 
     // 初回出題とフォーカス設定
     generateStereogram();
-    setTimeout(() => guessInput.focus(), 500);
+    // setTimeout(() => guessInput.focus(), 500); // ボタン入力のためフォーカスは不要
 
     // 「回答」ボタンの処理
     submitButton.addEventListener("click", function () {
@@ -432,7 +491,7 @@
       if (userGuess === "") {
         resultEl.textContent = "📝 数字を入力してください";
         resultEl.className = "";
-        guessInput.focus();
+        // guessInput.focus(); // ボタン入力のためフォーカスは不要
         return;
       }
       
@@ -446,7 +505,7 @@
         setTimeout(() => {
           guessInput.value = "";
           generateStereogram();
-          guessInput.focus();
+          // guessInput.focus(); // ボタン入力のためフォーカスは不要
         }, 1500);
       } else {
         resultEl.textContent = `❌ 正解は ${hiddenAnswer} でした`;
@@ -454,7 +513,7 @@
         setTimeout(() => {
           guessInput.value = "";
           generateStereogram();
-          guessInput.focus();
+          // guessInput.focus(); // ボタン入力のためフォーカスは不要
         }, 2500);
       }
     });
@@ -482,24 +541,50 @@
       
       resultEl.textContent = `💡 ヒント: ${hintText}`;
       resultEl.className = "";
-      guessInput.focus();
+      // guessInput.focus(); // ボタン入力のためフォーカスは不要
     });
 
     // 「新しい問題」ボタンの処理
     document.getElementById("changeNumber").addEventListener("click", function () {
       generateStereogram();
       guessInput.value = "";
-      guessInput.focus();
+      // guessInput.focus(); // ボタン入力のためフォーカスは不要
     });
 
-    // Enterキー・数字キーでの操作
+    // 数字ボタンの処理
+    numberButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        if (!gameActive) return;
+
+        const buttonValue = this.dataset.value;
+        const currentInput = guessInput.value;
+        const maxLength = parseInt(guessInput.maxLength);
+
+        if (buttonValue === 'delete') {
+          guessInput.value = currentInput.slice(0, -1);
+        } else {
+          if (currentInput.length < maxLength) {
+            guessInput.value += buttonValue;
+          }
+        }
+        
+        // 入力がある程度あれば回答ボタンを有効化
+        if (guessInput.value.length > 0) {
+          submitButton.disabled = false;
+        } else {
+          submitButton.disabled = true;
+        }
+      });
+    });
+
+    // Enterキーでの操作 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
     guessInput.addEventListener("keypress", function (e) {
       if (e.key === "Enter" && gameActive) {
         submitButton.click();
       }
     });
 
-    // 数字以外の入力を制限
+    // 数字以外の入力を制限 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
     guessInput.addEventListener("input", function (e) {
       this.value = this.value.replace(/[^0-9]/g, '');
       if (this.value.length > 0 && gameActive) {
@@ -507,7 +592,7 @@
       }
     });
 
-    // フォーカス管理
+    // フォーカス管理 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
     guessInput.addEventListener("focus", function () {
       this.select(); // 全選択で入力しやすく
     });
@@ -522,9 +607,29 @@
         e.preventDefault();
         hintButton.click();
       }
+      // Enterキーでの回答は、テキスト入力欄がreadonlyのため、数字ボタンでの入力後にEnterを押す場合は機能しない
+      // if (e.key === "Enter" && gameActive) {
+      //   submitButton.click();
+      // }
       if (e.key === "Escape") {
         guessInput.blur();
       }
+      // 数字キーでの入力は、readonlyのため直接は機能しないが、
+      // 将来的にテキスト入力欄を再度編集可能にする場合に備えて残す
+      // if (e.key >= '0' && e.key <= '9' && gameActive) {
+      //   const currentInput = guessInput.value;
+      //   const maxLength = parseInt(guessInput.maxLength);
+      //   if (currentInput.length < maxLength) {
+      //     guessInput.value += e.key;
+      //     submitButton.disabled = false;
+      //   }
+      // }
+      // if (e.key === 'Backspace' && gameActive) {
+      //   guessInput.value = guessInput.value.slice(0, -1);
+      //   if (guessInput.value.length === 0) {
+      //     submitButton.disabled = true;
+      //   }
+      // }
     });
   </script>
 </body>
