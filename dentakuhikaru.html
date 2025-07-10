@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>改良版！電卓型記憶力ゲーム</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            background: #2c3e50;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 380px; /* 横幅を少し広げる */
+        }
+
+        .calculator {
+            background: #34495e;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .display {
+            background: #1a252f;
+            color: #00ff41;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 2px solid #34495e;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            width: 100%; /* 幅を自動調整 */
+            height: 60px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.number { background: #3498db; color: white; }
+        .btn.operator { background: #e74c3c; color: white; }
+        .btn.equals { background: #27ae60; color: white; grid-row: span 2; } /* 修正 */
+        .btn.clear { background: #f39c12; color: white; }
+        .btn.zero { grid-column: span 2; } /* 0ボタン用のクラスを追加 */
+
+        .btn.active {
+            background: #fff !important;
+            color: #333 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255,255,255,0.8);
+        }
+
+        .btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px; /* 間隔を広げる */
+            justify-content: center;
+            align-items: center; /* 中央揃え */
+            margin-top: 20px;
+            flex-wrap: wrap; /* 折り返し */
+        }
+
+        .control-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #8e44ad;
+            transform: translateY(-1px);
+        }
+
+        .control-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* --- ここから追加・変更したスタイル --- */
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            background: #34495e;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .difficulty-selector label {
+            padding: 8px 12px;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .difficulty-selector input {
+            display: none;
+        }
+        
+        .difficulty-selector input:checked + label {
+            background-color: #3498db;
+            font-weight: bold;
+        }
+
+        .game-info {
+            display: flex; /* Flexboxに変更 */
+            justify-content: space-around; /* 均等配置 */
+            align-items: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .score-box {
+            text-align: center;
+        }
+        /* --- ここまで追加・変更したスタイル --- */
+
+        .score { font-size: 20px; font-weight: bold; color: #f1c40f; }
+        .level { font-size: 16px; color: #ecf0f1; margin-top: 5px; }
+        .status { font-size: 14px; color: #bdc3c7; margin-top: 10px; }
+        .title { color: white; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        .instructions { color: #ecf0f1; font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .btn.flash { animation: flash 0.5s ease-in-out; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="title">改良版！電卓型記憶力ゲーム 🧠</div>
+        <div class="instructions">
+            光る順番を覚えて、同じ順番でボタンを押してください！
+        </div>
+        
+        <div class="game-info">
+            <div class="score-box">
+                <div class="score">ハイスコア: <span id="highScore">0</span></div>
+                <div class="level"></div>
+            </div>
+            <div class="score-box">
+                <div class="score">スコア: <span id="score">0</span></div>
+                <div class="level">レベル: <span id="level">1</span></div>
+            </div>
+        </div>
+        <div class="status" id="status">難易度を選んでスタート！</div>
+        <div class="calculator">
+            <div class="display" id="display">記憶力ゲーム</div>
+            
+            <div class="buttons">
+                <button class="btn clear" data-key="C">C</button>
+                <button class="btn operator" data-key="/">/</button>
+                <button class="btn operator" data-key="*">×</button>
+                <button class="btn operator" data-key="-">-</button>
+                
+                <button class="btn number" data-key="7">7</button>
+                <button class="btn number" data-key="8">8</button>
+                <button class="btn number" data-key="9">9</button>
+                <button class="btn operator" data-key="+">+</button>
+                
+                <button class="btn number" data-key="4">4</button>
+                <button class="btn number" data-key="5">5</button>
+                <button class="btn number" data-key="6">6</button>
+                <button class="btn equals" data-key="=">=</button>
+                
+                <button class="btn number" data-key="1">1</button>
+                <button class="btn number" data-key="2">2</button>
+                <button class="btn number" data-key="3">3</button>
+                
+                <button class="btn number zero" data-key="0">0</button>
+                <button class="btn operator" data-key=".">.</button>
+            </div>
+            </div>
+
+        <div class="controls">
+            <div class="difficulty-selector" id="difficultySelector">
+                <input type="radio" id="easy" name="difficulty" value="800" checked><label for="easy">かんたん</label>
+                <input type="radio" id="normal" name="difficulty" value="600"><label for="normal">ふつう</label>
+                <input type="radio" id="hard" name="difficulty" value="400"><label for="hard">むずかしい</label>
+            </div>
+            <button class="control-btn" id="startBtn">スタート</button>
+            <button class="control-btn" id="resetBtn">リセット</button>
+        </div>
+        </div>
+
+    <script>
+        class CalculatorMemoryGame {
+            constructor() {
+                // ▼▼▼ プロパティを追加 ▼▼▼
+                this.highScore = 0;
+                this.sequenceSpeed = 600; // デフォルトの速度
+                this.sounds = {}; // サウンドオブジェクトを格納
+                // ▲▲▲ プロパティを追加 ▲▲▲
+
+                this.sequence = [];
+                this.playerInput = [];
+                this.score = 0;
+                this.level = 1;
+                this.isPlaying = false;
+                this.isShowingSequence = false;
+                
+                this.initializeGame();
+                this.bindEvents();
+                this.loadHighScore(); // ハイスコアを読み込む
+                this.preloadSounds(); // サウンドを事前に読み込む
+            }
+
+            initializeGame() {
+                this.display = document.getElementById('display');
+                this.scoreElement = document.getElementById('score');
+                this.levelElement = document.getElementById('level');
+                this.statusElement = document.getElementById('status');
+                this.startBtn = document.getElementById('startBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.gameButtons = document.querySelectorAll('.btn');
+
+                // ▼▼▼ 新しい要素を取得 ▼▼▼
+                this.highScoreElement = document.getElementById('highScore');
+                this.difficultySelector = document.getElementById('difficultySelector');
+                // ▲▲▲ 新しい要素を取得 ▲▲▲
+                
+                this.updateDisplay();
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startGame());
+                this.resetBtn.addEventListener('click', () => this.resetGame());
+                
+                this.gameButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (!this.isPlaying || this.isShowingSequence) return;
+                        
+                        const key = e.target.dataset.key;
+                        if (key) {
+                            this.handlePlayerInput(key);
+                        }
+                    });
+                });
+
+                // ▼▼▼ キーボード操作のイベントリスナーを追加 ▼▼▼
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+                // ▲▲▲ キーボード操作のイベントリスナーを追加 ▲▲▲
+            }
+
+            // ▼▼▼ サウンド読み込み機能を追加 ▼▼▼
+            preloadSounds() {
+                // Web Audio APIを使用して、ユーザー操作なしでも再生できるように準備
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.audioCtx = new AudioContext();
+
+                // 効果音のデータ (Base64エンコード)
+                // 実際には外部ファイルから読み込む方が良いですが、ここではシンプルにまとめます
+                const soundData = {
+                    click: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
+                    correct: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhUQAAAP2/AP/9/wIA/f8EABAA/v8IABAD/v8KABAA/v4NABAA//kRABAD//kUABAA/v+BAAUA/v+HADwA//4kAHEAG/8vAHwAO/+BAB4AFv+MAHwAHf+aAIAAJv+oAIQAAP+zAIwAAACDAJAAAgCLAJQAJgCiAJgAGgDIAKEADgEQALoA+gCeAMEA+wClAOMABAClAQIAFgDLAQYAFgDkAQgAEgD5AQkADAD+AQgA',
+                    wrong: 'data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhWAAAAAEAAgADAAQABQAGAAcACAAJAAoACwAMAA0ADgAPABAAEQASABMAFAAVABYAFwAYABkAGgAbABwAHQAeAB8AIAAhACIAIwAkACUAJgAnACgAKQAqACsALAAtAC4ALwAwADEAMgAzADQANQA2ADcAOAA5ADoAOwA8AD0APgA/AEAAQQBCAEMARABFAEYARwBIAEkASgBLAEwATQBOAE8AUABRAFIAUwBUAFUAVgBXAFgAWQBaAFsAXABdAF4AXwBgAGEAYgBjAGQAZQNm'
+                };
+
+                for (const key in soundData) {
+                    this.sounds[key] = new Audio(soundData[key]);
+                }
+            }
+
+            playSound(soundName) {
+                if (this.sounds[soundName]) {
+                    // オーディオコンテキストが一時停止状態なら再開 (ブラウザの自動再生ポリシー対策)
+                    if (this.audioCtx.state === 'suspended') {
+                        this.audioCtx.resume();
+                    }
+                    this.sounds[soundName].currentTime = 0;
+                    this.sounds[soundName].play();
+                }
+            }
+            // ▲▲▲ サウンド読み込み機能を追加 ▲▲▲
+
+            // ▼▼▼ キーボード操作処理を追加 ▼▼▼
+            handleKeyPress(e) {
+                if (this.isPlaying && !this.isShowingSequence) {
+                    const keyMap = {
+                        'Enter': '=', 'Escape': 'C',
+                        'NumpadEnter': '=', 'NumpadDecimal': '.', 'Decimal': '.',
+                        'NumpadAdd': '+', 'NumpadSubtract': '-', 'NumpadMultiply': '*', 'NumpadDivide': '/'
+                    };
+                    
+                    let key = e.key;
+                    if (keyMap[e.code]) {
+                        key = keyMap[e.code];
+                    }
+
+                    const button = document.querySelector(`.btn[data-key="${key}"]`);
+                    if (button) {
+                        e.preventDefault(); // デフォルトの動作をキャンセル
+                        button.click();
+                        
+                        // クリックした見た目を再現
+                        button.classList.add('active');
+                        setTimeout(() => button.classList.remove('active'), 100);
+                    }
+                }
+            }
+            // ▲▲▲ キーボード操作処理を追加 ▲▲▲
+
+            startGame() {
+                this.isPlaying = true;
+                this.sequence = [];
+                this.playerInput = [];
+                this.score = 0;
+                this.level = 1;
+
+                // ▼▼▼ 難易度に応じた速度を設定 ▼▼▼
+                const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+                this.sequenceSpeed = parseInt(selectedDifficulty, 10);
+                this.difficultySelector.style.pointerEvents = 'none'; // ゲーム中は難易度変更不可
+                // ▲▲▲ 難易度に応じた速度を設定 ▲▲▲
+                
+                this.startBtn.disabled = true;
+                this.updateDisplay();
+                this.updateStatus('ゲーム開始！');
+                
+                setTimeout(() => {
+                    this.nextLevel();
+                }, 1000);
+            }
+
+            resetGame() {
+                this.isPlaying = false;
+                this.isShowingSequence = false;
+                this.sequence = [];
+                this.playerInput = [];
+                this.score = 0;
+                this.level = 1;
+                
+                this.startBtn.disabled = false;
+                this.difficultySelector.style.pointerEvents = 'auto'; // 難易度変更を再度可能に
+                this.gameButtons.forEach(btn => {
+                    btn.classList.remove('disabled', 'active');
+                });
+                
+                this.updateDisplay();
+                this.updateStatus('難易度を選んでスタート！');
+                this.display.textContent = '記憶力ゲーム';
+            }
+
+            nextLevel() {
+                this.playerInput = [];
+                this.addToSequence();
+                this.showSequence();
+            }
+
+            addToSequence() {
+                const keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+                             '+', '-', '*', '/', '=', 'C', '.'];
+                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                this.sequence.push(randomKey);
+            }
+
+            async showSequence() {
+                this.isShowingSequence = true;
+                this.updateStatus('順番を覚えてください...');
+                this.display.textContent = `レベル ${this.level}`;
+                this.gameButtons.forEach(btn => btn.classList.add('disabled'));
+
+                await this.wait(1000);
+
+                for (let i = 0; i < this.sequence.length; i++) {
+                    const key = this.sequence[i];
+                    const button = document.querySelector(`[data-key="${key}"]`);
+                    
+                    if (button) {
+                        button.classList.add('active');
+                        this.display.textContent = key;
+                        await this.wait(this.sequenceSpeed); // 難易度に応じた速度
+                        
+                        button.classList.remove('active');
+                        this.display.textContent = '...';
+                        await this.wait(this.sequenceSpeed / 2); // 間の時間も調整
+                    }
+                }
+                
+                this.isShowingSequence = false;
+                this.gameButtons.forEach(btn => btn.classList.remove('disabled'));
+                this.updateStatus('順番通りにボタンを押してください');
+                this.display.textContent = 'あなたの番です';
+            }
+
+            handlePlayerInput(key) {
+                this.playSound('click'); // クリック音を再生
+                this.playerInput.push(key);
+                this.display.textContent = this.playerInput.join(' ');
+                
+                const currentIndex = this.playerInput.length - 1;
+                if (this.playerInput[currentIndex] !== this.sequence[currentIndex]) {
+                    this.gameOver();
+                    return;
+                }
+
+                if (this.playerInput.length === this.sequence.length) {
+                    this.levelComplete();
+                }
+            }
+
+            levelComplete() {
+                this.playSound('correct'); // 正解音を再生
+                this.score += this.level * 10;
+                this.level++;
+                this.updateDisplay();
+                this.updateStatus('正解！次のレベルへ！');
+                
+                setTimeout(() => {
+                    this.nextLevel();
+                }, 1500);
+            }
+
+            gameOver() {
+                this.playSound('wrong'); // 不正解音を再生
+                this.isPlaying = false;
+                this.startBtn.disabled = false;
+                this.difficultySelector.style.pointerEvents = 'auto'; // 難易度変更を再度可能に
+                this.display.textContent = 'ゲームオーバー';
+                this.updateStatus(`ゲーム終了！最終スコア: ${this.score}`);
+                
+                // ▼▼▼ ハイスコア更新処理を追加 ▼▼▼
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    this.saveHighScore();
+                    this.updateStatus(`ハイスコア更新！ ${this.highScore}`);
+                }
+                // ▲▲▲ ハイスコア更新処理を追加 ▲▲▲
+
+                const wrongKey = this.playerInput[this.playerInput.length - 1];
+                const wrongButton = document.querySelector(`[data-key="${wrongKey}"]`);
+                if (wrongButton) {
+                    wrongButton.style.background = '#e74c3c';
+                    wrongButton.classList.add('flash');
+                    setTimeout(() => {
+                        wrongButton.style.background = '';
+                        wrongButton.classList.remove('flash');
+                    }, 1000);
+                }
+            }
+            
+            // ▼▼▼ ハイスコア関連の関数を追加 ▼▼▼
+            loadHighScore() {
+                const storedHighScore = localStorage.getItem('calculatorMemoryHighScore');
+                if (storedHighScore) {
+                    this.highScore = parseInt(storedHighScore, 10);
+                }
+                this.highScoreElement.textContent = this.highScore;
+            }
+
+            saveHighScore() {
+                localStorage.setItem('calculatorMemoryHighScore', this.highScore);
+                this.highScoreElement.textContent = this.highScore;
+            }
+            // ▲▲▲ ハイスコア関連の関数を追加 ▲▲▲
+
+            updateDisplay() {
+                this.scoreElement.textContent = this.score;
+                this.levelElement.textContent = this.level;
+                this.highScoreElement.textContent = this.highScore; // ハイスコアも更新
+            }
+
+            updateStatus(message) {
+                this.statusElement.textContent = message;
+            }
+
+            wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new CalculatorMemoryGame();
+        });
+    </script>
+</body>
+</html>
