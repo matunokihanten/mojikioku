@@ -637,4 +637,673 @@
                 { name: "セレン", symbol: "Se", number: 34 },
                 { name: "臭素", symbol: "Br", number: 35 },
                 { name: "クリプトン", symbol: "Kr", number: 36 }
+            ],
+            hard: [
+                { name: "ルビジウム", symbol: "Rb", number: 37 },
+                { name: "ストロンチウム", symbol: "Sr", number: 38 },
+                { name: "イットリウム", symbol: "Y", number: 39 },
+                { name: "ジルコニウム", symbol: "Zr", number: 40 },
+                { name: "ニオブ", symbol: "Nb", number: 41 },
+                { name: "モリブデン", symbol: "Mo", number: 42 },
+                { name: "テクネチウム", symbol: "Tc", number: 43 },
+                { name: "ルテニウム", symbol: "Ru", number: 44 },
+                { name: "ロジウム", symbol: "Rh", number: 45 },
+                { name: "パラジウム", symbol: "Pd", number: 46 },
+                { name: "カドミウム", symbol: "Cd", number: 48 },
+                { name: "インジウム", symbol: "In", number: 49 },
+                { name: "スズ", symbol: "Sn", number: 50 },
+                { name: "アンチモン", symbol: "Sb", number: 51 },
+                { name: "テルル", symbol: "Te", number: 52 },
+                { name: "ヨウ素", symbol: "I", number: 53 },
+                { name: "キセノン", symbol: "Xe", number: 54 },
+                { name: "セシウム", symbol: "Cs", number: 55 },
+                { name: "バリウム", symbol: "Ba", number: 56 }
+            ]
+        };
+
+        // 全ての元素データを格納（元素記号表用）
+        const allElements = [
+            ...elements.easy,
+            ...elements.medium,
+            ...elements.hard
+        ];
+
+        // ゲーム状態
+        let gameState = {
+            currentScreen: 'menuScreen', // IDを使用
+            mode: 'normal', // 'normal' or 'weakness'
+            difficulty: 'easy',
+            currentQuestion: 0,
+            score: 0,
+            correctAnswers: 0,
+            totalQuestions: 10,
+            timeLeft: 30,
+            timer: null,
+            // ★修正点：次の問題へ遷移するためのタイマーIDを管理
+            nextQuestionTimeout: null, 
+            combo: 0,
+            maxCombo: 0,
+            questionStartTime: 0,
+            totalTime: 0,
+            questions: [],
+            settings: {
+                sound: true,
+                timer: true,
+                combo: true
+            }
+        };
+
+        // 統計データ
+        let stats = JSON.parse(localStorage.getItem('elementStats')) || {
+            totalGames: 0,
+            totalCorrect: 0,
+            totalQuestions: 0,
+            bestScore: 0,
+            averageScore: 0,
+            difficultyStats: {
+                easy: { played: 0, correct: 0, total: 0 },
+                medium: { played: 0, correct: 0, total: 0 },
+                hard: { played: 0, correct: 0, total: 0 }
+            },
+            elementLearningHistory: {}
+        };
+
+        // elementLearningHistoryを初期化 (初回アクセス時やデータ構造変更時に必要)
+        function initializeElementLearningHistory() {
+            let needsUpdate = false;
+            if (!stats.elementLearningHistory) {
+                stats.elementLearningHistory = {};
+                needsUpdate = true;
+            }
+            allElements.forEach(el => {
+                if (!stats.elementLearningHistory[el.symbol]) {
+                    stats.elementLearningHistory[el.symbol] = { correct: 0, incorrect: 0 };
+                    needsUpdate = true;
+                }
+            });
+            if (needsUpdate) {
+                localStorage.setItem('elementStats', JSON.stringify(stats));
+            }
+        }
+        initializeElementLearningHistory();
+
+
+        // リーダーボード
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+        // 画面切り替え
+        function showScreen(screenId) {
+            // すべての画面要素を非表示にする
+            document.querySelectorAll('.screen-container').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // 指定されたIDの画面を表示する
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+            }
+            // gameState.currentScreen を更新
+            gameState.currentScreen = screenId;
+        }
+
+        function showMenu() {
+            showScreen('menuScreen');
+            // ★修正点：全てのタイマーをクリアする
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            if (gameState.nextQuestionTimeout) {
+                clearTimeout(gameState.nextQuestionTimeout);
+            }
+        }
+
+        function showModeSelector() {
+            showScreen('modeSelector');
+            document.querySelectorAll('#modeSelector .mode-button').forEach(btn => btn.classList.remove('active'));
+            // gameState.mode に基づいてアクティブなボタンを設定
+            const currentModeButton = document.querySelector(`#modeSelector .mode-button[onclick*="selectMode('${gameState.mode}')"]`);
+            if (currentModeButton) {
+                currentModeButton.classList.add('active');
+            }
+        }
+
+        function showDifficultySelector() {
+            showScreen('difficultySelector');
+            document.querySelectorAll('#difficultySelector .difficulty-btn').forEach(btn => btn.classList.remove('active'));
+            // gameState.difficulty に基づいてアクティブなボタンを設定
+            const currentDifficultyButton = document.querySelector(`#difficultySelector .difficulty-btn[onclick*="selectDifficulty('${gameState.difficulty}')"]`);
+            if (currentDifficultyButton) {
+                currentDifficultyButton.classList.add('active');
+            }
+        }
+
+        function showStats() {
+            showScreen('statsScreen');
+            updateStatsDisplay();
+        }
+
+        function showSettings() {
+            showScreen('settingsScreen');
+        }
+
+        function showLeaderboard() {
+            showScreen('leaderboardScreen');
+            updateLeaderboard();
+        }
         
+        // 元素記号表の表示
+        function showPeriodicTable() {
+            showScreen('periodicTableScreen');
+            generatePeriodicTableList();
+        }
+
+        // 難易度選択
+        function selectDifficulty(difficulty, event) {
+            gameState.difficulty = difficulty;
+            document.querySelectorAll('#difficultySelector .difficulty-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // モード選択
+        function selectMode(mode, event) {
+            gameState.mode = mode;
+            document.querySelectorAll('#modeSelector .mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // クイズ開始
+        function startQuiz() {
+            gameState.currentQuestion = 0;
+            gameState.score = 0;
+            gameState.correctAnswers = 0;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.totalTime = 0;
+            gameState.questions = generateQuestions();
+            
+            showScreen('quizScreen');
+            showQuestion();
+        }
+
+        // 問題生成
+        function generateQuestions() {
+            const elementList = elements[gameState.difficulty];
+            const questions = [];
+            // 通常モードでのみ使用: 現在のクイズで出題された元素の記号を記録
+            const selectedQuestionSymbolsForNormalMode = new Set(); 
+
+            while (questions.length < gameState.totalQuestions) {
+                let correctElement = null;
+
+                if (gameState.mode === 'weakness') {
+                    // 苦手克服モードの場合、不正解回数が多い元素を優先
+                    const weightedElements = [];
+                    elementList.forEach(el => {
+                        const history = stats.elementLearningHistory[el.symbol];
+                        let weight = 1; // デフォルトの重み
+
+                        if (history) {
+                            const totalAttempts = history.correct + history.incorrect;
+                            if (totalAttempts > 0) {
+                                // 不正解率が高いほど重みが増す
+                                const incorrectRatio = history.incorrect / totalAttempts;
+                                // 最低1、最大6の重み（不正解率0%で1、100%で6）
+                                weight = 1 + Math.floor(incorrectRatio * 5); 
+                            }
+                        }
+                        // 重みに応じて要素を配列に追加
+                        for (let i = 0; i < weight; i++) {
+                            weightedElements.push(el);
+                        }
+                    });
+
+                    // 重み付けされたリストからランダムに選択
+                    correctElement = weightedElements[Math.floor(Math.random() * weightedElements.length)];
+
+                } else {
+                    // 通常モードの場合、重複しないようにランダムに選択
+                    let availableElements = elementList.filter(el => !selectedQuestionSymbolsForNormalMode.has(el.symbol));
+                    if (availableElements.length === 0) { 
+                        availableElements = elementList.slice(); 
+                        selectedQuestionSymbolsForNormalMode.clear();
+                    }
+                    correctElement = availableElements[Math.floor(Math.random() * availableElements.length)];
+                    selectedQuestionSymbolsForNormalMode.add(correctElement.symbol);
+                }
+                
+                // 間違い選択肢を3つ追加 (重複しないように)
+                const wrongOptionsPool = allElements.filter(el => el !== correctElement); 
+                const options = [correctElement];
+                
+                while (options.length < 4) {
+                    const randomIndex = Math.floor(Math.random() * wrongOptionsPool.length);
+                    const wrongElement = wrongOptionsPool[randomIndex];
+                    if (!options.some(opt => opt.symbol === wrongElement.symbol)) { // optionsに既になければ追加
+                        options.push(wrongElement);
+                    }
+                }
+                
+                // 選択肢をシャッフル
+                options.sort(() => Math.random() - 0.5);
+                
+                questions.push({
+                    element: correctElement,
+                    options: options,
+                    questionType: Math.random() > 0.5 ? 'symbolToName' : 'nameToSymbol'
+                });
+            }
+            
+            return questions;
+        }
+
+        // 問題表示
+        function showQuestion() {
+            // ボタンを再度有効化
+            document.querySelectorAll('#optionsContainer .quiz-button').forEach(btn => {
+                btn.disabled = false;
+            });
+
+            const question = gameState.questions[gameState.currentQuestion];
+            
+            document.getElementById('questionNumber').textContent = gameState.currentQuestion + 1;
+            document.getElementById('totalQuestions').textContent = gameState.totalQuestions;
+            document.getElementById('currentScore').textContent = gameState.score;
+            
+            const progress = ((gameState.currentQuestion + 1) / gameState.totalQuestions) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            if (question.questionType === 'symbolToName') {
+                document.getElementById('questionText').textContent = 'この元素記号は何？';
+                document.getElementById('elementDisplay').textContent = question.element.symbol;
+            } else {
+                document.getElementById('questionText').textContent = 'この元素の記号は？';
+                document.getElementById('elementDisplay').textContent = question.element.name;
+            }
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'quiz-button';
+                button.textContent = question.questionType === 'symbolToName' ? option.name : option.symbol;
+                button.onclick = () => selectAnswer(option, button);
+                optionsContainer.appendChild(button);
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            
+            gameState.questionStartTime = Date.now();
+            if (gameState.settings.timer) {
+                startTimer();
+                document.querySelector('.timer').style.display = 'inline';
+            } else {
+                document.querySelector('.timer').style.display = 'none';
+            }
+            
+            updateComboDisplay();
+        }
+
+        // タイマー開始
+        function startTimer() {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            gameState.timeLeft = 30;
+            document.getElementById('timeLeft').textContent = gameState.timeLeft;
+            
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timeLeft').textContent = gameState.timeLeft;
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    selectAnswer(null, null); // タイムアウト
+                }
+            }, 1000);
+        }
+
+        // 回答選択
+        function selectAnswer(selectedOption, buttonElement) {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            
+            const question = gameState.questions[gameState.currentQuestion];
+            const isCorrect = selectedOption && selectedOption.symbol === question.element.symbol;
+            const responseTime = Date.now() - gameState.questionStartTime;
+            
+            document.querySelectorAll('#optionsContainer .quiz-button').forEach(btn => {
+                btn.disabled = true;
+            });
+
+            if (stats.elementLearningHistory[question.element.symbol]) {
+                if (isCorrect) {
+                    stats.elementLearningHistory[question.element.symbol].correct++;
+                } else {
+                    stats.elementLearningHistory[question.element.symbol].incorrect++;
+                }
+                localStorage.setItem('elementStats', JSON.stringify(stats));
+            }
+            
+            if (isCorrect) {
+                gameState.correctAnswers++;
+                gameState.combo++;
+                gameState.maxCombo = Math.max(gameState.maxCombo, gameState.combo);
+                gameState.totalTime += responseTime;
+                
+                const timeBonus = Math.max(0, Math.floor((30 - (responseTime / 1000)) * 5));
+                const comboBonus = gameState.combo * 10;
+                const points = 100 + timeBonus + comboBonus;
+                gameState.score += points;
+                
+                if (buttonElement) {
+                    buttonElement.classList.add('correct');
+                    buttonElement.classList.add('animation-correct');
+                }
+
+                document.getElementById('feedback').textContent = `正解！ +${points}点！`;
+                document.getElementById('feedback').classList.remove('incorrect');
+                document.getElementById('feedback').classList.add('correct');
+
+            } else {
+                gameState.combo = 0;
+                
+                if (buttonElement) {
+                    buttonElement.classList.add('incorrect');
+                    buttonElement.classList.add('animation-incorrect');
+                }
+                
+                document.querySelectorAll('.quiz-button').forEach(btn => {
+                    const buttonText = btn.textContent;
+                    const correctText = question.questionType === 'symbolToName' ? question.element.name : question.element.symbol;
+                    if (buttonText === correctText) {
+                        btn.classList.add('correct');
+                    }
+                });
+
+                document.getElementById('feedback').textContent = `残念！ 正解は ${question.questionType === 'symbolToName' ? question.element.name : question.element.symbol} でした。`;
+                document.getElementById('feedback').classList.remove('correct');
+                document.getElementById('feedback').classList.add('incorrect');
+            }
+
+            updateComboDisplay();
+
+            // ★修正点：次の問題へ遷移する処理をgameStateに保存
+            gameState.nextQuestionTimeout = setTimeout(() => {
+                gameState.currentQuestion++;
+                if (gameState.currentQuestion < gameState.totalQuestions) {
+                    showQuestion();
+                } else {
+                    endQuiz();
+                }
+            }, 1500);
+        }
+
+        // コンボ表示更新
+        function updateComboDisplay() {
+            const comboDisplay = document.getElementById('comboDisplay');
+            if (gameState.settings.combo && gameState.combo > 1) { // 2コンボ以上で表示
+                comboDisplay.style.display = 'block';
+                document.getElementById('comboNumber').textContent = gameState.combo;
+            } else {
+                comboDisplay.style.display = 'none';
+            }
+        }
+
+        // クイズ終了
+        function endQuiz() {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+
+            const accuracy = gameState.totalQuestions > 0 ? (gameState.correctAnswers / gameState.totalQuestions) * 100 : 0;
+            const avgTime = gameState.correctAnswers > 0 ? (gameState.totalTime / gameState.correctAnswers / 1000).toFixed(2) : 0;
+
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('correctCount').textContent = gameState.correctAnswers;
+            document.getElementById('accuracyRate').textContent = `${accuracy.toFixed(1)}%`;
+            document.getElementById('maxCombo').textContent = gameState.maxCombo;
+            document.getElementById('avgTime').textContent = `${avgTime}s`;
+
+            let resultText = '';
+            if (accuracy === 100) {
+                resultText = 'パーフェクト！素晴らしい！';
+            } else if (accuracy >= 80) {
+                resultText = 'よくできました！もっと上を目指しましょう！';
+            } else if (accuracy >= 50) {
+                resultText = 'あと一息！頑張りましょう！';
+            } else {
+                resultText = 'ドンマイ！繰り返し練習しましょう！';
+            }
+            document.getElementById('resultText').textContent = resultText;
+
+            // 統計を更新
+            stats.totalGames++;
+            stats.totalCorrect += gameState.correctAnswers;
+            stats.totalQuestions += gameState.totalQuestions;
+            if (gameState.score > stats.bestScore) {
+                stats.bestScore = gameState.score;
+            }
+            stats.averageScore = stats.totalGames > 1 ? ((stats.averageScore * (stats.totalGames - 1)) + gameState.score) / stats.totalGames : gameState.score;
+
+            stats.difficultyStats[gameState.difficulty].played++;
+            stats.difficultyStats[gameState.difficulty].correct += gameState.correctAnswers;
+            stats.difficultyStats[gameState.difficulty].total += gameState.totalQuestions;
+
+            localStorage.setItem('elementStats', JSON.stringify(stats));
+
+            // リーダーボードを更新
+            leaderboard.push({
+                score: gameState.score,
+                difficulty: gameState.difficulty,
+                mode: gameState.mode,
+                date: new Date().toLocaleString('ja-JP')
+            });
+            leaderboard.sort((a, b) => b.score - a.score);
+            if (leaderboard.length > 10) {
+                leaderboard = leaderboard.slice(0, 10);
+            }
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+
+            showScreen('resultScreen');
+        }
+
+        // 統計表示を更新
+        function updateStatsDisplay() {
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalGames}</div>
+                    <div class="stat-label">総プレイ回数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalCorrect}</div>
+                    <div class="stat-label">総正解数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.totalQuestions}</div>
+                    <div class="stat-label">総問題数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${(stats.totalQuestions > 0 ? (stats.totalCorrect / stats.totalQuestions) * 100 : 0).toFixed(1)}%</div>
+                    <div class="stat-label">全体正答率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.bestScore}</div>
+                    <div class="stat-label">最高スコア</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.averageScore.toFixed(0)}</div>
+                    <div class="stat-label">平均スコア</div>
+                </div>
+            `;
+
+            const difficultyNames = { easy: '初級', medium: '中級', hard: '上級' };
+            for (const diff in stats.difficultyStats) {
+                const diffStats = stats.difficultyStats[diff];
+                const diffAccuracy = diffStats.total > 0 ? (diffStats.correct / diffStats.total) * 100 : 0;
+                statsContainer.innerHTML += `
+                    <div class="stat-card">
+                        <div class="stat-number">${diffStats.played}</div>
+                        <div class="stat-label">${difficultyNames[diff]}プレイ</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${diffStats.correct} / ${diffStats.total}</div>
+                        <div class="stat-label">${difficultyNames[diff]}正解数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${diffAccuracy.toFixed(1)}%</div>
+                        <div class="stat-label">${difficultyNames[diff]}正答率</div>
+                    </div>
+                `;
+            }
+
+            const weaknessStatsDiv = document.createElement('div');
+            weaknessStatsDiv.style.gridColumn = '1 / -1';
+            weaknessStatsDiv.innerHTML = '<h4 style="text-align: center; margin-top: 30px; margin-bottom: 10px; color: #333;">苦手元素（不正解率順）</h4>';
+            
+            const sortedElements = Object.entries(stats.elementLearningHistory)
+                .map(([symbol, data]) => {
+                    const elementInfo = allElements.find(el => el.symbol === symbol);
+                    const name = elementInfo ? elementInfo.name : symbol;
+                    const total = data.correct + data.incorrect;
+                    return {
+                        symbol,
+                        name,
+                        correct: data.correct,
+                        incorrect: data.incorrect,
+                        total: total,
+                        incorrectRatio: total > 0 ? data.incorrect / total : 0
+                    };
+                })
+                .filter(el => el.total > 0)
+                .sort((a, b) => b.incorrectRatio - a.incorrectRatio || b.incorrect - a.incorrect);
+
+            if (sortedElements.length > 0) {
+                const weaknessList = document.createElement('ul');
+                weaknessList.style.listStyle = 'none';
+                weaknessList.style.padding = '0';
+                weaknessList.style.margin = '0 auto';
+                weaknessList.style.maxWidth = '400px';
+
+                sortedElements.slice(0, 10).forEach(el => { // 上位10件のみ表示
+                    const listItem = document.createElement('li');
+                    listItem.style.padding = '8px 15px';
+                    listItem.style.marginBottom = '5px';
+                    listItem.style.background = '#f0f4ff';
+                    listItem.style.borderRadius = '8px';
+                    listItem.style.display = 'flex';
+                    listItem.style.justifyContent = 'space-between';
+                    listItem.style.alignItems = 'center';
+
+                    listItem.innerHTML = `
+                        <span style="font-weight: bold; color: #667eea;">${el.name} (${el.symbol})</span>
+                        <span>不正解: <span style="color: #f44336; font-weight: bold;">${el.incorrect}</span> / 正解: ${el.correct}</span>
+                        <span style="font-weight: bold;">${(el.incorrectRatio * 100).toFixed(1)}%</span>
+                    `;
+                    weaknessList.appendChild(listItem);
+                });
+                weaknessStatsDiv.appendChild(weaknessList);
+                statsContainer.appendChild(weaknessStatsDiv);
+            } else {
+                weaknessStatsDiv.innerHTML += '<p style="text-align: center; color: #666;">まだ学習履歴がありません。</p>';
+                statsContainer.appendChild(weaknessStatsDiv);
+            }
+        }
+
+        // リーダーボードを更新
+        function updateLeaderboard() {
+            const leaderboardContainer = document.getElementById('leaderboardContainer');
+            leaderboardContainer.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                leaderboardContainer.innerHTML = '<p style="text-align: center; color: #666;">まだスコアがありません。</p>';
+                return;
+            }
+
+            leaderboard.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                const difficultyName = { easy: '初級', medium: '中級', hard: '上級' }[entry.difficulty];
+                const modeName = { normal: '通常', weakness: '苦手' }[entry.mode];
+                item.innerHTML = `
+                    <span class="rank">#${index + 1}</span>
+                    <span>スコア: ${entry.score}</span>
+                    <span>難易度: ${difficultyName}</span>
+                    <span>モード: ${modeName}</span>
+                    <span style="font-size: 0.8em; color: #666;">${entry.date}</span>
+                `;
+                leaderboardContainer.appendChild(item);
+            });
+        }
+
+        // 元素記号リストを生成して表示
+        function generatePeriodicTableList() {
+            const container = document.getElementById('elementListContainer');
+            container.innerHTML = '';
+
+            allElements.sort((a, b) => a.number - b.number);
+
+            allElements.forEach(element => {
+                const item = document.createElement('div');
+                item.className = 'element-item';
+                item.innerHTML = `
+                    <div class="symbol">${element.symbol}</div>
+                    <div class="name">${element.name}</div>
+                    <div class="number">No.${element.number}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 設定の初期化とイベントリスナー
+        function initializeSettings() {
+            const savedSettings = JSON.parse(localStorage.getItem('elementSettings'));
+            if (savedSettings) {
+                gameState.settings = { ...gameState.settings, ...savedSettings };
+            }
+
+            document.getElementById('soundToggle').checked = gameState.settings.sound;
+            document.getElementById('timerToggle').checked = gameState.settings.timer;
+            document.getElementById('comboToggle').checked = gameState.settings.combo;
+
+            document.getElementById('soundToggle').addEventListener('change', (e) => {
+                gameState.settings.sound = e.target.checked;
+                localStorage.setItem('elementSettings', JSON.stringify(gameState.settings));
+            });
+            document.getElementById('timerToggle').addEventListener('change', (e) => {
+                gameState.settings.timer = e.target.checked;
+                localStorage.setItem('elementSettings', JSON.stringify(gameState.settings));
+                document.querySelector('.timer').style.display = gameState.settings.timer ? 'inline' : 'none';
+            });
+            document.getElementById('comboToggle').addEventListener('change', (e) => {
+                gameState.settings.combo = e.target.checked;
+                localStorage.setItem('elementSettings', JSON.stringify(gameState.settings));
+                updateComboDisplay();
+            });
+            
+            document.querySelector('.timer').style.display = gameState.settings.timer ? 'inline' : 'none';
+        }
+
+        // ★修正点：起動時の処理を修正
+        window.onload = () => {
+            initializeSettings();
+            // 最初に必ずメニュー画面を表示する
+            showMenu();
+            // 各画面のデフォルト選択状態を初期化しておく
+            const initialModeButton = document.querySelector(`#modeSelector .mode-button[onclick*="selectMode('${gameState.mode}')"]`);
+            if (initialModeButton) initialModeButton.classList.add('active');
+            
+            const initialDifficultyButton = document.querySelector(`#difficultySelector .difficulty-btn[onclick*="selectDifficulty('${gameState.difficulty}')"]`);
+            if (initialDifficultyButton) initialDifficultyButton.classList.add('active');
+        };
+    </script>
+</body>
+</html>
