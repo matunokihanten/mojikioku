@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元素記号脳トレアプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        /* All screen containers are hidden by default */
+        .screen-container { /* Unified class for all screen containers */
+            display: none;
+        }
+
+        /* Only active screen is displayed */
+        .screen-container.active { /* Use 'active' for consistency */
+            display: block;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .menu-button, .quiz-button, .back-button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .menu-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .menu-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .quiz-button {
+            background: #4CAF50;
+            color: white;
+            margin: 10px;
+        }
+
+        .quiz-button:hover {
+            background: #45a049;
+        }
+
+        .quiz-button.incorrect {
+            background: #f44336;
+        }
+
+        .quiz-button.correct {
+            background: #2196F3;
+        }
+
+        .back-button {
+            background: #ff7043;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background: #f4511e;
+        }
+
+        .mode-selector {
+            margin-bottom: 20px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mode-button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-button.active {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        .mode-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+
+        .difficulty-selector {
+            margin-bottom: 20px;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .quiz-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        .quiz-question {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .question-text {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .element-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .result-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .result-score {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .result-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 1.1em;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .feedback.correct {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        .feedback.incorrect {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .combo-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .combo-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff9800;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .animation-correct {
+            animation: bounceIn 0.5s ease;
+        }
+
+        .animation-incorrect {
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .settings-container {
+            margin-bottom: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .leaderboard {
+            margin-top: 20px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+
+        .rank {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* Periodic Table specific styles */
+        .element-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjust column width as needed */
+            gap: 10px;
+            max-height: 400px; /* Make it scrollable if too long */
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .element-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .element-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .element-item .symbol {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .element-item .name {
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        .element-item .number {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1 class="title">⚗️ 元素記号マスター</h1>
+            <p class="subtitle">楽しく学ぶ化学の基礎</p>
+        </div>
+
+        <div id="menuScreen" class="screen-container active">
+            <div class="menu-buttons">
+                <button class="menu-button" onclick="showModeSelector()">🎯 クイズスタート</button>
+                <button class="menu-button" onclick="showPeriodicTable()">📖 元素記号表</button>
+                <button class="menu-button" onclick="showStats()">📊 学習統計</button>
+                <button class="menu-button" onclick="showSettings()">⚙️ 設定</button>
+                <button class="menu-button" onclick="showLeaderboard()">🏆 リーダーボード</button>
+            </div>
+        </div>
+
+        <div id="modeSelector" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">クイズモードを選択してください</h3>
+            <div class="mode-buttons">
+                <button class="mode-button" onclick="selectMode('normal', event)">📝 通常モード</button>
+                <button class="mode-button" onclick="selectMode('weakness', event)">💪 苦手克服モード</button>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="quiz-button" onclick="showDifficultySelector()">次へ</button>
+                <button class="back-button" onclick="showMenu()">戻る</button>
+            </div>
+        </div>
+
+        <div id="difficultySelector" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">難易度を選択してください</h3>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn" onclick="selectDifficulty('easy', event)">初級</button>
+                <button class="difficulty-btn" onclick="selectDifficulty('medium', event)">中級</button>
+                <button class="difficulty-btn" onclick="selectDifficulty('hard', event)">上級</button>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="quiz-button" onclick="startQuiz()">クイズ開始</button>
+                <button class="back-button" onclick="showModeSelector()">戻る</button>
+            </div>
+        </div>
+
+        <div id="quizScreen" class="screen-container">
+            <div class="quiz-info">
+                <span>問題 <span id="questionNumber">1</span> / <span id="totalQuestions">10</span></span>
+                <span>スコア: <span id="currentScore">0</span></span>
+                <span class="timer">時間: <span id="timeLeft">30</span>秒</span>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="combo-display" id="comboDisplay" style="display: none;">
+                <div>🔥 コンボ <span class="combo-number" id="comboNumber">0</span></div>
+            </div>
+
+            <div class="quiz-question">
+                <div class="question-text" id="questionText"></div>
+                <div class="element-display" id="elementDisplay"></div>
+            </div>
+
+            <div class="options" id="optionsContainer"></div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <button class="back-button" onclick="showMenu()">メニューに戻る</button>
+        </div>
+
+        <div id="resultScreen" class="screen-container">
+            <div class="result-message">
+                <div class="result-score" id="finalScore">0</div>
+                <div class="result-text" id="resultText"></div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number" id="correctCount">0</div>
+                    <div class="stat-label">正解数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="accuracyRate">0%</div>
+                    <div class="stat-label">正答率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="maxCombo">0</div>
+                    <div class="stat-label">最大コンボ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgTime">0s</div>
+                    <div class="stat-label">平均回答時間</div>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="quiz-button" onclick="showModeSelector()">もう一度</button>
+                <button class="back-button" onclick="showMenu()">メニューに戻る</button>
+            </div>
+        </div>
+
+        <div id="statsScreen" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">📊 学習統計</h3>
+            <div class="stats-container" id="statsContainer"></div>
+            <button class="back-button" onclick="showMenu()">戻る</button>
+        </div>
+
+        <div id="settingsScreen" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">⚙️ 設定</h3>
+            <div class="settings-container">
+                <div class="setting-item">
+                    <span>音響効果</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>タイマー表示</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="timerToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>コンボ表示</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="comboToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <button class="back-button" onclick="showMenu()">戻る</button>
+        </div>
+
+        <div id="leaderboardScreen" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">🏆 リーダーボード</h3>
+            <div class="leaderboard" id="leaderboardContainer"></div>
+            <button class="back-button" onclick="showMenu()">戻る</button>
+        </div>
+
+        <div id="periodicTableScreen" class="screen-container">
+            <h3 style="text-align: center; margin-bottom: 20px;">📖 元素記号一覧</h3>
+            <div class="element-list" id="elementListContainer">
+                </div>
+            <button class="back-button" onclick="showMenu()">戻る</button>
+        </div>
+    </div>
+
+    <script>
+        // 元素データ（難易度別）
+        const elements = {
+            easy: [
+                { name: "水素", symbol: "H", number: 1 },
+                { name: "ヘリウム", symbol: "He", number: 2 },
+                { name: "リチウム", symbol: "Li", number: 3 },
+                { name: "炭素", symbol: "C", number: 6 },
+                { name: "窒素", symbol: "N", number: 7 },
+                { name: "酸素", symbol: "O", number: 8 },
+                { name: "ナトリウム", symbol: "Na", number: 11 },
+                { name: "マグネシウム", symbol: "Mg", number: 12 },
+                { name: "アルミニウム", symbol: "Al", number: 13 },
+                { name: "ケイ素", symbol: "Si", number: 14 },
+                { name: "硫黄", symbol: "S", number: 16 },
+                { name: "塩素", symbol: "Cl", number: 17 },
+                { name: "カリウム", symbol: "K", number: 19 },
+                { name: "カルシウム", symbol: "Ca", number: 20 },
+                { name: "鉄", symbol: "Fe", number: 26 },
+                { name: "銅", symbol: "Cu", number: 29 },
+                { name: "亜鉛", symbol: "Zn", number: 30 },
+                { name: "銀", symbol: "Ag", number: 47 },
+                { name: "金", symbol: "Au", number: 79 }
+            ],
+            medium: [
+                { name: "ベリリウム", symbol: "Be", number: 4 },
+                { name: "ホウ素", symbol: "B", number: 5 },
+                { name: "フッ素", symbol: "F", number: 9 },
+                { name: "ネオン", symbol: "Ne", number: 10 },
+                { name: "リン", symbol: "P", number: 15 },
+                { name: "アルゴン", symbol: "Ar", number: 18 },
+                { name: "スカンジウム", symbol: "Sc", number: 21 },
+                { name: "チタン", symbol: "Ti", number: 22 },
+                { name: "バナジウム", symbol: "V", number: 23 },
+                { name: "クロム", symbol: "Cr", number: 24 },
+                { name: "マンガン", symbol: "Mn", number: 25 },
+                { name: "コバルト", symbol: "Co", number: 27 },
+                { name: "ニッケル", symbol: "Ni", number: 28 },
+                { name: "ガリウム", symbol: "Ga", number: 31 },
+                { name: "ゲルマニウム", symbol: "Ge", number: 32 },
+                { name: "ヒ素", symbol: "As", number: 33 },
+                { name: "セレン", symbol: "Se", number: 34 },
+                { name: "臭素", symbol: "Br", number: 35 },
+                { name: "クリプトン", symbol: "Kr", number: 36 }
+        
