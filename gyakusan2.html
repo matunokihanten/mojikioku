@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豪華な逆算チャレンジ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 120px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #FFD700;
+        }
+
+        .level-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .button {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .button.warning {
+            background: linear-gradient(45deg, #FFA726, #FF9800);
+        }
+
+        .button.info {
+            background: linear-gradient(45deg, #29B6F6, #0288D1);
+        }
+
+        .target-display {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .target-number {
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .numbers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.8em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .number:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .number.positive {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .number.negative {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        .number.clicked {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .result {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result.success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            animation: pulse 0.5s ease;
+        }
+
+        .result.error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .combo-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .combo-display.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: #FFD700;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: float 3s linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .stats-bar {
+                justify-content: center;
+            }
+            
+            .number {
+                width: 60px;
+                height: 60px;
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="game-container">
+        <div class="combo-display" id="comboDisplay">COMBO x<span id="comboCount">0</span></div>
+        
+        <h1>豪華な逆算チャレンジ</h1>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="level">1</div>
+                <div>レベル</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="score">0</div>
+                <div>スコア</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streak">0</div>
+                <div>連続正解</div>
+            </div>
+        </div>
+
+        <div class="level-controls">
+            <button class="button info" onclick="levelDown()">レベルダウン</button>
+            <button class="button info" onclick="levelUp()">レベルアップ</button>
+        </div>
+
+        <div class="target-display">
+            目標: <span class="target-number" id="target">0</span>
+        </div>
+
+        <div class="numbers-grid" id="numbers"></div>
+
+        <div class="controls">
+            <button class="button warning" onclick="showHint()">ヒント</button>
+            <button class="button success" onclick="checkAnswer()">チェック</button>
+            <button class="button info" onclick="newChallenge()">新しいチャレンジ</button>
+            <button class="button" onclick="resetGame()">リセット</button>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let numbers = []; // 問題の数字
+        let signs = [];   // ユーザーが選択する符号 ('+' または '-')
+        let target = 0;   // 目標値
+        let level = 1;
+        let score = 0;
+        let streak = 0; // 連続正解数
+        let combo = 0;  // コンボ数 (連続正解ボーナス用)
+
+        // 音声効果をシミュレート
+        function playSound(type) {
+            // 実際の音声ファイルがない場合の代替
+            console.log(`Playing sound: ${type}`);
+        }
+
+        // パーティクルエフェクト
+        function createParticles() {
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 5; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 3 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                particles.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 5000);
+            }
+        }
+
+        // レベルアップ
+        function levelUp() {
+            level++;
+            if (level > 20) level = 20; // 最大レベルを20に設定
+            updateLevel();
+            playSound('levelup');
+        }
+
+        // レベルダウン
+        function levelDown() {
+            level--;
+            if (level < 1) level = 1; // 最小レベルを1に設定
+            updateLevel();
+        }
+
+        // レベル更新
+        function updateLevel() {
+            document.getElementById('level').textContent = level;
+            newChallenge(); // レベル変更時に新しいチャレンジを生成
+        }
+
+        // 新しいチャレンジ生成
+        function newChallenge() {
+            const numberCount = Math.min(level + 4, 12); // レベルに応じて数字の数を増やす (最大12個)
+            const maxValue = Math.min(level * 2 + 5, 20); // レベルに応じて数字の最大値を増やす (最大20)
+            
+            let attempts = 0;
+            const maxAttempts = 100; // 無限ループ防止のための試行回数制限
+
+            do {
+                numbers = Array.from({ length: numberCount }, () => 
+                    Math.floor(Math.random() * maxValue) + 1
+                );
+                
+                // 問題が必ず解けるように、解となる符号の組み合わせを先に生成する
+                const solutionSigns = numbers.map(() => Math.random() > 0.5 ? '+' : '-');
+                // 最初の数字の符号は、一旦ランダムに生成してから必ず+にする
+                solutionSigns[0] = '+'; 
+                
+                // 目標値を計算 (これで目標値が必ず達成可能になる)
+                target = calculateWithSigns(numbers, solutionSigns);
+                attempts++;
+
+                if (attempts >= maxAttempts) {
+                    console.warn("Could not generate a positive target after many attempts. Relaxing constraints.");
+                    // 極端なケースでのフォールバック（通常は発生しないはず）
+                    if (target <= 0) target = 1; 
+                    break;
+                }
+            } while (target <= 0); // 目標値が0以下にならないように再生成
+
+            // ユーザーに表示する初期の符号は全て'+'にする
+            signs = numbers.map(() => '+');
+            
+            document.getElementById('target').textContent = target;
+            updateNumbersDisplay(); // 数字と符号の表示を更新
+            document.getElementById('result').textContent = ''; // 結果表示をクリア
+            document.getElementById('result').className = 'result'; // 結果表示のスタイルをリセット
+        }
+
+        // 数字と符号を表示
+        function updateNumbersDisplay() {
+            const numbersDiv = document.getElementById('numbers');
+            numbersDiv.innerHTML = '';
+            
+            numbers.forEach((num, index) => {
+                const div = document.createElement('div');
+                div.className = `number ${signs[index] === '+' ? 'positive' : 'negative'}`;
+                div.textContent = `${signs[index]}${num}`;
+                div.onclick = () => toggleSign(index); // クリックで符号を切り替え
+                numbersDiv.appendChild(div);
+            });
+        }
+
+        // 符号切り替え
+        function toggleSign(index) {
+            // REMOVED: if (index === 0) return; // 最初の数字の符号は変更できないようにする - この行を削除
+            
+            signs[index] = signs[index] === '+' ? '-' : '+';
+            updateNumbersDisplay(); // 表示を更新
+            
+            // クリックアニメーション
+            const numberElement = document.querySelectorAll('.number')[index];
+            numberElement.classList.add('clicked');
+            setTimeout(() => {
+                numberElement.classList.remove('clicked');
+            }, 500);
+            
+            playSound('click');
+        }
+
+        // 数字と符号に基づいて計算を実行
+        function calculateWithSigns(nums, currentSigns) {
+            return nums.reduce((sum, num, index) => 
+                sum + (currentSigns[index] === '+' ? num : -num), 0
+            );
+        }
+
+        // 現在の合計を計算
+        function calculateCurrentTotal() {
+            return calculateWithSigns(numbers, signs);
+        }
+
+        // ヒント表示
+        function showHint() {
+            const total = calculateCurrentTotal();
+            const difference = target - total;
+            document.getElementById('result').innerHTML = `
+                <div>現在の合計: ${total}</div>
+                <div>目標との差: ${difference}</div>
+            `;
+            document.getElementById('result').className = 'result';
+            playSound('hint');
+        }
+
+        // 答えチェック
+        function checkAnswer() {
+            const total = calculateCurrentTotal();
+            const resultElement = document.getElementById('result');
+            
+            if (total === target) {
+                streak++;
+                combo++; // 正解するとコンボが増える
+                score += level * 10 * combo; // スコアにレベルとコンボを乗算して加算
+                
+                resultElement.innerHTML = `
+                    <div>正解！ 🎉</div>
+                    <div>+${level * 10 * combo}点</div>
+                `;
+                resultElement.className = 'result success';
+                
+                // コンボが2以上の場合のみコンボ表示を更新
+                if (combo > 1) {
+                    showCombo();
+                }
+                
+                createParticles(); // 正解時のパーティクルエフェクト
+                playSound('success');
+                
+                setTimeout(() => {
+                    newChallenge(); // 1.5秒後に新しいチャレンジ
+                }, 1500);
+                
+            } else {
+                streak = 0; // 不正解で連続正解リセット
+                combo = 0;  // 不正解でコンボリセット
+                resultElement.innerHTML = `
+                    <div>不正解 😞</div>
+                    <div>現在: ${total} / 目標: ${target}</div>
+                `;
+                resultElement.className = 'result error';
+                playSound('error');
+            }
+            
+            updateStats(); // 統計情報を更新
+        }
+
+        // コンボ表示
+        function showCombo() {
+            const comboDisplay = document.getElementById('comboDisplay');
+            document.getElementById('comboCount').textContent = combo;
+            comboDisplay.classList.add('show');
+            
+            setTimeout(() => {
+                comboDisplay.classList.remove('show');
+            }, 2000); // 2秒後にコンボ表示を隠す
+        }
+
+        // 統計更新
+        function updateStats() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+        }
+
+        // ゲームリセット
+        function resetGame() {
+            score = 0;
+            streak = 0;
+            combo = 0;
+            level = 1;
+            
+            updateStats(); // スコアと連続正解数をリセットして表示
+            updateLevel();  // レベルをリセットして新しいチャレンジを生成
+            
+            document.getElementById('result').textContent = '';
+            document.getElementById('result').className = 'result';
+        }
+
+        // 背景パーティクル生成 (常時実行)
+        function generateBackgroundParticles() {
+            setInterval(() => {
+                // ランダムにパーティクルを生成して背景を賑やかにする
+                if (Math.random() < 0.1) { // 10%の確率で生成
+                    createParticles();
+                }
+            }, 2000); // 2秒ごとにチェック
+        }
+
+        // 初期化
+        function init() {
+            newChallenge(); // 最初のチャレンジを生成
+            generateBackgroundParticles(); // 背景パーティクルの生成を開始
+        }
+
+        // ゲーム開始
+        init();
+    </script>
+</body>
+</html>
