@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>脳トレ × 色彩アートゲーム</title>
+  <style>
+    :root {
+      --shape-size: 80px;
+      --gap: 12px;
+      --primary-color: #4CAF50; /* Green */
+      --secondary-color: #2196F3; /* Blue */
+      --accent-color: #FFC107; /* Amber */
+      --danger-color: #F44336; /* Red */
+      --text-color: #eee;
+      --bg-color: #1a1a1a;
+      --card-bg: #333;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      text-align: center;
+      background: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin-bottom: 15px;
+      color: var(--accent-color);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    #settings, #game, #result, #countdown {
+      margin-top: 25px;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 600px;
+      box-sizing: border-box;
+    }
+
+    select, button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 10px 8px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      font-weight: bold;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    button:hover {
+      background-color: #45a049;
+      transform: translateY(-2px);
+    }
+    #restartBtn {
+      background-color: var(--secondary-color);
+    }
+    #restartBtn:hover {
+      background-color: #1e87db;
+    }
+    select {
+      background-color: #444;
+      color: var(--text-color);
+      border: 1px solid #555;
+      padding-right: 30px; /* For dropdown arrow */
+      -webkit-appearance: none; /* Remove default arrow */
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%205%22%3E%3Cpath%20fill%3D%22%23eee%22%20d%3D%22M2%200L0%202h4L2%200zM2%205L0%203h4L2%205z%22%2F%3E%3C%2Fsvg%3E');
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 10px;
+    }
+    select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+    }
+
+    #prompt {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+    #targetPreview {
+      margin: 0 auto 25px;
+      border: 3px dashed rgba(255,255,255,0.5); /* Target border */
+      box-sizing: border-box;
+    }
+    #choices {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--gap);
+      margin-top: 20px;
+    }
+    .shape {
+      width: var(--shape-size);
+      height: var(--shape-size);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      background: none;
+      box-sizing: border-box; /* Include padding and border in element's total width and height */
+      border: 3px solid transparent; /* Default border for choices */
+    }
+    .shape:hover {
+      transform: scale(1.1);
+      border-color: var(--secondary-color); /* Hover effect */
+    }
+    .circle {
+      border-radius: 50%;
+    }
+    /* .square is default */
+    .triangle {
+      width: 0;
+      height: 0;
+      border-left: calc(var(--shape-size) / 2) solid transparent;
+      border-right: calc(var(--shape-size) / 2) solid transparent;
+      border-bottom: var(--shape-size) solid;
+      background: none; /* Crucial for triangle */
+    }
+    .correct-feedback {
+      background-color: #28a745 !important; /* Green overlay */
+      border-color: #28a745 !important;
+    }
+    .wrong-feedback {
+      background-color: #dc3545 !important; /* Red overlay */
+      border-color: #dc3545 !important;
+    }
+    .correct {
+      animation: pop 0.3s ease-out forwards;
+      border-color: var(--primary-color) !important;
+    }
+    .wrong {
+      animation: shake 0.3s ease-out forwards;
+      border-color: var(--danger-color) !important;
+    }
+    .faded {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-10px); }
+      75%      { transform: translateX(10px); }
+    }
+    #stats {
+      margin-top: 25px;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #stats span {
+      padding: 5px 10px;
+      background: #444;
+      border-radius: 5px;
+    }
+    #result p {
+      margin: 10px 0;
+      font-size: 22px;
+    }
+    #result span {
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+    .result-detail {
+        font-size: 18px;
+        margin-top: 15px;
+        line-height: 1.5;
+        text-align: left;
+        padding-left: 20%; /* Center the text visually */
+    }
+
+    #countdown {
+        font-size: 8em;
+        font-weight: bold;
+        color: var(--accent-color);
+        text-shadow: 0 0 15px var(--accent-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      :root {
+        --shape-size: 70px;
+        --gap: 10px;
+      }
+      body {
+        padding: 10px;
+      }
+      h1 {
+        font-size: 2em;
+      }
+      #settings, #game, #result {
+        padding: 20px;
+        margin-top: 15px;
+      }
+      select, button {
+        font-size: 16px;
+        padding: 8px 15px;
+        margin: 8px 5px;
+      }
+      #prompt {
+        font-size: 22px;
+      }
+      #stats {
+        font-size: 16px;
+      }
+      #result p {
+        font-size: 18px;
+      }
+      .result-detail {
+        font-size: 16px;
+        padding-left: 10%;
+      }
+      #countdown {
+        font-size: 6em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --shape-size: 60px;
+        --gap: 8px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+      select, button {
+        width: calc(100% - 16px); /* Full width minus margin */
+        box-sizing: border-box;
+      }
+      #choices {
+        gap: 8px;
+      }
+      #countdown {
+        font-size: 5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>脳トレ × 色彩アート</h1>
+
+  <div id="settings">
+    <p>テーマを選択：
+    <select id="themeSelect"></select></p>
+    <p>ラウンド数を選択：
+    <select id="roundsSelect">
+      <option value="5">5ラウンド</option>
+      <option value="10" selected>10ラウンド</option>
+      <option value="15">15ラウンド</option>
+      <option value="20">20ラウンド</option>
+    </select></p>
+    <button id="startBtn">ゲームスタート</button>
+  </div>
+
+  <div id="countdown" hidden>
+      3
+  </div>
+
+  <div id="game" hidden>
+    <div id="prompt"></div>
+    <div id="targetPreview" class="shape"></div>
+    <div id="choices"></div>
+    <div id="stats">
+      <span>ラウンド: <span id="round">0</span> / <span id="maxRounds">0</span></span>
+      <span>スコア: <span id="score">0</span></span>
+      <span>平均反応時間: <span id="avgTime">0.00</span> 秒</span>
+    </div>
+  </div>
+
+  <div id="result" hidden>
+    <p>ゲーム終了！</p>
+    <p>最終スコア: <span id="finalScore"></span></p>
+    <div class="result-detail">
+        <p>正解数: <span id="correctCount"></span></p>
+        <p>不正解数: <span id="incorrectCount"></span></p>
+        <p>正解率: <span id="accuracyRate"></span>%</p>
+        <p>最短反応時間: <span id="minTime"></span> 秒</p>
+        <p>最長反応時間: <span id="maxTime"></span> 秒</p>
+        <p>合計反応時間: <span id="totalTimeDisplay"></span> 秒</p>
+    </div>
+    <button id="restartBtn">もう一度遊ぶ</button>
+  </div>
+
+  <script>
+    // ゲーム設定と状態変数
+    const themes = {
+      "ビビッドネオン": [
+        { name: "レッド",   value: "#FF073A" },
+        { name: "オレンジ", value: "#FF9F1C" },
+        { name: "イエロー", value: "#FFBF00" },
+        { name: "シアン",   value: "#08D9D6" },
+        { name: "ブルー",   value: "#00BBF9" },
+        { name: "マゼンタ", value: "#B5179E" }
+      ],
+      "パステル": [
+        { name: "ペールピンク", value: "#FFB3BA" },
+        { name: "ライトオレンジ", value: "#FFDFBA" },
+        { name: "ペールイエロー", value: "#FFFFBA" },
+        { name: "ミント", value: "#BAFFC9" },
+        { name: "ライトブルー", value: "#BAE1FF" }
+      ],
+      "ウォーム": [
+        { name: "深紅", value: "#D7263D" },
+        { name: "サーモン", value: "#F46036" },
+        { name: "マスタード", value: "#EEC213" },
+        { name: "クリーム", value: "#F4F1BB" },
+        { name: "ネイビー", value: "#2E294E" }
+      ]
+    };
+
+    const shapes = ["circle", "square", "triangle"];
+    let currentThemeColors = [];
+    let maxRounds = 10;
+    let round = 0, score = 0, incorrectCount = 0;
+    let totalReactionTime = 0;
+    let minReactionTime = Infinity;
+    let maxReactionTime = 0;
+    let startTime = 0;
+    let isClickable = false; // 選択肢クリック可能フラグ
+
+    // DOM要素の取得
+    const themeSelect      = document.getElementById("themeSelect");
+    const roundsSelect     = document.getElementById("roundsSelect");
+    const startBtn         = document.getElementById("startBtn");
+    const restartBtn       = document.getElementById("restartBtn");
+    const settingsDiv      = document.getElementById("settings");
+    const countdownDiv     = document.getElementById("countdown");
+    const gameDiv          = document.getElementById("game");
+    const resultDiv        = document.getElementById("result");
+    const promptEl         = document.getElementById("prompt");
+    const previewEl        = document.getElementById("targetPreview");
+    const choicesEl        = document.getElementById("choices");
+    const roundEl          = document.getElementById("round");
+    const maxRoundsEl      = document.getElementById("maxRounds");
+    const scoreEl          = document.getElementById("score");
+    const avgTimeEl        = document.getElementById("avgTime");
+    const finalScoreEl     = document.getElementById("finalScore");
+    const correctCountEl   = document.getElementById("correctCount");
+    const incorrectCountEl = document.getElementById("incorrectCount");
+    const accuracyRateEl   = document.getElementById("accuracyRate");
+    const minTimeEl        = document.getElementById("minTime");
+    const maxTimeEl        = document.getElementById("maxTime");
+    const totalTimeDisplayEl = document.getElementById("totalTimeDisplay");
+
+    // イベントリスナーの設定
+    startBtn.onclick   = startCountdown;
+    restartBtn.onclick = initGame;
+
+    // テーマ選択肢の生成
+    Object.keys(themes).forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      themeSelect.appendChild(opt);
+    });
+
+    /**
+     * ゲーム開始前の初期化処理
+     */
+    function initGame() {
+      settingsDiv.hidden = false;
+      gameDiv.hidden     = true;
+      resultDiv.hidden   = true;
+      countdownDiv.hidden = true; // ensure countdown is hidden
+
+      round = 0;
+      score = 0;
+      incorrectCount = 0;
+      totalReactionTime = 0;
+      minReactionTime = Infinity;
+      maxReactionTime = 0;
+      updateStats();
+      maxRoundsEl.textContent = maxRounds; // Initialize max rounds display
+
+      // 現在のテーマ色とラウンド数を設定
+      currentThemeColors = themes[themeSelect.value];
+      maxRounds = parseInt(roundsSelect.value);
+    }
+
+    /**
+     * ゲーム開始前のカウントダウン処理
+     */
+    function startCountdown() {
+        settingsDiv.hidden = true;
+        gameDiv.hidden = true;
+        resultDiv.hidden = true;
+        countdownDiv.hidden = false;
+
+        let count = 3;
+        countdownDiv.textContent = count;
+
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownDiv.textContent = count;
+            } else {
+                clearInterval(countdownInterval);
+                countdownDiv.hidden = true;
+                gameDiv.hidden = false;
+                nextRound(); // カウントダウン終了後、次のラウンドへ
+            }
+        }, 1000);
+    }
+
+    /**
+     * 次のラウンドの準備と開始
+     */
+    function nextRound() {
+      if (round >= maxRounds) {
+        endGame();
+        return;
+      }
+
+      round++;
+      roundEl.textContent = round;
+      maxRoundsEl.textContent = maxRounds; // Update max rounds display each round
+      choicesEl.innerHTML = ""; // 選択肢をクリア
+      isClickable = false; // クリックを一時的に無効化
+
+      // ターゲットを決定
+      const targetShape = randomItem(shapes);
+      const targetColor = randomItem(currentThemeColors);
+
+      // プレビューの更新
+      previewEl.className = `shape ${targetShape}`; // Reset classes
+      if (targetShape === "triangle") {
+        previewEl.style.borderBottomColor = targetColor.value;
+        previewEl.style.background = "none";
+        previewEl.style.borderColor = "transparent"; // Ensure border is transparent for triangle
+      } else {
+        previewEl.style.background = targetColor.value;
+        previewEl.style.border = "3px dashed rgba(255,255,255,0.5)"; // Restore dashed border
+        previewEl.style.borderTopColor = previewEl.style.borderRightColor = previewEl.style.borderLeftColor = "rgba(255,255,255,0.5)";
+      }
+
+      // テキストプロンプトの更新
+      promptEl.textContent = `${targetColor.name}の${shapeName(targetShape)}を探してね！`;
+
+      // 選択肢の生成（6個）
+      let options = [{ shape: targetShape, color: targetColor, correct: true }];
+      while (options.length < 6) {
+        const s = randomItem(shapes);
+        const c = randomItem(currentThemeColors);
+        // 同じ色と形の組み合わせが既に存在するかチェック
+        if (options.some(o => o.shape === s && o.color.value === c.value)) continue;
+        options.push({ shape: s, color: c, correct: false });
+      }
+      options.sort(() => Math.random() - 0.5); // シャッフル
+
+      // 選択肢の描画
+      options.forEach(opt => {
+        const el = document.createElement("div");
+        el.className = `shape ${opt.shape}`;
+        if (opt.shape === "triangle") {
+          el.style.borderBottomColor = opt.color.value;
+          el.style.background = "none";
+        } else {
+          el.style.background = opt.color.value;
+        }
+        el.onclick = () => handleChoice(el, opt.correct);
+        choicesEl.appendChild(el);
+      });
+
+      // 選択肢が描画された後、クリック可能にする
+      setTimeout(() => {
+        startTime = performance.now();
+        isClickable = true;
+      }, 100); // 短い遅延を設けて、DOMが完全にレンダリングされるのを待つ
+    }
+
+    /**
+     * 選択肢がクリックされた時の処理
+     * @param {HTMLElement} el クリックされた要素
+     * @param {boolean} correct 正解かどうか
+     */
+    function handleChoice(el, correct) {
+      if (!isClickable) return; // クリックが無効なら何もしない
+      isClickable = false; // クリックを受け付けたら、次のクリックを無効化
+
+      const elapsed = (performance.now() - startTime) / 1000; // 秒単位
+      totalReactionTime += elapsed;
+      minReactionTime = Math.min(minReactionTime, elapsed);
+      maxReactionTime = Math.max(maxReactionTime, elapsed);
+
+      // 他の選択肢をフェードアウトさせる
+      Array.from(choicesEl.children).forEach(child => {
+          if (child !== el) {
+              child.classList.add('faded');
+          }
+      });
+
+      if (correct) {
+        score++;
+        el.classList.add("correct");
+        // 正解時のフィードバック
+        document.body.classList.add('correct-feedback');
+      } else {
+        incorrectCount++;
+        el.classList.add("wrong");
+        // 不正解時のフィードバック
+        document.body.classList.add('wrong-feedback');
+
+        // 不正解の場合、正しい選択肢を強調表示（オプション）
+        // const correctChoice = Array.from(choicesEl.children).find(child => child.__correct__); // もし__correct__プロパティを付与しているなら
+        // if (correctChoice) {
+        //     correctChoice.style.border = '3px solid var(--primary-color)';
+        // }
+      }
+      updateStats();
+
+      // 一定時間後に次のラウンドへ、またはゲーム終了
+      setTimeout(() => {
+        // フィードバックをリセット
+        document.body.classList.remove('correct-feedback', 'wrong-feedback');
+        nextRound();
+      }, 800); // アニメーションとフィードバックが表示される時間を確保
+    }
+
+    /**
+     * 統計情報の更新
+     */
+    function updateStats() {
+      scoreEl.textContent = score;
+      avgTimeEl.textContent = round > 0 ? (totalReactionTime / round).toFixed(2) : "0.00";
+    }
+
+    /**
+     * ゲーム終了時の処理
+     */
+    function endGame() {
+      gameDiv.hidden   = true;
+      resultDiv.hidden = false;
+      finalScoreEl.textContent = `${score} / ${maxRounds}`;
+      correctCountEl.textContent = score;
+      incorrectCountEl.textContent = incorrectCount;
+      const totalAnswered = score + incorrectCount;
+      accuracyRateEl.textContent = totalAnswered > 0 ? ((score / totalAnswered) * 100).toFixed(1) : "0.0";
+      minTimeEl.textContent = minReactionTime === Infinity ? "N/A" : minReactionTime.toFixed(2);
+      maxTimeEl.textContent = maxReactionTime === 0 ? "N/A" : maxReactionTime.toFixed(2);
+      totalTimeDisplayEl.textContent = totalReactionTime.toFixed(2);
+    }
+
+    /**
+     * 配列からランダムな要素を返すヘルパー関数
+     * @param {Array} arr
+     * @returns {any} arr内のランダムな要素
+     */
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    /**
+     * 図形のキーから日本語名に変換するヘルパー関数
+     * @param {string} key 図形キー（"circle", "square", "triangle"）
+     * @returns {string} 日本語名
+     */
+    function shapeName(key) {
+      return { circle: "丸", square: "四角", triangle: "三角" }[key];
+    }
+
+    // ページロード時の初期化
+    initGame();
+  </script>
+</body>
+</html>
