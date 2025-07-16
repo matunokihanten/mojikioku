@@ -28,6 +28,7 @@
       align-items: center;
       min-height: 100vh;
       box-sizing: border-box;
+      transition: background-color 0.3s ease; /* Feedback transition */
     }
     h1 {
       margin-bottom: 15px;
@@ -76,7 +77,7 @@
     #relaxModeBtn:hover {
         background-color: #455A64;
     }
-    #numberModeBtn { /* 新しい数字モードボタンのスタイル */
+    #numberModeBtn {
         background-color: #FF5722; /* Deep Orange */
     }
     #numberModeBtn:hover {
@@ -113,6 +114,7 @@
       margin-bottom: 20px;
       font-weight: bold;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      min-height: 36px; /* Prevent layout shift */
     }
     #choices {
       display: flex;
@@ -128,13 +130,17 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.2s ease, opacity 0.2s ease;
+      transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
       background: none;
       box-sizing: border-box;
       border: 3px solid transparent;
-      color: #fff; /* 数字の文字色 */
-      font-size: 2.5em; /* 数字のフォントサイズ */
+      color: #fff;
+      font-size: 2.5em;
       font-weight: bold;
+      -webkit-user-select: none; /* Prevent text selection */
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     .shape:hover {
       transform: scale(1.1);
@@ -142,6 +148,9 @@
     }
     .circle {
       border-radius: 50%;
+    }
+    .square {
+      border-radius: 5px;
     }
     .triangle {
       width: 0;
@@ -210,8 +219,15 @@
         text-align: left;
         padding-left: 20%;
     }
+    .result-detail .label { /* Added for consistent label width */
+        display: inline-block;
+        width: 150px;
+        font-weight: normal;
+    }
     #game-buttons {
         margin-top: 20px;
+        display: flex;
+        justify-content: center;
     }
 
     #countdown {
@@ -233,7 +249,7 @@
       h1 {
         font-size: 2em;
       }
-      #settings, #game, #result {
+      #settings, #game, #result, #countdown {
         padding: 20px;
         margin-top: 15px;
       }
@@ -255,10 +271,13 @@
         font-size: 16px;
         padding-left: 10%;
       }
+      .result-detail .label {
+        width: 120px;
+      }
       #countdown {
         font-size: 6em;
       }
-      .shape { /* 数字のサイズ調整 */
+      .shape {
         font-size: 2em;
       }
     }
@@ -281,8 +300,11 @@
       #countdown {
         font-size: 5em;
       }
-      .shape { /* 数字のサイズ調整 */
+      .shape {
         font-size: 1.8em;
+      }
+      .result-detail .label {
+        width: 100px;
       }
     }
   </style>
@@ -302,7 +324,8 @@
     </select></p>
     <button id="startBtn">通常モードで遊ぶ</button>
     <button id="relaxModeBtn">リラックスモードで遊ぶ</button>
-    <button id="numberModeBtn">数字モードで遊ぶ</button> </div>
+    <button id="numberModeBtn">数字モードで遊ぶ</button>
+  </div>
 
   <div id="countdown" hidden>
       3
@@ -325,12 +348,12 @@
     <p>ゲーム終了！</p>
     <p>最終スコア: <span id="finalScore"></span></p>
     <div class="result-detail">
-        <p>正解数: <span id="correctCount"></span></p>
-        <p>不正解数: <span id="incorrectCount"></span></p>
-        <p>正解率: <span id="accuracyRate"></span>%</p>
-        <p>最短反応時間: <span id="minTime"></span> 秒</p>
-        <p>最長反応時間: <span id="maxTime"></span> 秒</p>
-        <p>合計反応時間: <span id="totalTimeDisplay"></span> 秒</p>
+        <p><span class="label">正解数:</span> <span id="correctCount"></span></p>
+        <p><span class="label">不正解数:</span> <span id="incorrectCount"></span></p>
+        <p><span class="label">正解率:</span> <span id="accuracyRate"></span>%</p>
+        <p><span class="label">最短反応時間:</span> <span id="minTime"></span> 秒</p>
+        <p><span class="label">最長反応時間:</span> <span id="maxTime"></span> 秒</p>
+        <p><span class="label">合計反応時間:</span> <span id="totalTimeDisplay"></span> 秒</p>
     </div>
     <button id="restartBtn">もう一度遊ぶ</button>
   </div>
@@ -371,7 +394,7 @@
     };
 
     const shapes = ["circle", "square", "triangle"];
-    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]; // 数字モード用
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     let currentThemeColors = [];
     let maxRounds = 10;
     let round = 0, score = 0, incorrectCount = 0;
@@ -379,16 +402,17 @@
     let minReactionTime = Infinity;
     let maxReactionTime = 0;
     let startTime = 0;
-    let isClickable = false; // 選択肢クリック可能フラグ
-    let isRelaxMode = false; // リラックスモードフラグ
-    let isNumberMode = false; // 数字モードフラグ
+    let isClickable = false;
+    let isRelaxMode = false;
+    let isNumberMode = false;
+    let countdownTimer = null;
 
     // DOM要素の取得
     const themeSelect      = document.getElementById("themeSelect");
     const roundsSelect     = document.getElementById("roundsSelect");
     const startBtn         = document.getElementById("startBtn");
     const relaxModeBtn     = document.getElementById("relaxModeBtn");
-    const numberModeBtn    = document.getElementById("numberModeBtn"); // 新しく追加
+    const numberModeBtn    = document.getElementById("numberModeBtn");
     const restartBtn       = document.getElementById("restartBtn");
     const endGameBtn       = document.getElementById("endGameBtn");
     const settingsDiv      = document.getElementById("settings");
@@ -411,11 +435,14 @@
     const gameButtonsDiv   = document.getElementById("game-buttons");
 
     // イベントリスナーの設定
-    startBtn.onclick     = () => { isRelaxMode = false; isNumberMode = false; startCountdown(); }; // 通常モード
-    relaxModeBtn.onclick = () => { isRelaxMode = true; isNumberMode = false; startCountdown(); }; // リラックスモード
-    numberModeBtn.onclick = () => { isRelaxMode = false; isNumberMode = true; startCountdown(); }; // 数字モード
+    startBtn.onclick     = () => { isRelaxMode = false; isNumberMode = false; startCountdown(); };
+    relaxModeBtn.onclick = () => { isRelaxMode = true; isNumberMode = false; startCountdown(); };
+    numberModeBtn.onclick = () => { isRelaxMode = false; isNumberMode = true; startCountdown(); };
     restartBtn.onclick   = initGame;
-    endGameBtn.onclick   = endGame;
+    endGameBtn.onclick   = () => {
+        if (countdownTimer) clearInterval(countdownTimer);
+        endGame();
+    };
 
     // テーマ選択肢の生成
     Object.keys(themes).forEach(name => {
@@ -424,34 +451,47 @@
       opt.textContent = name;
       themeSelect.appendChild(opt);
     });
+    // 初期テーマを「ベーシックカラー」に設定
+    themeSelect.value = "ベーシックカラー";
 
     /**
      * ゲーム開始前の初期化処理
      */
     function initGame() {
+      // Reset all display elements
       settingsDiv.hidden = false;
       gameDiv.hidden     = true;
       resultDiv.hidden   = true;
       countdownDiv.hidden = true;
 
+      // Reset game state variables
       round = 0;
       score = 0;
       incorrectCount = 0;
       totalReactionTime = 0;
       minReactionTime = Infinity;
       maxReactionTime = 0;
-      updateStats();
-      maxRoundsEl.textContent = maxRounds;
+      isClickable = false;
+      isRelaxMode = false;
+      isNumberMode = false;
+      if (countdownTimer) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+      }
 
+      // Update stats display (score and avgTime will be reset by updateStats)
+      updateStats();
+      maxRoundsEl.textContent = maxRounds; // Default value, will be updated by settings
+
+      // Set initial theme and rounds from settings
       currentThemeColors = themes[themeSelect.value];
       maxRounds = parseInt(roundsSelect.value);
 
-      themeSelect.value = "ベーシックカラー";
-      currentThemeColors = themes["ベーシックカラー"];
-
-      avgTimeEl.parentElement.hidden = false;
-      scoreEl.parentElement.hidden = false;
-      gameButtonsDiv.hidden = true;
+      // Ensure stats elements are visible by default
+      scoreEl.parentElement.hidden = false; // Always show score parent to prevent layout shift even if score is N/A
+      avgTimeEl.parentElement.hidden = false; // Always show avgTime parent
+      gameButtonsDiv.hidden = true; // Hide game buttons on init
+      document.body.classList.remove('correct-feedback', 'wrong-feedback'); // Clear any lingering feedback
     }
 
     /**
@@ -462,33 +502,28 @@
         gameDiv.hidden = true;
         resultDiv.hidden = true;
         countdownDiv.hidden = false;
-        gameButtonsDiv.hidden = false;
+        gameButtonsDiv.hidden = false; // Show end game button during countdown
 
-        // リラックスモードまたは数字モードに応じて統計情報の表示を切り替える
-        if (isRelaxMode || isNumberMode) { // 数字モードでも時間やスコアは計測しない
-            avgTimeEl.parentElement.hidden = true;
+        // Hide/show score only; avg time is always shown now
+        if (isRelaxMode || isNumberMode) {
             scoreEl.parentElement.hidden = true;
         } else {
-            avgTimeEl.parentElement.hidden = false;
             scoreEl.parentElement.hidden = false;
         }
 
         let count = 3;
         countdownDiv.textContent = count;
 
-        const countdownInterval = setInterval(() => {
+        countdownTimer = setInterval(() => {
             count--;
             if (count > 0) {
                 countdownDiv.textContent = count;
             } else {
-                clearInterval(countdownInterval);
+                clearInterval(countdownTimer);
+                countdownTimer = null;
                 countdownDiv.hidden = true;
                 gameDiv.hidden = false;
-                if (isRelaxMode || isNumberMode) { // リラックスモードまたは数字モードでは無限ラウンド
-                    maxRoundsEl.textContent = "∞";
-                } else {
-                    maxRoundsEl.textContent = maxRounds;
-                }
+                maxRoundsEl.textContent = (isRelaxMode || isNumberMode) ? "∞" : maxRounds;
                 nextRound();
             }
         }, 1000);
@@ -498,6 +533,8 @@
      * 次のラウンドの準備と開始
      */
     function nextRound() {
+      document.body.classList.remove('correct-feedback', 'wrong-feedback');
+
       if (!isRelaxMode && !isNumberMode && round >= maxRounds) {
         endGame();
         return;
@@ -510,7 +547,7 @@
 
       const targetColor = randomItem(currentThemeColors);
       let promptText = "";
-      let targetValue; // 図形の場合はshape、数字の場合はnumber
+      let targetValue;
 
       if (isNumberMode) {
           targetValue = randomItem(numbers);
@@ -520,7 +557,6 @@
           promptText = `${targetColor.name}の${shapeName(targetValue)}を探してね！`;
       }
 
-      // 質問文の文字色をターゲットの色とは異なる色に設定
       let promptColor = randomItem(currentThemeColors);
       while (promptColor.value === targetColor.value && currentThemeColors.length > 1) {
           promptColor = randomItem(currentThemeColors);
@@ -528,28 +564,30 @@
       promptEl.style.color = promptColor.value;
       promptEl.textContent = promptText;
 
-      // 選択肢の生成（6個）
       let options = [{ type: isNumberMode ? 'number' : 'shape', value: targetValue, color: targetColor, correct: true }];
       while (options.length < 6) {
         let type = isNumberMode ? 'number' : 'shape';
         let val = isNumberMode ? randomItem(numbers) : randomItem(shapes);
         let c = randomItem(currentThemeColors);
 
-        // 同じ組み合わせが既に存在するかチェック
         if (options.some(o => o.type === type && o.value === val && o.color.value === c.value)) continue;
+
+        // Make sure "incorrect" options aren't accidentally the exact correct visual combination
+        if (type === (isNumberMode ? 'number' : 'shape') && val === targetValue && c.value === targetColor.value && !options[0].correct) {
+            continue;
+        }
 
         options.push({ type: type, value: val, color: c, correct: false });
       }
-      options.sort(() => Math.random() - 0.5); // シャッフル
+      options.sort(() => Math.random() - 0.5);
 
-      // 選択肢の描画
       options.forEach(opt => {
         const el = document.createElement("div");
         if (opt.type === 'number') {
-            el.className = `shape square`; // 数字は四角い背景
+            el.className = `shape square`;
             el.style.background = opt.color.value;
-            el.textContent = opt.value; // 数字を表示
-        } else { // shapeモード
+            el.textContent = opt.value;
+        } else {
             el.className = `shape ${opt.value}`;
             if (opt.value === "triangle") {
                 el.style.borderBottomColor = opt.color.value;
@@ -577,12 +615,11 @@
       if (!isClickable) return;
       isClickable = false;
 
-      if (!isRelaxMode && !isNumberMode) { // リラックスモードと数字モード以外で時間計測
-          const elapsed = (performance.now() - startTime) / 1000;
-          totalReactionTime += elapsed;
-          minReactionTime = Math.min(minReactionTime, elapsed);
-          maxReactionTime = Math.max(maxReactionTime, elapsed);
-      }
+      // Reaction time is always measured
+      const elapsed = (performance.now() - startTime) / 1000;
+      totalReactionTime += elapsed;
+      minReactionTime = Math.min(minReactionTime, elapsed);
+      maxReactionTime = Math.max(maxReactionTime, elapsed);
 
       Array.from(choicesEl.children).forEach(child => {
           if (child !== el) {
@@ -595,16 +632,13 @@
         el.classList.add("correct");
         document.body.classList.add('correct-feedback');
       } else {
-        if (!isRelaxMode && !isNumberMode) { // リラックスモードと数字モード以外で不正解数をカウント
-            incorrectCount++;
-        }
+        incorrectCount++; // Incorrect count always increases, but only used in normal mode results
         el.classList.add("wrong");
         document.body.classList.add('wrong-feedback');
       }
       updateStats();
 
       setTimeout(() => {
-        document.body.classList.remove('correct-feedback', 'wrong-feedback');
         nextRound();
       }, 800);
     }
@@ -613,12 +647,15 @@
      * 統計情報の更新
      */
     function updateStats() {
-      scoreEl.textContent = score;
+      // Score only shown for normal mode
       if (!isRelaxMode && !isNumberMode) {
-          avgTimeEl.textContent = round > 0 ? (totalReactionTime / round).toFixed(2) : "0.00";
+          scoreEl.textContent = score;
+          scoreEl.parentElement.hidden = false;
       } else {
-          avgTimeEl.textContent = "N/A";
+          scoreEl.parentElement.hidden = true; // Hide score for relax/number mode
       }
+      // Average time is now always shown
+      avgTimeEl.textContent = round > 0 ? (totalReactionTime / round).toFixed(2) : "0.00";
     }
 
     /**
@@ -629,8 +666,7 @@
       resultDiv.hidden = false;
       gameButtonsDiv.hidden = true;
 
-      // 各統計情報の表示を初期状態に戻す
-      finalScoreEl.parentElement.hidden = false;
+      // Ensure all result details are visible by default
       correctCountEl.parentElement.hidden = false;
       incorrectCountEl.parentElement.hidden = false;
       accuracyRateEl.parentElement.hidden = false;
@@ -638,26 +674,29 @@
       maxTimeEl.parentElement.hidden = false;
       totalTimeDisplayEl.parentElement.hidden = false;
 
-
-      if (isRelaxMode || isNumberMode) { // リラックスモードまたは数字モードの場合
-          finalScoreEl.textContent = `${isNumberMode ? '数字' : 'リラックス'}モード終了！お疲れ様でした！`;
-          // これらの統計情報は表示しない
+      if (isRelaxMode) {
+          finalScoreEl.textContent = `リラックスモード終了！お疲れ様でした！`;
           correctCountEl.parentElement.hidden = true;
           incorrectCountEl.parentElement.hidden = true;
           accuracyRateEl.parentElement.hidden = true;
-          minTimeEl.parentElement.hidden = true;
-          maxTimeEl.parentElement.hidden = true;
-          totalTimeDisplayEl.parentElement.hidden = true;
-      } else { // 通常モードの場合
+      } else if (isNumberMode) {
+          finalScoreEl.textContent = `数字モード終了！お疲れ様でした！`;
+          correctCountEl.parentElement.hidden = true;
+          incorrectCountEl.parentElement.hidden = true;
+          accuracyRateEl.parentElement.hidden = true;
+      } else {
           finalScoreEl.textContent = `${score} / ${maxRounds}`;
           correctCountEl.textContent = score;
           incorrectCountEl.textContent = incorrectCount;
           const totalAnswered = score + incorrectCount;
           accuracyRateEl.textContent = totalAnswered > 0 ? ((score / totalAnswered) * 100).toFixed(1) : "0.0";
-          minTimeEl.textContent = minReactionTime === Infinity ? "N/A" : minReactionTime.toFixed(2);
-          maxTimeEl.textContent = maxReactionTime === 0 ? "N/A" : maxReactionTime.toFixed(2);
-          totalTimeDisplayEl.textContent = totalReactionTime.toFixed(2);
       }
+
+      minTimeEl.textContent = minReactionTime === Infinity ? "N/A" : minReactionTime.toFixed(2);
+      maxTimeEl.textContent = maxReactionTime === 0 ? "N/A" : maxReactionTime.toFixed(2);
+      totalTimeDisplayEl.textContent = totalReactionTime.toFixed(2);
+
+      document.body.classList.remove('correct-feedback', 'wrong-feedback');
     }
 
     /**
