@@ -6,6 +6,7 @@
 
   <meta charset="UTF-8">
   <title>重複数字ゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* 全体レイアウト・背景 */
     body {
@@ -15,6 +16,11 @@
       text-align: center;
       padding: 20px;
       margin: 0;
+      display: flex; /* Flexboxを使って中央寄せ */
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh; /* 画面全体の高さを利用 */
+      box-sizing: border-box; /* パディングを幅に含める */
     }
     /* メニュー部分 */
     #menu {
@@ -57,6 +63,7 @@
       display: grid;
       gap: 10px;
       justify-content: center;
+      max-width: 90%; /* 親要素の幅の90%まで */
     }
     .cell {
       width: 60px;
@@ -87,6 +94,10 @@
     /* コントロール部分 */
     #controls {
       margin: 20px;
+      display: flex;
+      flex-wrap: wrap; /* ボタンが多すぎるときに折り返す */
+      justify-content: center;
+      gap: 10px; /* ボタン間のスペース */
     }
     #controls button {
       border: none;
@@ -95,10 +106,10 @@
       background: #0984e3;
       color: white;
       padding: 10px 16px;
-      margin: 0 5px;
       font-size: 16px;
       transition: background 0.3s;
       cursor: pointer;
+      flex-shrink: 0; /* 小さくなるときに縮まないようにする */
     }
     #controls button:hover {
       background: #74b9ff;
@@ -109,10 +120,51 @@
       margin-top: 10px;
       min-height: 24px;
     }
+
+    /* スマートフォンなど小さい画面での調整 */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      #game {
+        gap: 5px; /* ギャップを小さく */
+      }
+      .cell {
+        width: 45px; /* セルを小さく */
+        height: 45px;
+        font-size: 18px; /* フォントサイズも調整 */
+      }
+      #menu select,
+      #menu button,
+      #controls button {
+        padding: 6px 10px; /* ボタンのパディングも小さく */
+        font-size: 14px;
+      }
+      #stats, #message {
+        font-size: 16px; /* 統計情報やメッセージのフォントサイズ調整 */
+      }
+      h1 {
+        font-size: 24px; /* タイトルのフォントサイズ調整 */
+      }
+    }
+
+    /* さらに小さい画面での調整 */
+    @media (max-width: 480px) {
+      #game {
+        gap: 3px;
+      }
+      .cell {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+      }
+      #controls {
+        gap: 5px; /* ボタン間のスペースをさらに小さく */
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- メニュー：レベル選択（※終了時に表示されます） -->
   <div id="menu">
     <h1>重複数字ゲーム</h1>
     <div>
@@ -131,16 +183,13 @@
     </div>
   </div>
 
-  <!-- 統計情報 -->
   <div id="stats">
     <span id="levelDisplay"></span>
     <span id="timerDisplay"></span>
   </div>
 
-  <!-- ゲームボード -->
   <div id="game"></div>
 
-  <!-- コントロール部分：ヒント、シャッフル、レベルアップ、レベルダウン、終了 -->
   <div id="controls">
     <button id="hint">ヒント</button>
     <button id="shuffle">シャッフル</button>
@@ -152,15 +201,17 @@
   <p id="message"></p>
 
   <script>
-    // グローバル変数（初期の chosenLevel は 1）
+    // グローバル変数
     let chosenLevel = 1;
     let gridSize;             // gridSize = chosenLevel + 2
     let duplicateNumber;      // 重複する数字
     let numbers = [];         // 盤面に表示する数字の配列
     let firstSelection = null;
-    let isProcessing = false;
+    let isProcessing = false; // クリック処理中の排他制御
     let timerInterval;
     let startTime;
+    let correctCount = 0;   // 正解回数
+    let incorrectCount = 0; // 不正解回数
 
     // 各エレメントの取得
     const menu = document.getElementById('menu');
@@ -206,33 +257,26 @@
 
     // ゲームボードの生成
     function createBoard() {
-      // 現在の chosenLevel に基づくグリッドサイズ: gridSize = chosenLevel + 2
       gridSize = chosenLevel + 2;
       const cellCount = gridSize * gridSize;
       
-      // ユニークな数字リスト（1～cellCount-1）
       let uniqueNumbers = [];
       for (let i = 1; i <= cellCount - 1; i++) {
         uniqueNumbers.push(i);
       }
-      // リストからランダムに1つ選び、重複させる
       duplicateNumber = uniqueNumbers[Math.floor(Math.random() * uniqueNumbers.length)];
 
-      // 数字配列を作成：重複分を追加してシャッフル
       numbers = uniqueNumbers.slice();
       numbers.push(duplicateNumber);
       numbers = shuffle(numbers);
 
-      // グリッドの列数を設定
-      gameBoard.style.gridTemplateColumns = "repeat(" + gridSize + ", 60px)";
+      gameBoard.style.gridTemplateColumns = "repeat(" + gridSize + ", 1fr)"; // 1frでレスポンシブ対応
       gameBoard.innerHTML = "";
 
-      // 盤面状態とメッセージをリセット
       firstSelection = null;
       isProcessing = false;
-      messageEl.textContent = "";
+      messageEl.textContent = ""; // メッセージクリア
 
-      // 各セルの生成とクリックイベント登録
       numbers.forEach((num, index) => {
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -242,52 +286,73 @@
         gameBoard.appendChild(cell);
       });
 
-      // 統計情報の更新＆タイマー開始
       levelDisplay.textContent = "レベル: " + chosenLevel + " (" + gridSize + "×" + gridSize + ")";
       stopTimer();
       startTimer();
     }
 
-    // 正誤にかかわらず、正解セルを表示しメッセージ後に次の問題へ
+    // 正誤判定後の処理（正解セル表示と次の問題への移行）
     function revealAnswerAndNext(isCorrect) {
+      stopTimer(); // 正誤判定後、タイマーを停止
       const cells = document.querySelectorAll('.cell');
+
+      // 選択状態をリセット
+      if (firstSelection) {
+        firstSelection.classList.remove('selected');
+      }
+      cells.forEach(cell => {
+        cell.classList.remove('selected'); // クリックしたセルも選択状態を解除
+      });
+
+      // 正解のセルを強調表示
       cells.forEach(cell => {
         if (cell.textContent === String(duplicateNumber)) {
           cell.classList.add('correct');
         }
       });
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       if (isCorrect) {
+        correctCount++;
         messageEl.textContent = "正解！ 経過時間: " + elapsed + " s";
       } else {
+        incorrectCount++;
         messageEl.textContent = "不正解。正解は " + duplicateNumber + " です。 経過時間: " + elapsed + " s";
       }
+
+      // 次のボード生成への遅延
       setTimeout(() => {
         createBoard();
-      }, 1500);
+      }, 1500); // 1.5秒後に次の問題へ
     }
 
     // セルクリック時の処理
     function cellClicked(event) {
-      if (isProcessing) return;
+      if (isProcessing) return; // 処理中はクリックを無効化
       const cell = event.currentTarget;
-      if (cell.classList.contains('matched') || cell.classList.contains('selected')) return;
-      cell.classList.add('selected');
+
+      // 既に一致済み、または正解として表示されているセルはクリックできない
+      if (cell.classList.contains('matched') || cell.classList.contains('correct')) return;
+
+      // 1つ目の選択
       if (!firstSelection) {
+        cell.classList.add('selected');
         firstSelection = cell;
-      } else {
-        isProcessing = true;
+      } else { // 2つ目の選択
+        isProcessing = true; // 処理中フラグを立てる
         const num1 = firstSelection.textContent;
         const num2 = cell.textContent;
-        stopTimer();
+
         if (num1 === num2) {
           firstSelection.classList.add('matched');
           cell.classList.add('matched');
           revealAnswerAndNext(true);
         } else {
+          // 不正解の場合、クリックされたセルにも一時的に 'selected' を付与して視覚フィードバック
+          cell.classList.add('selected');
           revealAnswerAndNext(false);
         }
-        firstSelection = null;
+        firstSelection = null; // 選択状態をリセット
       }
     }
 
@@ -302,49 +367,75 @@
 
     // シャッフルボタン：盤面の数字配置を再シャッフル（選択状態をリセット）
     function shuffleBoard() {
-      if (isProcessing || firstSelection !== null) return;
+      if (isProcessing || firstSelection !== null) return; // 処理中または選択中の場合は無効
       numbers = shuffle(numbers);
       const cells = document.querySelectorAll('.cell');
       cells.forEach((cell, index) => {
         cell.textContent = numbers[index];
-        cell.classList.remove('selected', 'matched', 'correct');
+        cell.classList.remove('selected', 'matched', 'correct'); // クラスをリセット
       });
+      messageEl.textContent = "盤面をシャッフルしました！";
+      setTimeout(() => {
+        messageEl.textContent = "";
+      }, 1000);
     }
 
     // レベルアップボタン：現在のレベルを 1 増加して盤面再生成
     function levelUp() {
-      chosenLevel++;
-      createBoard();
+      if (chosenLevel < 8) { // 最大レベル8
+        chosenLevel++;
+        messageEl.textContent = "レベルアップ！ (レベル " + chosenLevel + ")";
+        setTimeout(() => { messageEl.textContent = ""; }, 1000);
+        createBoard();
+      } else {
+        messageEl.textContent = "これ以上レベルは上がりません";
+        setTimeout(() => { messageEl.textContent = ""; }, 1500);
+      }
     }
 
     // レベルダウンボタン：現在のレベルが 1 より上なら 1 減少して盤面再生成
     function levelDown() {
       if (chosenLevel > 1) {
         chosenLevel--;
+        messageEl.textContent = "レベルダウン！ (レベル " + chosenLevel + ")";
+        setTimeout(() => { messageEl.textContent = ""; }, 1000);
         createBoard();
       } else {
         messageEl.textContent = "これ以上レベルは下がりません";
-        setTimeout(() => {
-          messageEl.textContent = "";
-        }, 1500);
+        setTimeout(() => { messageEl.textContent = ""; }, 1500);
       }
     }
 
     // 終了ボタン：ゲーム終了し、メニュー（レベル選択）を表示
     function finishGame() {
       stopTimer();
-      gameBoard.innerHTML = "";
-      messageEl.textContent = "";
+      gameBoard.innerHTML = ""; // ボードをクリア
       levelDisplay.textContent = "";
       timerDisplay.textContent = "";
+
+      // リザルト表示
+      const totalAttempts = correctCount + incorrectCount;
+      const accuracy = totalAttempts > 0 ? ((correctCount / totalAttempts) * 100).toFixed(1) : 0;
+      messageEl.innerHTML = "ゲーム終了！<br>" +
+                            "正解: <span style='color:#00b894; font-weight:bold;'>" + correctCount + "</span> 回<br>" +
+                            "不正解: <span style='color:#d63031; font-weight:bold;'>" + incorrectCount + "</span> 回<br>" +
+                            "正答率: <span style='color:#6c5ce7; font-weight:bold;'>" + accuracy + "</span> %";
+
+      // カウントをリセット
+      correctCount = 0;
+      incorrectCount = 0;
+
+      // セレクトボックスの値を現在のレベルに同期
+      levelSelect.value = chosenLevel;
+      // メニューを表示
       menu.style.display = "block";
     }
 
-    // イベント登録（メニューからの開始は finishGame を経由して再表示された場合に利用）
+    // イベントリスナー登録
     startGameBtn.addEventListener('click', () => {
-      chosenLevel = parseInt(levelSelect.value);
-      menu.style.display = "none";
-      createBoard();
+      chosenLevel = parseInt(levelSelect.value); // 選択されたレベルを設定
+      menu.style.display = "none"; // メニューを非表示に
+      createBoard(); // ゲームボードを作成
     });
     hintButton.addEventListener('click', showHint);
     shuffleButton.addEventListener('click', shuffleBoard);
@@ -352,12 +443,15 @@
     levelDownButton.addEventListener('click', levelDown);
     finishButton.addEventListener('click', finishGame);
 
-    // アプリ起動時に、初めからレベル1の盤面を表示する
+    // アプリ起動時：メニューを表示し、ゲーム開始を待つ
     window.onload = function() {
-      chosenLevel = 1;
-      // メニューは起動時は非表示にして、自動で盤面を作成
-      menu.style.display = "none";
-      createBoard();
+      chosenLevel = 1; // 初期レベルを1に設定
+      levelSelect.value = chosenLevel; // セレクトボックスの表示も同期
+      menu.style.display = "block"; // メニューを表示
+      gameBoard.innerHTML = ""; // ゲームボードは空に
+      levelDisplay.textContent = ""; // 統計情報をクリア
+      timerDisplay.textContent = "";
+      messageEl.innerHTML = "↑レベルを選択して「<span style='color:#6c5ce7; font-weight:bold;'>開始</span>」を押してください"; // 初期メッセージ
     };
   </script>
 </body>
