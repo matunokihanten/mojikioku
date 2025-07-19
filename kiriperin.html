@@ -117,7 +117,7 @@
       transition: all 0.2s ease-in-out;
     }
     
-    /* ★改善点: 計算対象の数字を光らせるスタイル */
+    /* 計算対象の数字を光らせるスタイル */
     .highlight-number {
       color: #f39c12;
       transform: scale(1.15);
@@ -191,7 +191,7 @@
       box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
     }
 
-    /* ★改善点: ボタン押下時のフィードバック */
+    /* ボタン押下時のフィードバック */
     .number-btn--pressed {
         transform: translateY(0) scale(0.95) !important;
         box-shadow: 1px 1px 3px rgba(0,0,0,0.3) !important;
@@ -281,7 +281,8 @@
       </div>
       <div class="control-panel">
         <button class="btn btn-primary" id="startBtn">検査開始</button>
-        <button class="btn btn-info hidden" id="endRelaxBtn">終了</button> <button class="btn btn-secondary" id="resetBtn">リセット</button>
+        <button class="btn btn-info hidden" id="endRelaxBtn">終了</button>
+        <button class="btn btn-secondary" id="resetBtn">リセット</button>
       </div>
     </div>
     <div class="stats-grid" id="statsGrid" style="display: none;"></div>
@@ -314,16 +315,18 @@
         this.performanceChart = null;
         this.totalCorrectAnswersOverall = 0; // 全体の正答数
         this.totalQuestionsAnsweredOverall = 0; // 全体の回答済問題数（正解/不正解問わず）
+        this.testFinished = false; // 検査が終了しているかどうかのフラグを追加
 
         this.initializeElements();
         this.bindEvents();
         this.setDifficulty(this.difficulty); // 初期表示時に難易度を設定してリセット状態にする
+        this.resetTest(); // 初期ロード時にリセット状態にする
       }
 
       initializeElements() {
         this.displayInputPairContainer = document.getElementById('displayInputPairContainer');
         this.startBtn = document.getElementById('startBtn');
-        this.endRelaxBtn = document.getElementById('endRelaxBtn'); // 新しい終了ボタン
+        this.endRelaxBtn = document.getElementById('endRelaxBtn');
         this.resetBtn = document.getElementById('resetBtn');
         this.timer = document.getElementById('timer');
         this.lineCountEl = document.getElementById('lineCount');
@@ -333,6 +336,7 @@
         this.analysisPanel = document.getElementById('analysisPanel');
         this.chartContainer = document.getElementById('chartContainer');
         this.traitGrid = document.getElementById('traitGrid');
+        this.numberPad = document.querySelector('.number-pad'); // 数字パッドのDOM要素を追加
       }
 
       bindEvents() {
@@ -347,7 +351,7 @@
           this.resetTest(); 
         }));
         this.startBtn.addEventListener('click', () => this.startTest());
-        this.endRelaxBtn.addEventListener('click', () => this.finishTest()); // 終了ボタンのイベント
+        this.endRelaxBtn.addEventListener('click', () => this.finishTest());
         this.resetBtn.addEventListener('click', () => this.resetTest());
         document.addEventListener('keydown', (e) => this.handleKeyInput(e));
       }
@@ -357,16 +361,13 @@
         document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
 
-        // リラックスモードのUI制御
         if (difficulty === 'relax') {
-          // テスト開始前でも終了ボタンを表示 (初期状態ではhidden)
-          // ただし、testActive中は常に表示されるようにする
-          // ここでは resetTest() が呼ばれるため、そこでの hidden クラスの制御が主
-          this.timer.textContent = '無制限'; // タイマー表示を変更
-          this.lineCountEl.textContent = '0/∞'; // 行数表示を変更
-          document.querySelector('.progress-bar').style.visibility = 'hidden'; // プログレスバーを非表示に
+          this.timer.textContent = '無制限';
+          this.lineCountEl.textContent = '0/∞';
+          document.querySelector('.progress-bar').style.visibility = 'hidden';
+          this.endRelaxBtn.classList.remove('hidden');
         } else {
-          this.endRelaxBtn.classList.add('hidden'); // リラックスモード以外では隠す
+          this.endRelaxBtn.classList.add('hidden');
           document.querySelector('.progress-bar').style.visibility = 'visible';
           this.lineCountEl.textContent = `0/${this.totalLines}`;
         }
@@ -375,7 +376,7 @@
           case 'easy': this.timeLimit = 90000; break;
           case 'medium': this.timeLimit = 60000; break;
           case 'hard': this.timeLimit = 45000; break;
-          case 'relax': this.timeLimit = Infinity; break; // リラックスモードは時間無制限
+          case 'relax': this.timeLimit = Infinity; break;
         }
       }
 
@@ -445,7 +446,6 @@
           box.classList.remove('current');
           if (index === this.currentIndex) {
             box.classList.add('current');
-            // 要素が画面外にある場合にスクロールする
             box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           }
         });
@@ -458,14 +458,13 @@
       handleNumberInput(input) {
         if (!this.isTestActive) return;
 
-        // 現在のボックスの入力前の状態を保存 (正答数・回答数の更新用)
         const prevAnswer = this.answers[this.currentIndex];
         let wasPreviouslyAnswered = (prevAnswer !== '' && prevAnswer !== undefined);
 
         if (input === 'back') {
           if (this.currentIndex > 0) {
             this.currentIndex--;
-            if (this.answers[this.currentIndex] !== '') { // 既に回答があれば、全体統計から減算
+            if (this.answers[this.currentIndex] !== '') {
                 const expected = (this.currentLineNumbers[this.currentIndex] + this.currentLineNumbers[this.currentIndex + 1]) % 10;
                 if (parseInt(this.answers[this.currentIndex]) === expected) {
                     this.totalCorrectAnswersOverall--;
@@ -475,32 +474,27 @@
             this.answers[this.currentIndex] = '';
             this.inputBoxes[this.currentIndex].textContent = '';
             this.inputBoxes[this.currentIndex].classList.remove('correct', 'incorrect');
-            this.updateStats(); // 戻った場合も正答率を更新
+            this.updateStats();
           }
         } else if (input === 'next') {
-          // 次の入力ボックスへ移動（まだ解答がない場合のみ）
           if (this.currentIndex < this.answers.length - 1) {
             this.currentIndex++;
           }
-        } else { // 数字が入力された場合
+        } else {
           if (this.currentIndex < this.answers.length) {
-            // 新しい回答をセット
             this.answers[this.currentIndex] = input;
             this.inputBoxes[this.currentIndex].textContent = input;
             
-            // 正解判定
             const expected = (this.currentLineNumbers[this.currentIndex] + this.currentLineNumbers[this.currentIndex + 1]) % 10;
             const userAnswer = parseInt(this.answers[this.currentIndex]);
 
-            // 全体統計の更新
-            if (wasPreviouslyAnswered) { // 既に回答済みで上書きの場合
-                // 以前の回答が正解だった場合、正解数を減算
+            if (wasPreviouslyAnswered) {
                 const prevExpected = (this.currentLineNumbers[this.currentIndex] + this.currentLineNumbers[this.currentIndex + 1]) % 10;
                 if (parseInt(prevAnswer) === prevExpected) {
                     this.totalCorrectAnswersOverall--;
                 }
-            } else { // 新規回答の場合
-                this.totalQuestionsAnsweredOverall++; // 答えた数を加算
+            } else {
+                this.totalQuestionsAnsweredOverall++;
             }
 
             if (userAnswer === expected) {
@@ -512,12 +506,11 @@
                 this.inputBoxes[this.currentIndex].classList.remove('correct');
             }
             
-            this.updateStats(); // 入力するたびに正答率を更新
+            this.updateStats();
 
             if (this.currentIndex < this.answers.length - 1) {
               this.currentIndex++;
             } else if (this.answers.every(answer => answer !== '')) {
-              // 行の全ての解答が埋まったら次の行へ
               setTimeout(() => this.finishLine(), 500);
             }
           }
@@ -533,6 +526,19 @@
           }, 150);
       }
 
+      handleKeyInput(e) {
+        if (!this.isTestActive) return;
+
+        if (e.key >= '0' && e.key <= '9') {
+          this.handleNumberInput(e.key);
+        } else if (e.key === 'Backspace') {
+          this.handleNumberInput('back');
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+          e.preventDefault(); // Enterキーによるフォーム送信を防止
+          this.handleNumberInput('next');
+        }
+      }
+
       startTest() {
         if (this.isTestActive) return;
         
@@ -545,7 +551,12 @@
           this.performanceChart = null;
         }
 
+        // 検査エリアと数字パッドを再表示
+        this.displayInputPairContainer.classList.remove('hidden');
+        this.numberPad.classList.remove('hidden');
+
         this.isTestActive = true;
+        this.testFinished = false; // テスト開始時にフラグをリセット
         this.startTime = Date.now();
         this.lineStartTime = Date.now();
         this.remainingTime = this.timeLimit;
@@ -553,32 +564,33 @@
         this.scores = [];
         this.durations = [];
         this.totalCorrectAnswersOverall = 0;
-        this.totalQuestionsAnsweredOverall = 0; // ここをリセット
+        this.totalQuestionsAnsweredOverall = 0;
 
         this.startBtn.disabled = true;
         document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = true);
+        
         if (this.difficulty === 'relax') {
-            this.endRelaxBtn.classList.remove('hidden'); // リラックスモードでは終了ボタンを表示
+            this.endRelaxBtn.classList.remove('hidden'); 
             this.endRelaxBtn.disabled = false;
         }
         this.startTimer();
         this.generateNewLine();
         this.updateStats();
-        this.updateProgress(); // プログレスバーも初期化
+        this.updateProgress();
       }
 
       startTimer() {
         clearInterval(this.timerInterval);
         if (this.difficulty === 'relax') {
           this.timer.textContent = '無制限';
-          return; // リラックスモードではタイマーを進めない
+          return;
         }
         this.timerInterval = setInterval(() => {
           this.remainingTime -= 1000;
           const minutes = Math.floor(this.remainingTime / 60000);
           const seconds = Math.floor((this.remainingTime % 60000) / 1000);
           this.timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          if (this.remainingTime <= 0) this.finishLine(); // 時間切れで次の行へ
+          if (this.remainingTime <= 0) this.finishLine();
         }, 1000);
       }
 
@@ -588,7 +600,6 @@
         const duration = (Date.now() - this.lineStartTime) / 1000;
         let lineCorrectCount = 0;
         
-        // その行の正答数を集計
         this.answers.forEach((answer, index) => {
           if (answer !== '') {
             const expected = (this.currentLineNumbers[index] + this.currentLineNumbers[index + 1]) % 10;
@@ -598,17 +609,15 @@
           }
         });
 
-        this.scores.push(lineCorrectCount); // その行の正答数を記録
-        this.durations.push(duration); // その行の所要時間を記録
+        this.scores.push(lineCorrectCount);
+        this.durations.push(duration);
         
-        // totalCorrectAnswersOverall と totalQuestionsAnsweredOverall は handleNumberInput でリアルタイムに更新済み
-
         this.lineCount++;
         this.updateStats();
         this.updateProgress();
 
         if (this.difficulty !== 'relax' && (this.lineCount >= this.totalLines || this.remainingTime <= 0)) {
-          this.finishTest(); // 通常モードで終了条件を満たしたらテスト終了
+          this.finishTest();
         } else {
           this.lineStartTime = Date.now();
           setTimeout(() => this.generateNewLine(), 500);
@@ -616,7 +625,6 @@
       }
 
       updateStats() {
-        // totalCorrectAnswersOverall と totalQuestionsAnsweredOverall は handleNumberInput でリアルタイムに更新されている
         const accuracy = this.totalQuestionsAnsweredOverall > 0 ? 
                          (this.totalCorrectAnswersOverall / this.totalQuestionsAnsweredOverall * 100).toFixed(1) : 0;
         
@@ -626,7 +634,7 @@
 
       updateProgress() {
         if (this.difficulty === 'relax') {
-            this.progressFill.style.width = '0%'; // リラックスモードではプログレスバーは常に空
+            this.progressFill.style.width = '0%';
         } else {
             this.progressFill.style.width = (this.lineCount / this.totalLines) * 100 + '%';
         }
@@ -634,11 +642,11 @@
 
       finishTest() {
         this.isTestActive = false;
+        this.testFinished = true; // テスト終了時にフラグを設定
         clearInterval(this.timerInterval);
         this.startBtn.disabled = false;
         document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = false);
-        this.endRelaxBtn.disabled = true; // 終了ボタンを無効化
-        this.endRelaxBtn.classList.add('hidden'); // 終了ボタンを隠す
+        this.endRelaxBtn.disabled = true;
 
         if (this.difficulty === 'relax') {
             this.timer.textContent = '完了';
@@ -647,19 +655,25 @@
             this.timer.textContent = '完了';
         }
 
+        // 検査エリアの内容をクリア
+        this.displayInputPairContainer.innerHTML = ''; 
+        // 問題表示エリアと数字パッドを非表示にする
+        this.displayInputPairContainer.classList.add('hidden');
+        this.numberPad.classList.add('hidden');
+        
+        // 結果表示部分を表示する
         this.showDetailedStats();
         this.showAnalysis();
         this.showChart();
       }
 
       showDetailedStats() {
-        const totalCorrect = this.scores.reduce((a, b) => a + b, 0); // 各行の正答数の合計
-        const questionsPerLine = this.currentLineNumbers.length - 1; 
-        const totalQuestionsAttempted = this.scores.length * questionsPerLine; // 完了した行の総問題数
+        const totalCorrect = this.scores.reduce((a, b) => a + b, 0);
+        const questionsPerLine = this.currentLineNumbers.length > 0 ? this.currentLineNumbers.length - 1 : 0; 
+        const totalQuestionsAttempted = this.scores.length * questionsPerLine;
         
         const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
         
-        // 最終的な正答率も全体の正答数と回答済み問題数で計算
         const finalAccuracy = this.totalQuestionsAnsweredOverall > 0 ? 
                               (this.totalCorrectAnswersOverall / this.totalQuestionsAnsweredOverall * 100).toFixed(1) : 0;
 
@@ -672,13 +686,8 @@
       }
 
       showAnalysis() {
-        const totalCorrect = this.scores.reduce((a, b) => a + b, 0); // 各行の正答数の合計
-        const questionsPerLine = this.currentLineNumbers.length - 1;
-        const totalQuestionsAttempted = this.scores.length * questionsPerLine;
-        
         const averageSpeed = this.durations.length > 0 ? this.durations.reduce((a, b) => a + b, 0) / this.durations.length : 0;
         
-        // 分析結果は最終的な全体の正答率と回答数を使用
         const accuracyForAnalysis = this.totalQuestionsAnsweredOverall > 0 ? 
                                     (this.totalCorrectAnswersOverall / this.totalQuestionsAnsweredOverall * 100) : 0;
 
@@ -694,7 +703,7 @@
       analyzeTraits(averageSpeed, accuracy) {
         const traits = [];
         // 発動性
-        if (this.durations.length === 0) { // データがない場合
+        if (this.durations.length === 0) {
             traits.push({name: '🚀 発動性', value: '測定不能 - 十分なデータがありません'});
         } else if (averageSpeed < 30) {
             traits.push({name: '🚀 発動性', value: '高い - 素早く作業を開始する傾向があります'});
@@ -705,7 +714,7 @@
         }
 
         // 可塑性
-        if (this.totalQuestionsAnsweredOverall === 0) { // 回答がない場合
+        if (this.totalQuestionsAnsweredOverall === 0) {
              traits.push({name: '🎯 可塑性', value: '測定不能 - 十分なデータがありません'});
         } else if (accuracy > 85) {
             traits.push({name: '🎯 可塑性', value: '非常に高い - 非常に正確な作業が可能です'});
@@ -786,17 +795,18 @@
 
       resetTest() {
         this.isTestActive = false;
+        this.testFinished = false; // リセット時にフラグをリセット
         clearInterval(this.timerInterval);
         this.startBtn.disabled = false;
         document.querySelectorAll('.difficulty-btn').forEach(btn => btn.disabled = false);
-        this.endRelaxBtn.disabled = true; // 終了ボタンを無効化
-        this.endRelaxBtn.classList.add('hidden'); // 終了ボタンを隠す
+        this.endRelaxBtn.disabled = true;
+        this.endRelaxBtn.classList.add('hidden');
 
-        // 難易度に応じた表示に戻す
         if (this.difficulty === 'relax') {
           this.timer.textContent = '無制限';
           this.lineCountEl.textContent = '0/∞';
           document.querySelector('.progress-bar').style.visibility = 'hidden';
+          this.endRelaxBtn.classList.remove('hidden');
         } else {
           this.timer.textContent = '準備完了';
           this.lineCountEl.textContent = `0/${this.totalLines}`;
@@ -808,9 +818,12 @@
         this.durations = [];
         this.totalCorrectAnswersOverall = 0;
         this.totalQuestionsAnsweredOverall = 0;
-        this.updateStats(); // 0%と表示
+        this.updateStats();
         this.progressFill.style.width = '0%';
         
+        // 問題表示エリアと数字パッドを再表示し、初期メッセージを表示
+        this.displayInputPairContainer.classList.remove('hidden');
+        this.numberPad.classList.remove('hidden');
         this.displayInputPairContainer.innerHTML = `<div class="initial-message">「検査開始」ボタンを押してください</div>`;
         this.inputBoxes = [];
         this.numberSpans = [];
@@ -832,14 +845,14 @@
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-          // テストがアクティブでない場合のみリセット
-          if (!kraepelinTest.isTestActive) {
-              kraepelinTest.resetTest(); 
-          } else {
-              // テスト中の場合は表示のみ再描画
+          // テストがアクティブな場合、またはテストが終了しているが結果が表示されている場合は、
+          // レイアウト調整のために表示のみ再描画する
+          if (kraepelinTest.isTestActive || kraepelinTest.testFinished) {
               kraepelinTest.renderLineAndInputBoxes();
               kraepelinTest.highlightCurrentInput();
           }
+          // そうでなければ（初期状態などで問題がない場合）、特に何もしない
+          // resetTest() は明示的なボタン操作でのみ呼ぶようにする
         }, 250);
       });
     });
