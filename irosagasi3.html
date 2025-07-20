@@ -426,6 +426,7 @@
         let timeLeft = timeLimit;
         let gameStartTime = 0;
         let lastAnswerTime = 0;
+        let lastBaseColor = ''; // 前回の基本色を保存する変数
 
         let timeLabels = [];
         let correctCountsPerInterval = [];
@@ -504,12 +505,13 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
                 if (gameActive && !isDuringFeedback && !relaxMode) {
-                    handleIncorrectAnswer(null, -100, false); // isTimeUpをfalseに
+                    // isTimeUpはここではもはや使われないが、引数はそのまま残す
+                    handleIncorrectAnswer(null, -100, false); 
                 }
             }
         }
 
-        function handleIncorrectAnswer(clickedBox, penaltyScore = 0, isTimeUp = false) {
+        function handleIncorrectAnswer(clickedBox, penaltyScore = 0) {
             isDuringFeedback = true;
             disableBoxes(true);
             
@@ -559,8 +561,7 @@
                 if (clickedBox) {
                     clickedBox.classList.remove('incorrect-clicked');
                 }
-                // タイムアップでもゲームは継続し、次の問題へ
-                generateProblem();
+                generateProblem(); // タイムアップでもゲームは継続し、次の問題へ
             }, 1000);
         }
 
@@ -573,6 +574,7 @@
             updateScoreDisplay();
             gameStartTime = Date.now();
             lastAnswerTime = Date.now();
+            lastBaseColor = ''; // ゲーム開始時にリセット
             setupIntervalDataCollection();
 
             startButton.textContent = 'リスタート';
@@ -594,8 +596,9 @@
             incorrectCount = 0;
             totalGameScore = 0;
             updateScoreDisplay();
-            gameStartTime = Date.now();
+            gameStartTime = Date.Now();
             lastAnswerTime = Date.now();
+            lastBaseColor = ''; // ゲーム開始時にリセット
             setupIntervalDataCollection();
 
             startButton.disabled = true;
@@ -613,12 +616,9 @@
         }
 
         function endGame() {
-            // gameActiveがfalseでもモーダルが表示されている場合は何もしない
             if (!gameActive && gameOverModal.style.display === 'flex') return;
             
-            // ゲームがアクティブでない状態で「終了」を押された場合（初回ロード時など）
             if (!gameActive) {
-                // 結果は表示せず、初期状態に戻す
                 resetGameStates();
                 gameContainer.innerHTML = '';
                 initialMessage.style.display = 'block';
@@ -640,15 +640,12 @@
                 incorrectCount = 0;
                 totalGameScore = 0;
                 updateScoreDisplay();
-                return; // ここで処理を終了
+                return;
             }
 
             const playDuration = Math.floor((Date.now() - gameStartTime) / 1000);
 
-            resetGameStates(); // すべてのタイマーとフラグをリセット
-
-            // 最終的な区間データを確認 (最後の問題が終了した時点のデータも確実に含める)
-            // この関数はゲーム終了時のみ呼び出されるため、ここでデータ収集を完了させる
+            resetGameStates();
             
             gameActive = false;
             isDuringFeedback = false;
@@ -669,8 +666,6 @@
             timerDisplay.style.display = 'none';
             colorSelect.disabled = false;
             levelSelect.disabled = false;
-
-            // スコアとカウントはモーダル表示後にリセットされるため、ここではリセットしない
         }
 
         function resetGameStates() {
@@ -727,7 +722,15 @@
             let selectedColorValue = colorSelect.value;
             if (relaxMode || selectedColorValue === 'random') {
                 const colorKeys = Object.keys(baseColors);
-                selectedColorValue = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+                let availableColors = colorKeys.filter(key => key !== lastBaseColor); // 前回と同じ色を除外
+                
+                if (availableColors.length === 0) { // 全ての色が前回と同じ場合（ありえないが念のため）
+                    availableColors = colorKeys;
+                }
+                selectedColorValue = availableColors[Math.floor(Math.random() * availableColors.length)];
+                lastBaseColor = selectedColorValue; // 今回の基本色を保存
+            } else {
+                lastBaseColor = selectedColorValue; // ランダムモードでなくても設定色を保存
             }
             
             const baseColor = baseColors[selectedColorValue];
@@ -806,7 +809,6 @@
             totalAnswerTimesPerInterval = [];
             answersPerInterval = [];
 
-            // 現在のゲーム経過時間を基に最初の区間を設定
             const initialElapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const initialInterval = Math.floor(initialElapsed / intervalDuration);
             for(let i = 0; i <= initialInterval; i++) {
@@ -819,14 +821,13 @@
                 answersPerInterval.push(0);
             }
 
-            // 10秒ごとのタイマーを設定
             let currentInterval = initialInterval;
             intervalTimer = setInterval(() => {
                 currentInterval++;
                 const startTime = currentInterval * intervalDuration;
                 const endTime = (currentInterval + 1) * intervalDuration;
                 timeLabels.push(`${startTime}-${endTime}秒`);
-                correctCountsPerInterval.push(0); // 新しい区間を初期化
+                correctCountsPerInterval.push(0);
                 incorrectCountsPerInterval.push(0);
                 totalAnswerTimesPerInterval.push(0);
                 answersPerInterval.push(0);
@@ -852,8 +853,7 @@
                 avgAnswerTimeChartInstance.destroy();
             }
 
-            // データが実際に存在する区間のみをグラフに表示
-            const actualIntervalCount = timeLabels.length; // 現在記録されている区間の数
+            const actualIntervalCount = timeLabels.length;
 
             const finalLabels = timeLabels.slice(0, actualIntervalCount);
             const finalCorrect = correctCountsPerInterval.slice(0, actualIntervalCount);
@@ -988,7 +988,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            endGame(); // ページロード時に初期状態に設定
+            endGame();
         });
     </script>
 </body>
