@@ -16,35 +16,35 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 10px; /* 全体のパディングを調整 */
+            padding: 10px;
             box-sizing: border-box;
-            overflow-y: auto; /* 念のため縦方向のスクロールを許可 */
+            overflow-y: auto;
         }
         h1 {
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            margin-bottom: 15px; /* マージンを調整 */
-            font-size: 2em; /* フォントサイズ調整 */
+            margin-bottom: 15px;
+            font-size: 2em;
         }
         .controls {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 15px; /* マージンを調整 */
+            margin-bottom: 15px;
             display: flex;
             flex-wrap: wrap;
-            gap: 8px; /* 隙間を調整 */
+            gap: 8px;
             align-items: center;
             justify-content: center;
-            width: 100%; /* 幅を調整 */
-            max-width: 500px; /* 最大幅を設定 */
+            width: 100%;
+            max-width: 600px; /* 少し広げてボタンを配置しやすく */
         }
         .controls label {
             font-weight: bold;
             color: #555;
             margin-right: 5px;
-            white-space: nowrap; /* テキストの折り返しを防ぐ */
+            white-space: nowrap;
         }
         .controls select, .controls button {
             padding: 8px 12px;
@@ -54,7 +54,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-            flex-shrink: 0; /* 縮小させない */
+            flex-shrink: 0;
         }
         .controls select:focus, .controls button:focus {
             outline: none;
@@ -82,6 +82,12 @@
         #endButton:hover:not(:disabled) {
             background-color: #c82333;
         }
+        #relaxModeButton {
+            background-color: #007bff; /* 青系の色 */
+        }
+        #relaxModeButton:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
 
         #timer {
             background-color: rgba(255, 255, 255, 0.9);
@@ -96,22 +102,22 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr)); /* 5列に固定、最小幅0で柔軟に */
-            gap: 5px; /* 隙間を調整 */
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 5px;
             justify-content: center;
             margin-top: 10px;
-            padding: 10px; /* パディングを調整 */
+            padding: 10px;
             background-color: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            width: 95vw; /* ビューポート幅の95% */
-            max-width: 400px; /* 5x5マスが大きくなりすぎないよう最大幅を設定 */
-            min-height: 250px; /* ボックスがないときも高さを確保 */
-            display: flex; /* 初期画面メッセージを中央に */
+            width: 95vw;
+            max-width: 400px;
+            min-height: 250px;
+            display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            box-sizing: border-box; /* パディングを幅に含める */
+            box-sizing: border-box;
         }
         .box {
             background-color: rgb(255, 0, 0);
@@ -123,8 +129,8 @@
             overflow: hidden;
             width: 100%;
             height: auto;
-            aspect-ratio: 1 / 1; /* 正方形を維持 */
-            touch-action: manipulation; /* タッチデバイスでの遅延をなくす */
+            aspect-ratio: 1 / 1;
+            touch-action: manipulation;
         }
         .box:hover:not(.disabled) {
             transform: scale(1.05);
@@ -138,10 +144,10 @@
         }
         .message {
             text-align: center;
-            font-size: 18px; /* フォントサイズ調整 */
+            font-size: 18px;
             font-weight: bold;
-            margin-top: 10px; /* マージン調整 */
-            padding: 8px 12px; /* パディング調整 */
+            margin-top: 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             background-color: rgba(255, 255, 255, 0.9);
             box-shadow: 0 1px 5px rgba(0,0,0,0.1);
@@ -163,22 +169,21 @@
         }
         #score {
             font-size: 16px;
-            margin-top: 8px; /* マージン調整 */
+            margin-top: 8px;
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         #totalScore {
-            font-size: 22px; /* フォントサイズ調整 */
+            font-size: 22px;
             font-weight: bold;
             color: #fff;
             text-shadow: 2px 2px 3px rgba(0,0,0,0.3);
             margin-top: 5px;
         }
-        /* 初期画面のメッセージ */
         #initialMessage {
-            font-size: 1.1em; /* フォントサイズ調整 */
+            font-size: 1.1em;
             color: #555;
-            padding: 10px; /* パディング追加 */
+            padding: 10px;
         }
 
         .box.correct-answer::after {
@@ -198,32 +203,43 @@
             100% { transform: translate(100%, 100%) rotate(45deg); opacity: 0; }
         }
 
+        /* New CSS for incorrect click highlight */
+        .box.incorrect-clicked {
+            animation: shake 0.3s ease-in-out;
+            box-shadow: 0 0 10px 3px #dc3545; /* Red glow */
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
         /* スマートフォン向け調整 */
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.8em;
             }
             .controls {
-                flex-direction: column; /* 縦並びにする */
+                flex-direction: column;
                 gap: 10px;
                 padding: 10px;
             }
             .controls > div {
-                width: 100%; /* 各要素を全幅にする */
+                width: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
             }
             .controls select, .controls button {
-                width: auto; /* 幅を自動に */
-                flex-grow: 1; /* 均等に広がる */
+                width: auto;
+                flex-grow: 1;
                 font-size: 13px;
                 padding: 7px 10px;
             }
             .container {
-                gap: 4px; /* 隙間をさらに狭く */
+                gap: 4px;
                 padding: 8px;
-                max-width: 320px; /* スマホ向けに最大幅を調整 */
+                max-width: 320px;
                 min-height: 200px;
             }
             .box {
@@ -255,30 +271,30 @@
                 <option value="purple">紫</option>
                 <option value="green">緑</option>
                 <option value="grey">グレー</option>
-            </select>
+                <option value="random">ランダム</option> </select>
         </div>
         <div>
             <label for="level">レベル:</label>
             <select id="level">
-                <option value="1">レベル 1</option>
-                <option value="2">レベル 2</option>
-                <option value="3">レベル 3</option>
+                <option value="1">レベル 1 (とても簡単)</option>
+                <option value="2">レベル 2 (簡単)</option>
+                <option value="3">レベル 3 (普通)</option>
                 <option value="4">レベル 4</option>
                 <option value="5">レベル 5</option>
                 <option value="6">レベル 6</option>
-                <option value="7">レベル 7</option>
-                <option value="8">レベル 8</option>
-                <option value="9">レベル 9</option>
-                <option value="10">レベル 10</option>
+                <option value="7">レベル 7 (難しい)</option>
+                <option value="8">レベル 8 (とても難しい)</option>
+                <option value="9">レベル 9 (超難しい)</option>
+                <option value="10">レベル 10 (極めて困難)</option>
             </select>
         </div>
         <button id="startButton" onclick="startGame()">開始</button>
-        <button id="endButton" onclick="endGame()">終了</button>
+        <button id="relaxModeButton" onclick="startRelaxMode()">リラックスモード</button> <button id="endButton" onclick="endGame()">終了</button>
     </div>
 
     <div id="timer">残り時間: 10秒</div>
     <div class="container" id="gameContainer">
-        <p id="initialMessage">上の設定を選んで「開始」ボタンを押してください。</p>
+        <p id="initialMessage">上の設定を選んで「開始」ボタンを押してください。<br>マスの中に一つだけ異なる色のマスがあるので、それをクリックしてください。</p>
     </div>
     <div class="message" id="resultMessage"></div>
     <div class="message" id="score">正解数: 0</div>
@@ -289,12 +305,14 @@
         let totalGameScore = 0;
         let isDuringFeedback = false;
         let gameActive = false;
+        let relaxMode = false; // リラックスモードの状態を管理するフラグ
         let feedbackTimeoutId = null;
         let timerInterval = null;
         const timeLimit = 10;
         let timeLeft = timeLimit;
 
         const startButton = document.getElementById('startButton');
+        const relaxModeButton = document.getElementById('relaxModeButton'); // リラックスモードボタンの要素
         const endButton = document.getElementById('endButton');
         const colorSelect = document.getElementById('colorSelect');
         const levelSelect = document.getElementById('level');
@@ -305,6 +323,28 @@
         const timerDisplay = document.getElementById('timer');
         const initialMessage = document.getElementById('initialMessage');
 
+        const levelColorDifferences = {
+            1: 200,
+            2: 150,
+            3: 120,
+            4: 100,
+            5: 80,
+            6: 60,
+            7: 40,
+            8: 20,
+            9: 10,
+            10: 5
+        };
+
+        const baseColors = {
+            red: { r: 255, g: 0, b: 0 },
+            blue: { r: 0, g: 0, b: 255 },
+            yellow: { r: 255, g: 255, b: 0 },
+            purple: { r: 128, g: 0, b: 128 },
+            green: { r: 0, g: 255, b: 0 },
+            grey: { r: 150, g: 150, b: 150 }
+        };
+
         // --- 初期設定 ---
         endButton.disabled = true;
         timerDisplay.style.display = 'none';
@@ -313,6 +353,9 @@
         function updateScoreDisplay() {
             scoreDisplay.textContent = `正解数: ${correctCount}`;
             totalScoreDisplay.textContent = `総合スコア: ${totalGameScore}`;
+            // リラックスモード中はスコア表示の色を変えるなど視覚的な違いを出すことも可能
+            scoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff'; // リラックスモード中は金色など
+            totalScoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff';
         }
 
         function updateTimer() {
@@ -323,13 +366,13 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
 
-                if (gameActive && !isDuringFeedback) {
-                    handleIncorrectAnswer(-100); // タイムアップによる不正解
+                if (gameActive && !isDuringFeedback && !relaxMode) { // リラックスモード中はタイムアップしない
+                    handleIncorrectAnswer(null, -100); // タイムアップによる不正解
                 }
             }
         }
 
-        function handleIncorrectAnswer(penaltyScore = 0) {
+        function handleIncorrectAnswer(clickedBox, penaltyScore = 0) {
             isDuringFeedback = true;
             disableBoxes(true);
             
@@ -339,13 +382,19 @@
             }
 
             showMessage('不正解！', 'incorrect');
-            totalGameScore = Math.max(0, totalGameScore + penaltyScore);
+            if (!relaxMode) { // リラックスモード中は減点なし
+                totalGameScore = Math.max(0, totalGameScore + penaltyScore);
+            }
             updateScoreDisplay();
+
+            // クリックされた不正解のマスをハイライト
+            if (clickedBox) {
+                clickedBox.classList.add('incorrect-clicked');
+            }
 
             const targetIndex = gameContainer.dataset.targetIndex;
             if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
                 const correctBox = gameContainer.children[targetIndex];
-                // 正解のマスを視覚的に強調
                 correctBox.style.outline = '4px solid gold';
                 correctBox.style.transform = 'scale(1.1)';
             }
@@ -353,73 +402,106 @@
             feedbackTimeoutId = setTimeout(() => {
                 if (targetIndex !== undefined && gameContainer.children[targetIndex]) {
                     const correctBox = gameContainer.children[targetIndex];
-                    correctBox.style.outline = ''; // ハイライトを解除
-                    correctBox.style.transform = ''; // スケールを解除
-                    correctBox.classList.remove('correct-answer'); // アニメーションクラスを解除
+                    correctBox.style.outline = '';
+                    correctBox.style.transform = '';
+                    correctBox.classList.remove('correct-answer');
+                }
+                if (clickedBox) {
+                    clickedBox.classList.remove('incorrect-clicked'); // 不正解ハイライトを解除
                 }
                 generateProblem();
             }, 1000);
         }
 
         function startGame() {
-            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId); // 既存のフィードバックタイマーがあればクリア
-            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
-            timerInterval = null;
-
-            correctCount = 0;
-            totalGameScore = 0;
-            updateScoreDisplay();
-            hideMessage();
-
+            resetGameStates(); // ゲーム状態をリセット
+            relaxMode = false; // リラックスモードをオフ
             startButton.textContent = 'リスタート';
+            relaxModeButton.disabled = true; // 通常モード中はリラックスモードボタンを無効化
             endButton.disabled = false;
             gameActive = true;
-            timerDisplay.style.display = 'block';
-            initialMessage.style.display = 'none'; // 初期メッセージを非表示
+            timerDisplay.style.display = 'block'; // タイマー表示
+            initialMessage.style.display = 'none';
+
+            generateProblem();
+        }
+
+        function startRelaxMode() {
+            resetGameStates(); // ゲーム状態をリセット
+            relaxMode = true; // リラックスモードをオン
+            startButton.disabled = true; // リラックスモード中は開始ボタンを無効化
+            relaxModeButton.textContent = 'リラックスモード中';
+            relaxModeButton.disabled = true; // 二重クリック防止
+            endButton.disabled = false;
+            gameActive = true;
+            timerDisplay.style.display = 'none'; // リラックスモードではタイマー非表示
+            initialMessage.style.display = 'none';
+            colorSelect.value = 'random'; // リラックスモードは常にランダムカラー
+            colorSelect.disabled = true; // リラックスモード中は色選択を無効化
+            levelSelect.disabled = true; // リラックスモード中はレベル選択を無効化
 
             generateProblem();
         }
 
         function endGame() {
-            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId); // 既存のフィードバックタイマーがあればクリア
-            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
-            timerInterval = null;
-
+            resetGameStates(); // ゲーム状態をリセット
             gameActive = false;
             isDuringFeedback = false;
-            correctCount = 0;
-            totalGameScore = 0;
-            updateScoreDisplay();
-            hideMessage();
+            
+            if (relaxMode) {
+                // リラックスモード終了時の結果表示
+                showMessage(`リラックスモード終了！<br>総正解数: ${correctCount}回<br>最終スコア: ${totalGameScore}点`, 'info');
+                setTimeout(hideMessage, 5000); // 5秒後にメッセージを非表示
+            } else {
+                hideMessage();
+            }
 
-            gameContainer.innerHTML = ''; // マスをすべて削除
-            initialMessage.style.display = 'block'; // 初期メッセージを表示
-            gameContainer.style.display = 'flex'; // 初期メッセージを中央表示するためflexに
-            gameContainer.appendChild(initialMessage); // 初期メッセージを再追加
+            gameContainer.innerHTML = '';
+            initialMessage.style.display = 'block';
+            gameContainer.style.display = 'flex';
+            gameContainer.appendChild(initialMessage);
 
             startButton.textContent = '開始';
+            startButton.disabled = false;
+            relaxModeButton.textContent = 'リラックスモード';
+            relaxModeButton.disabled = false;
             endButton.disabled = true;
             timerDisplay.textContent = `残り時間: ${timeLimit}秒`;
             timerDisplay.style.display = 'none';
+            colorSelect.disabled = false; // 終了したら選択可能に戻す
+            levelSelect.disabled = false; // 終了したら選択可能に戻す
+
+            relaxMode = false; // リラックスモードフラグをリセット
+            correctCount = 0; // リセット
+            totalGameScore = 0; // リセット
+            updateScoreDisplay(); // 表示を更新
+        }
+
+        function resetGameStates() {
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            feedbackTimeoutId = null;
+            hideMessage();
         }
 
         function showMessage(text, type) {
-            resultMessage.textContent = text;
-            resultMessage.className = 'message show'; // showクラスを追加して表示
-            if (type) resultMessage.classList.add(type); // 正解/不正解のクラスを追加
+            resultMessage.innerHTML = text; // innerHTMLを使うと改行やHTMLタグも表示可能
+            resultMessage.className = 'message show';
+            if (type) resultMessage.classList.add(type);
         }
 
         function hideMessage() {
-            resultMessage.className = 'message'; // showクラスを削除して非表示
+            resultMessage.className = 'message';
+            resultMessage.classList.remove('info'); // 追加されたクラスを全て削除
+            resultMessage.classList.remove('correct');
+            resultMessage.classList.remove('incorrect');
         }
 
         function disableBoxes(disable) {
             const boxes = gameContainer.children;
-            // `initialMessage` がある場合、それがグリッドの子として数えられないようにする
-            // ここでの `gameContainer.style.display === 'grid'` は、マスが表示されている状態を示す
             if (gameContainer.style.display === 'grid') {
                 for (let i = 0; i < boxes.length; i++) {
-                    // initialMessageはスキップ (DOMから削除されているはずだが念のため)
                     if (boxes[i].id === 'initialMessage') continue; 
                     if (disable) {
                         boxes[i].classList.add('disabled');
@@ -431,97 +513,52 @@
         }
 
         function generateProblem() {
-            gameContainer.innerHTML = ''; // 前の問題をリセット
-            initialMessage.style.display = 'none'; // 初期メッセージを非表示
-            gameContainer.style.display = 'grid'; // ボックス表示のためgridに
+            gameContainer.innerHTML = '';
+            initialMessage.style.display = 'none';
+            gameContainer.style.display = 'grid';
 
             hideMessage();
             isDuringFeedback = false;
-            disableBoxes(false); // ボックスのクリックを有効にする
+            disableBoxes(false);
 
-            timeLeft = timeLimit; // 残り時間をリセット
-            timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
-            if (timerInterval) clearInterval(timerInterval); // 既存のタイマーがあればクリア
-            timerInterval = setInterval(updateTimer, 1000); // 新しいタイマーを開始
+            if (!relaxMode) { // リラックスモードでない場合のみタイマーをリセット・開始
+                timeLeft = timeLimit;
+                timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimer, 1000);
+            }
 
-            const selectedColor = colorSelect.value;
+            let selectedColorValue = colorSelect.value;
+            if (relaxMode || selectedColorValue === 'random') { // リラックスモード時、または通常モードで「ランダム」選択時
+                const colorKeys = Object.keys(baseColors);
+                selectedColorValue = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+            }
+            
+            const baseColor = baseColors[selectedColorValue];
             const level = parseInt(levelSelect.value);
+            let colorDifference = levelColorDifferences[level] || 80;
 
-            const boxCount = 25; // 5列 x 5行 = 25
-            let baseColor;
-
-            switch (selectedColor) {
-                case 'red':
-                    baseColor = { r: 255, g: 0, b: 0 };
-                    break;
-                case 'blue':
-                    baseColor = { r: 0, g: 0, b: 255 };
-                    break;
-                case 'yellow':
-                    baseColor = { r: 255, g: 255, b: 0 };
-                    break;
-                case 'purple':
-                    baseColor = { r: 128, g: 0, b: 128 };
-                    break;
-                case 'green':
-                    baseColor = { r: 0, g: 255, b: 0 };
-                    break;
-                case 'grey':
-                    baseColor = { r: 150, g: 150, b: 150 };
-                    break;
-                default:
-                    baseColor = { r: 255, g: 0, b: 0 }; // デフォルトは赤
-            }
-
-            let colorDifference;
-            // レベルに応じて色の差を設定（レベルが高いほど差が小さい）
-            if (level === 10) {
-                colorDifference = 5;
-            } else if (level === 9) {
-                colorDifference = 10;
-            } else if (level === 8) {
-                colorDifference = 20;
-            } else if (level === 7) {
-                colorDifference = 40;
-            } else if (level === 6) {
-                colorDifference = 60;
-            } else if (level === 5) {
-                colorDifference = 80;
-            } else if (level === 4) {
-                colorDifference = 100;
-            } else if (level === 3) {
-                colorDifference = 120;
-            } else if (level === 2) {
-                colorDifference = 150;
-            } else if (level === 1) {
-                colorDifference = 200;
-            } else {
-                colorDifference = 80; // 未定義レベルのフォールバック
-            }
-
-
-            // ターゲット色の算出
-            // RGB値を0-255の範囲に収める
+            const boxCount = 25;
+            
             const targetColor = {
                 r: Math.min(255, Math.max(0, baseColor.r - colorDifference)),
                 g: Math.min(255, Math.max(0, baseColor.g - colorDifference)),
                 b: Math.min(255, Math.max(0, baseColor.b - colorDifference))
             };
 
-            const targetIndex = Math.floor(Math.random() * boxCount); // 正解のマスをランダムに決定
-            gameContainer.dataset.targetIndex = targetIndex; // 正解インデックスをデータ属性に保存
+            const targetIndex = Math.floor(Math.random() * boxCount);
+            gameContainer.dataset.targetIndex = targetIndex;
 
             for (let i = 0; i < boxCount; i++) {
                 const box = document.createElement('div');
                 box.classList.add('box');
 
                 if (i === targetIndex) {
-                    // 正解のマス
                     box.style.backgroundColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
                     box.onclick = () => {
-                        if (isDuringFeedback || !gameActive) return; // フィードバック中またはゲーム非アクティブ中はクリック無効
+                        if (isDuringFeedback || !gameActive) return;
                         isDuringFeedback = true;
-                        disableBoxes(true); // 他のボックスのクリックを一時的に無効化
+                        disableBoxes(true);
                         
                         if (timerInterval) {
                             clearInterval(timerInterval);
@@ -529,25 +566,28 @@
                         }
 
                         showMessage('正解！', 'correct');
-                        box.classList.add('correct-answer'); // 正解時のアニメーション
+                        box.classList.add('correct-answer');
 
                         correctCount++;
-                        const currentLevel = parseInt(levelSelect.value);
-                        // スコア計算: 基本点 + 残り時間ボーナス + レベルボーナス
-                        const scoreGained = 100 + (timeLeft * 10) + (currentLevel * 50);
-                        totalGameScore += scoreGained;
+                        if (!relaxMode) { // リラックスモード中はスコア加算なし
+                            const currentLevel = parseInt(levelSelect.value);
+                            const scoreGained = 100 + (timeLeft * 10) + (currentLevel * 50);
+                            totalGameScore += scoreGained;
+                        } else {
+                             // リラックスモードでの正解時はポイント固定
+                            totalGameScore += 100; 
+                        }
                         updateScoreDisplay();
 
                         feedbackTimeoutId = setTimeout(() => {
-                            generateProblem(); // 次の問題を生成
+                            generateProblem();
                         }, 1000);
                     };
                 } else {
-                    // 不正解のマス
                     box.style.backgroundColor = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
                     box.onclick = () => {
-                        if (isDuringFeedback || !gameActive) return; // フィードバック中またはゲーム非アクティブ中はクリック無効
-                        handleIncorrectAnswer(-50); // 不正解、50点減点
+                        if (isDuringFeedback || !gameActive) return;
+                        handleIncorrectAnswer(box, -50);
                     };
                 }
                 gameContainer.appendChild(box);
