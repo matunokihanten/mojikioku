@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>色を探すゲーム</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Noto Sans JP', sans-serif;
@@ -38,7 +39,7 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            max-width: 600px; /* 少し広げてボタンを配置しやすく */
+            max-width: 600px;
         }
         .controls label {
             font-weight: bold;
@@ -83,7 +84,7 @@
             background-color: #c82333;
         }
         #relaxModeButton {
-            background-color: #007bff; /* 青系の色 */
+            background-color: #007bff;
         }
         #relaxModeButton:hover:not(:disabled) {
             background-color: #0056b3;
@@ -167,6 +168,9 @@
         #resultMessage.incorrect {
             color: #dc3545;
         }
+        #resultMessage.info {
+            color: #007bff;
+        }
         #score {
             font-size: 16px;
             margin-top: 8px;
@@ -203,15 +207,91 @@
             100% { transform: translate(100%, 100%) rotate(45deg); opacity: 0; }
         }
 
-        /* New CSS for incorrect click highlight */
         .box.incorrect-clicked {
             animation: shake 0.3s ease-in-out;
-            box-shadow: 0 0 10px 3px #dc3545; /* Red glow */
+            box-shadow: 0 0 10px 3px #dc3545;
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-5px); }
             40%, 80% { transform: translateX(5px); }
+        }
+
+        /* ゲームオーバー結果表示用モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 600px; /* グラフのために幅を広げる */
+            text-align: center;
+            position: relative;
+            animation: fadeInScale 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content h2 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .modal-content p {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .modal-content p strong {
+            color: #222;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 500px; /* グラフの最大幅 */
+            height: 250px; /* グラフの高さも指定 */
+            margin: 20px auto 0;
         }
 
         /* スマートフォン向け調整 */
@@ -255,6 +335,18 @@
             #totalScore {
                 font-size: 20px;
             }
+            .modal-content {
+                padding: 15px;
+            }
+            .modal-content h2 {
+                font-size: 1.5em;
+            }
+            .modal-content p {
+                font-size: 1em;
+            }
+            .chart-container {
+                height: 200px; /* スマホでのグラフの高さ */
+            }
         }
     </style>
 </head>
@@ -271,7 +363,8 @@
                 <option value="purple">紫</option>
                 <option value="green">緑</option>
                 <option value="grey">グレー</option>
-                <option value="random">ランダム</option> </select>
+                <option value="random">ランダム</option>
+            </select>
         </div>
         <div>
             <label for="level">レベル:</label>
@@ -289,7 +382,8 @@
             </select>
         </div>
         <button id="startButton" onclick="startGame()">開始</button>
-        <button id="relaxModeButton" onclick="startRelaxMode()">リラックスモード</button> <button id="endButton" onclick="endGame()">終了</button>
+        <button id="relaxModeButton" onclick="startRelaxMode()">リラックスモード</button>
+        <button id="endButton" onclick="endGame()">終了</button>
     </div>
 
     <div id="timer">残り時間: 10秒</div>
@@ -300,19 +394,51 @@
     <div class="message" id="score">正解数: 0</div>
     <div class="message" id="totalScore">総合スコア: 0</div>
 
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <h2 id="modalTitle">ゲーム終了</h2>
+            <p>総正解数: <strong id="modalCorrectCount">0</strong> 回</p>
+            <p>総不正解数: <strong id="modalIncorrectCount">0</strong> 回</p>
+            <p>正解率: <strong id="modalAccuracy">0%</strong></p>
+            <p>プレイ時間: <strong id="modalPlayTime">0秒</strong></p>
+            <p>最終スコア: <strong id="modalFinalScore">0</strong> 点</p>
+            
+            <div class="chart-container">
+                <canvas id="answerCountChart"></canvas>
+            </div>
+            <div class="chart-container" style="margin-top: 15px;">
+                <canvas id="avgAnswerTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script>
         let correctCount = 0;
+        let incorrectCount = 0;
         let totalGameScore = 0;
         let isDuringFeedback = false;
         let gameActive = false;
-        let relaxMode = false; // リラックスモードの状態を管理するフラグ
+        let relaxMode = false;
         let feedbackTimeoutId = null;
         let timerInterval = null;
         const timeLimit = 10;
         let timeLeft = timeLimit;
+        let gameStartTime = 0; // ゲーム開始時刻
+        let lastAnswerTime = 0; // 前回の回答時刻
+
+        // グラフデータ用配列
+        let timeLabels = []; // "10秒", "20秒" など
+        let correctCountsPerInterval = []; // 各10秒間の正解数
+        let incorrectCountsPerInterval = []; // 各10秒間の不正解数
+        let totalAnswerTimesPerInterval = []; // 各10秒間の合計解答時間
+        let answersPerInterval = []; // 各10秒間の総回答数
+
+        let intervalTimer = null; // 10秒ごとのデータ収集用タイマー
+        const intervalDuration = 10; // データ収集間隔（秒）
 
         const startButton = document.getElementById('startButton');
-        const relaxModeButton = document.getElementById('relaxModeButton'); // リラックスモードボタンの要素
+        const relaxModeButton = document.getElementById('relaxModeButton');
         const endButton = document.getElementById('endButton');
         const colorSelect = document.getElementById('colorSelect');
         const levelSelect = document.getElementById('level');
@@ -323,17 +449,22 @@
         const timerDisplay = document.getElementById('timer');
         const initialMessage = document.getElementById('initialMessage');
 
+        // モーダル関連要素
+        const gameOverModal = document.getElementById('gameOverModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalCorrectCount = document.getElementById('modalCorrectCount');
+        const modalIncorrectCount = document.getElementById('modalIncorrectCount');
+        const modalAccuracy = document.getElementById('modalAccuracy');
+        const modalPlayTime = document.getElementById('modalPlayTime');
+        const modalFinalScore = document.getElementById('modalFinalScore');
+
+        let answerCountChartInstance = null; // 回答数グラフのインスタンス
+        let avgAnswerTimeChartInstance = null; // 平均解答時間グラフのインスタンス
+
         const levelColorDifferences = {
-            1: 200,
-            2: 150,
-            3: 120,
-            4: 100,
-            5: 80,
-            6: 60,
-            7: 40,
-            8: 20,
-            9: 10,
-            10: 5
+            1: 200, 2: 150, 3: 120, 4: 100, 5: 80,
+            6: 60, 7: 40, 8: 20, 9: 10, 10: 5
         };
 
         const baseColors = {
@@ -350,11 +481,20 @@
         timerDisplay.style.display = 'none';
         updateScoreDisplay();
 
+        // モーダルを閉じるイベントリスナー
+        closeModalButton.onclick = () => {
+            gameOverModal.style.display = 'none';
+        };
+        window.onclick = (event) => {
+            if (event.target === gameOverModal) {
+                gameOverModal.style.display = 'none';
+            }
+        };
+
         function updateScoreDisplay() {
             scoreDisplay.textContent = `正解数: ${correctCount}`;
             totalScoreDisplay.textContent = `総合スコア: ${totalGameScore}`;
-            // リラックスモード中はスコア表示の色を変えるなど視覚的な違いを出すことも可能
-            scoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff'; // リラックスモード中は金色など
+            scoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff';
             totalScoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff';
         }
 
@@ -366,13 +506,13 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
 
-                if (gameActive && !isDuringFeedback && !relaxMode) { // リラックスモード中はタイムアップしない
-                    handleIncorrectAnswer(null, -100); // タイムアップによる不正解
+                if (gameActive && !isDuringFeedback && !relaxMode) {
+                    handleIncorrectAnswer(null, -100, true); // タイムアップによる不正解
                 }
             }
         }
 
-        function handleIncorrectAnswer(clickedBox, penaltyScore = 0) {
+        function handleIncorrectAnswer(clickedBox, penaltyScore = 0, isTimeUp = false) {
             isDuringFeedback = true;
             disableBoxes(true);
             
@@ -381,13 +521,29 @@
                 timerInterval = null;
             }
 
+            // 不正解数をカウント
+            incorrectCount++;
+
+            // 10秒間隔のデータに不正解を追加
+            const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+            const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
+            incorrectCountsPerInterval[currentIntervalIndex] = (incorrectCountsPerInterval[currentIntervalIndex] || 0) + 1;
+            answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex] || 0) + 1;
+            
+            // 回答時間の記録 (不正解でも記録)
+            if (lastAnswerTime > 0) {
+                const answerDuration = Date.now() - lastAnswerTime;
+                totalAnswerTimesPerInterval[currentIntervalIndex] = (totalAnswerTimesPerInterval[currentIntervalIndex] || 0) + answerDuration;
+            }
+            lastAnswerTime = Date.now();
+
+
             showMessage('不正解！', 'incorrect');
-            if (!relaxMode) { // リラックスモード中は減点なし
+            if (!relaxMode) {
                 totalGameScore = Math.max(0, totalGameScore + penaltyScore);
             }
             updateScoreDisplay();
 
-            // クリックされた不正解のマスをハイライト
             if (clickedBox) {
                 clickedBox.classList.add('incorrect-clicked');
             }
@@ -407,55 +563,79 @@
                     correctBox.classList.remove('correct-answer');
                 }
                 if (clickedBox) {
-                    clickedBox.classList.remove('incorrect-clicked'); // 不正解ハイライトを解除
+                    clickedBox.classList.remove('incorrect-clicked');
                 }
-                generateProblem();
+                if (isTimeUp) {
+                    endGame();
+                } else {
+                    generateProblem();
+                }
             }, 1000);
         }
 
         function startGame() {
-            resetGameStates(); // ゲーム状態をリセット
-            relaxMode = false; // リラックスモードをオフ
+            resetGameStates();
+            relaxMode = false;
+            correctCount = 0;
+            incorrectCount = 0;
+            totalGameScore = 0;
+            updateScoreDisplay();
+            gameStartTime = Date.now();
+            lastAnswerTime = Date.now(); // 最初の問題開始時間を記録
+            setupIntervalDataCollection(); // 10秒ごとのデータ収集を開始
+
             startButton.textContent = 'リスタート';
-            relaxModeButton.disabled = true; // 通常モード中はリラックスモードボタンを無効化
+            relaxModeButton.disabled = true;
+            colorSelect.disabled = false;
+            levelSelect.disabled = false;
             endButton.disabled = false;
             gameActive = true;
-            timerDisplay.style.display = 'block'; // タイマー表示
+            timerDisplay.style.display = 'block';
             initialMessage.style.display = 'none';
 
             generateProblem();
         }
 
         function startRelaxMode() {
-            resetGameStates(); // ゲーム状態をリセット
-            relaxMode = true; // リラックスモードをオン
-            startButton.disabled = true; // リラックスモード中は開始ボタンを無効化
+            resetGameStates();
+            relaxMode = true;
+            correctCount = 0;
+            incorrectCount = 0;
+            totalGameScore = 0;
+            updateScoreDisplay();
+            gameStartTime = Date.now();
+            lastAnswerTime = Date.now(); // 最初の問題開始時間を記録
+            setupIntervalDataCollection(); // 10秒ごとのデータ収集を開始
+
+            startButton.disabled = true;
             relaxModeButton.textContent = 'リラックスモード中';
-            relaxModeButton.disabled = true; // 二重クリック防止
+            relaxModeButton.disabled = true;
             endButton.disabled = false;
             gameActive = true;
-            timerDisplay.style.display = 'none'; // リラックスモードではタイマー非表示
+            timerDisplay.style.display = 'none';
             initialMessage.style.display = 'none';
-            colorSelect.value = 'random'; // リラックスモードは常にランダムカラー
-            colorSelect.disabled = true; // リラックスモード中は色選択を無効化
-            levelSelect.disabled = true; // リラックスモード中はレベル選択を無効化
+            colorSelect.value = 'random';
+            colorSelect.disabled = true;
+            levelSelect.disabled = true;
 
             generateProblem();
         }
 
         function endGame() {
-            resetGameStates(); // ゲーム状態をリセット
+            if (!gameActive && !gameOverModal.style.display === 'flex') return; // ゲームがアクティブでない、かつモーダルが表示中でない場合は何もしない
+
+            const playDuration = Math.floor((Date.now() - gameStartTime) / 1000);
+
+            resetGameStates(); // すべてのタイマーとフラグをリセット
+
+            // 最終的な区間データを確認
+            collectIntervalData(); // 最後の区間のデータを収集
+
             gameActive = false;
             isDuringFeedback = false;
             
-            if (relaxMode) {
-                // リラックスモード終了時の結果表示
-                showMessage(`リラックスモード終了！<br>総正解数: ${correctCount}回<br>最終スコア: ${totalGameScore}点`, 'info');
-                setTimeout(hideMessage, 5000); // 5秒後にメッセージを非表示
-            } else {
-                hideMessage();
-            }
-
+            showGameOverResults(correctCount, incorrectCount, totalGameScore, playDuration, relaxMode);
+            
             gameContainer.innerHTML = '';
             initialMessage.style.display = 'block';
             gameContainer.style.display = 'flex';
@@ -468,34 +648,34 @@
             endButton.disabled = true;
             timerDisplay.textContent = `残り時間: ${timeLimit}秒`;
             timerDisplay.style.display = 'none';
-            colorSelect.disabled = false; // 終了したら選択可能に戻す
-            levelSelect.disabled = false; // 終了したら選択可能に戻す
+            colorSelect.disabled = false;
+            levelSelect.disabled = false;
 
-            relaxMode = false; // リラックスモードフラグをリセット
-            correctCount = 0; // リセット
-            totalGameScore = 0; // リセット
-            updateScoreDisplay(); // 表示を更新
+            // スコアとカウントはモーダル表示後にリセットされるため、ここではリセットしない
+            // 正確なプレイデータはshowGameOverResultsに渡される
+            // ここで0にリセットすると、endGameが複数回呼ばれた場合にデータが消える可能性があるため
+            // showGameOverResults内で初期値にリセットする
         }
 
         function resetGameStates() {
             if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
             if (timerInterval) clearInterval(timerInterval);
+            if (intervalTimer) clearInterval(intervalTimer); // 10秒タイマーもクリア
             timerInterval = null;
             feedbackTimeoutId = null;
+            intervalTimer = null;
             hideMessage();
         }
 
         function showMessage(text, type) {
-            resultMessage.innerHTML = text; // innerHTMLを使うと改行やHTMLタグも表示可能
+            resultMessage.innerHTML = text;
             resultMessage.className = 'message show';
             if (type) resultMessage.classList.add(type);
         }
 
         function hideMessage() {
             resultMessage.className = 'message';
-            resultMessage.classList.remove('info'); // 追加されたクラスを全て削除
-            resultMessage.classList.remove('correct');
-            resultMessage.classList.remove('incorrect');
+            resultMessage.classList.remove('info', 'correct', 'incorrect');
         }
 
         function disableBoxes(disable) {
@@ -521,7 +701,7 @@
             isDuringFeedback = false;
             disableBoxes(false);
 
-            if (!relaxMode) { // リラックスモードでない場合のみタイマーをリセット・開始
+            if (!relaxMode) {
                 timeLeft = timeLimit;
                 timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
                 if (timerInterval) clearInterval(timerInterval);
@@ -529,7 +709,7 @@
             }
 
             let selectedColorValue = colorSelect.value;
-            if (relaxMode || selectedColorValue === 'random') { // リラックスモード時、または通常モードで「ランダム」選択時
+            if (relaxMode || selectedColorValue === 'random') {
                 const colorKeys = Object.keys(baseColors);
                 selectedColorValue = colorKeys[Math.floor(Math.random() * colorKeys.length)];
             }
@@ -565,17 +745,27 @@
                             timerInterval = null;
                         }
 
+                        // 回答時間を記録
+                        const answerDuration = Date.now() - lastAnswerTime;
+                        lastAnswerTime = Date.now();
+
+                        const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+                        const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
+                        correctCountsPerInterval[currentIntervalIndex] = (correctCountsPerInterval[currentIntervalIndex] || 0) + 1;
+                        totalAnswerTimesPerInterval[currentIntervalIndex] = (totalAnswerTimesPerInterval[currentIntervalIndex] || 0) + answerDuration;
+                        answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex] || 0) + 1;
+
+                        correctCount++;
+
                         showMessage('正解！', 'correct');
                         box.classList.add('correct-answer');
 
-                        correctCount++;
-                        if (!relaxMode) { // リラックスモード中はスコア加算なし
+                        if (!relaxMode) {
                             const currentLevel = parseInt(levelSelect.value);
                             const scoreGained = 100 + (timeLeft * 10) + (currentLevel * 50);
                             totalGameScore += scoreGained;
                         } else {
-                             // リラックスモードでの正解時はポイント固定
-                            totalGameScore += 100; 
+                            totalGameScore += 100;
                         }
                         updateScoreDisplay();
 
@@ -592,6 +782,202 @@
                 }
                 gameContainer.appendChild(box);
             }
+        }
+
+        // 10秒ごとのデータ収集ロジック
+        function setupIntervalDataCollection() {
+            // 既存のデータをクリア
+            timeLabels = [];
+            correctCountsPerInterval = [];
+            incorrectCountsPerInterval = [];
+            totalAnswerTimesPerInterval = [];
+            answersPerInterval = [];
+
+            // 最初の区間の初期化
+            timeLabels.push(`0-${intervalDuration}秒`);
+            correctCountsPerInterval[0] = 0;
+            incorrectCountsPerInterval[0] = 0;
+            totalAnswerTimesPerInterval[0] = 0;
+            answersPerInterval[0] = 0;
+
+            // 10秒ごとのタイマーを設定
+            let currentInterval = 0;
+            intervalTimer = setInterval(() => {
+                currentInterval++;
+                const startTime = currentInterval * intervalDuration;
+                const endTime = (currentInterval + 1) * intervalDuration;
+                timeLabels.push(`${startTime}-${endTime}秒`);
+                correctCountsPerInterval[currentInterval] = 0;
+                incorrectCountsPerInterval[currentInterval] = 0;
+                totalAnswerTimesPerInterval[currentInterval] = 0;
+                answersPerInterval[currentInterval] = 0;
+            }, intervalDuration * 1000);
+        }
+
+        // 最後の区間のデータを収集（endGame時に呼ばれる）
+        function collectIntervalData() {
+            // タイマーが動いていない（ゲームが開始されていない、または既に終了している）場合は何もしない
+            if (!intervalTimer && timeLabels.length === 0) return;
+
+            // 最終的に時間が切れていない区間があればそのデータを補完する処理は、
+            // Chart.jsでデータがない場合は表示されないので不要だが、
+            // データ配列の長さをプレイ時間に合わせて調整することも可能。
+            // ここでは、データ収集タイマーが止まった時点までのデータを使用する。
+        }
+
+        // ゲームオーバー結果表示関数
+        function showGameOverResults(correct, incorrect, score, time, isRelaxMode) {
+            modalTitle.textContent = isRelaxMode ? 'リラックスモード終了！' : 'ゲーム終了！';
+            modalCorrectCount.textContent = correct;
+            modalIncorrectCount.textContent = incorrect;
+            
+            const totalAttempts = correct + incorrect;
+            const accuracy = totalAttempts > 0 ? ((correct / totalAttempts) * 100).toFixed(1) : 0;
+            modalAccuracy.textContent = `${accuracy}%`;
+            
+            modalPlayTime.textContent = `${time}秒`;
+            modalFinalScore.textContent = score;
+
+            // グラフを更新または作成
+            if (answerCountChartInstance) {
+                answerCountChartInstance.destroy();
+            }
+            if (avgAnswerTimeChartInstance) {
+                avgAnswerTimeChartInstance.destroy();
+            }
+
+            // データが空の場合の対処（特に短いプレイ時間の場合）
+            const finalLabels = timeLabels.slice(0, correctCountsPerInterval.length);
+            const finalCorrect = correctCountsPerInterval.slice(0, finalLabels.length);
+            const finalIncorrect = incorrectCountsPerInterval.slice(0, finalLabels.length);
+            
+            const finalAvgTimes = finalLabels.map((_, index) => {
+                const totalAnswersInInterval = answersPerInterval[index];
+                const totalTimeInInterval = totalAnswerTimesPerInterval[index];
+                return totalAnswersInInterval > 0 ? (totalTimeInInterval / totalAnswersInInterval / 1000).toFixed(2) : 0; // 秒単位で小数点以下2桁
+            });
+
+
+            const ctxAnswerCount = document.getElementById('answerCountChart').getContext('2d');
+            answerCountChartInstance = new Chart(ctxAnswerCount, {
+                type: 'line',
+                data: {
+                    labels: finalLabels,
+                    datasets: [
+                        {
+                            label: '正解数',
+                            data: finalCorrect,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                            fill: true,
+                            tension: 0.3 // 滑らかな線
+                        },
+                        {
+                            label: '不正解数',
+                            data: finalIncorrect,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                            fill: true,
+                            tension: 0.3 // 滑らかな線
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '10秒ごとの回答数',
+                            font: { size: 16 },
+                            color: '#333'
+                        },
+                        legend: { position: 'bottom', labels: { color: '#555' } }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '経過時間',
+                                color: '#555'
+                            },
+                            ticks: { color: '#555' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '回答数',
+                                color: '#555'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#555',
+                                precision: 0 // 整数の目盛り
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctxAvgAnswerTime = document.getElementById('avgAnswerTimeChart').getContext('2d');
+            avgAnswerTimeChartInstance = new Chart(ctxAvgAnswerTime, {
+                type: 'line',
+                data: {
+                    labels: finalLabels,
+                    datasets: [{
+                        label: '平均解答時間 (秒)',
+                        data: finalAvgTimes,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        fill: true,
+                        tension: 0.3 // 滑らかな線
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '10秒ごとの平均解答時間',
+                            font: { size: 16 },
+                            color: '#333'
+                        },
+                        legend: { position: 'bottom', labels: { color: '#555' } }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '経過時間',
+                                color: '#555'
+                            },
+                            ticks: { color: '#555' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '時間 (秒)',
+                                color: '#555'
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#555',
+                                callback: function(value) {
+                                    return value + 's'; // 目盛りに's'を追加
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            gameOverModal.style.display = 'flex';
+            // 最終的なスコアとカウントをリセット
+            correctCount = 0;
+            incorrectCount = 0;
+            totalGameScore = 0;
+            updateScoreDisplay(); // 表示を更新して0に戻す
         }
 
         // ページロード時にゲームを終了状態にする
