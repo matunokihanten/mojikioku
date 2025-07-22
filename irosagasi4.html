@@ -127,7 +127,15 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
+            /* 数字が重なった際に後から配置されたものが上に表示されるように */
+            z-index: 1; 
         }
+        /* 正解の数字はアニメーション中z-indexを上げて手前に来るように */
+        .number-char.correct-answer {
+             animation: light-pulse 0.8s forwards;
+             z-index: 10;
+        }
+
 
         .number-char:hover:not(.disabled) {
             transform: scale(1.2);
@@ -184,11 +192,7 @@
             padding: 10px;
         }
         
-        .number-char.correct-answer {
-             animation: light-pulse 0.8s forwards;
-             z-index: 10;
-        }
-
+        /* CORRECT_ANSWER と INCORRECT_CLICKED のアニメーションは維持 */
         @keyframes light-pulse {
             0% { transform: scale(1.1); text-shadow: 0 0 5px gold; }
             50% { transform: scale(1.4); text-shadow: 0 0 25px gold, 0 0 40px white; }
@@ -618,7 +622,7 @@
             const targetIndex = Math.floor(Math.random() * config.count); // 正解となる数字のインデックス
             const targetDigit = Math.floor(Math.random() * 10); // 正解となる数字の文字
 
-            const placedPositions = []; // 配置済みの数字の位置とサイズを格納
+            const placedRects = []; // 配置済みの数字の矩形情報を格納 {x, y, width, height}
 
             // 数字同士が重ならないように配置を試みる
             for (let i = 0; i < config.count; i++) {
@@ -632,30 +636,50 @@
                 // 傾きを0からrotationRangeの間でランダムに設定（負の値も含む）
                 const rotation = Math.random() * (config.rotationRange * 2) - config.rotationRange; 
                 
+                numChar.style.fontSize = `${fontSize}px`;
+                numChar.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`; 
+                // 一旦DOMに追加して、サイズを計測する
+                // visibility: hidden で見えないように追加し、位置計算後に表示する
+                numChar.style.visibility = 'hidden'; 
+                gameContainer.appendChild(numChar); 
+                
+                // 数字のレンダリングされた幅と高さを取得
+                const charWidth = numChar.offsetWidth;
+                const charHeight = numChar.offsetHeight;
+
                 let x, y;
                 let collided = true;
                 let attempts = 0;
-                const maxAttempts = 200; // 配置試行回数の上限
+                const maxAttempts = 500; // 配置試行回数の上限を増やす
 
-                // 数字の境界ボックスの許容範囲 (例: 文字サイズの半分)
-                // この値を調整することで、数字同士の間隔をコントロールできる
-                const padding = fontSize * 0.6; // 少し重なる可能性を減らすために0.7から0.6に調整
-
-                // 重なり判定を円で行うため、中心座標からの距離を使用
-                const charRadius = fontSize / 2; 
+                // 文字の間の最小パディング
+                const padding = 5; 
 
                 while (collided && attempts < maxAttempts) {
-                    // gameContainerのパディング分を考慮して、- fontSize * 2 + fontSize としていたのを調整
-                    // より広い範囲でランダムに配置を試みる
-                    x = Math.random() * (gameContainer.clientWidth - fontSize) + (fontSize / 2);
-                    y = Math.random() * (gameContainer.clientHeight - fontSize) + (fontSize / 2);
+                    // gameContainerの境界内でランダムな中心座標を生成
+                    // gameContainer.clientWidth/Height は padding を含んだ内部幅
+                    x = Math.random() * (gameContainer.clientWidth - charWidth - padding * 2) + (charWidth / 2) + padding;
+                    y = Math.random() * (gameContainer.clientHeight - charHeight - padding * 2) + (charHeight / 2) + padding;
                     
-                    collided = false;
-                    for (const p of placedPositions) {
-                        const dist = Math.hypot(p.x - x, p.y - y); // 中心間の距離
-                        const minDistance = (p.radius + charRadius) + padding; // 半径の合計 + パディング
+                    // 回転を考慮した衝突判定は複雑なので、ここでは単純なAABB（軸並行境界ボックス）で近似
+                    // より厳密な衝突判定が必要なら、SAT（Separating Axis Theorem）などを実装する必要があるが、
+                    // パフォーマンスとのトレードオフになる。
+                    
+                    // 現在の数字の矩形情報 (中心座標 x, y)
+                    const currentRect = {
+                        left: x - charWidth / 2,
+                        right: x + charWidth / 2,
+                        top: y - charHeight / 2,
+                        bottom: y + charHeight / 2,
+                    };
 
-                        if (dist < minDistance) {
+                    collided = false;
+                    for (const pRect of placedRects) {
+                        // 矩形同士の重なり判定
+                        if (currentRect.left < pRect.right &&
+                            currentRect.right > pRect.left &&
+                            currentRect.top < pRect.bottom &&
+                            currentRect.bottom > pRect.top) {
                             collided = true;
                             break;
                         }
@@ -665,14 +689,21 @@
 
                 if (attempts === maxAttempts) {
                     // console.warn("数字の配置に失敗しました。重なる可能性があります。");
-                    // 配置できなかった場合は、重なる可能性を許容して配置する
+                    // 配置できなかった場合は、重なる可能性を許容して配置を続ける
+                    // 最悪の場合、一部の数字が重なるかもしれないが、ゲームの停止は回避
                 }
-                placedPositions.push({ x: x, y: y, radius: charRadius, fs: fontSize }); // 配置された数字の情報を記録
+                // 配置が確定したら、その矩形情報を保存
+                placedRects.push({
+                    left: x - charWidth / 2,
+                    right: x + charWidth / 2,
+                    top: y - charHeight / 2,
+                    bottom: y + charHeight / 2,
+                });
 
-                numChar.style.fontSize = `${fontSize}px`;
-                numChar.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`; // 中心を基準に回転・配置
+                // 実際の表示位置を決定
                 numChar.style.left = `${x}px`;
                 numChar.style.top = `${y}px`;
+                numChar.style.visibility = 'visible'; // 表示に戻す
 
                 if (i === targetIndex) {
                     numChar.style.color = targetColorCss;
@@ -682,7 +713,6 @@
                     numChar.style.color = baseColorCss;
                     numChar.onclick = () => { if (!isDuringFeedback && gameActive) handleIncorrectAnswer(numChar); };
                 }
-                gameContainer.appendChild(numChar);
             }
         }
         
