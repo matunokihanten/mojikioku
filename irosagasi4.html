@@ -505,4 +505,227 @@
             const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
             correctCountsPerInterval[currentIntervalIndex] = (correctCountsPerInterval[currentIntervalIndex] || 0) + 1;
             totalAnswerTimesPerInterval[currentIntervalIndex] = (totalAnswerTimesPerInterval[currentIntervalIndex] || 0) + answerDuration;
-            answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex
+            answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex] || 0) + 1;
+
+            correctCount++;
+            showMessage('正解！', 'correct');
+            clickedNumber.classList.add('correct-answer');
+
+            if (!relaxMode) {
+                const currentLevel = parseInt(levelSelect.value);
+                totalGameScore += 100 + (timeLeft * 10) + (currentLevel * 50);
+            } else {
+                totalGameScore += 100;
+            }
+            updateScoreDisplay();
+
+            feedbackTimeoutId = setTimeout(generateProblem, 1000);
+        }
+
+        function handleIncorrectAnswer(clickedNumber, penaltyScore = -50) {
+            isDuringFeedback = true;
+            disableNumbers(true);
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+            incorrectCount++;
+
+            // データ収集
+            const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+            const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
+            incorrectCountsPerInterval[currentIntervalIndex] = (incorrectCountsPerInterval[currentIntervalIndex] || 0) + 1;
+            if (lastAnswerTime > 0) {
+                const answerDuration = Date.now() - lastAnswerTime;
+                totalAnswerTimesPerInterval[currentIntervalIndex] = (totalAnswerTimesPerInterval[currentIntervalIndex] || 0) + answerDuration;
+            }
+            answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex] || 0) + 1;
+            lastAnswerTime = Date.now();
+
+            showMessage('不正解！', 'incorrect');
+            if (!relaxMode) {
+                totalGameScore = Math.max(0, totalGameScore + penaltyScore);
+            }
+            updateScoreDisplay();
+
+            if (clickedNumber) {
+                clickedNumber.classList.add('incorrect-clicked');
+            }
+
+            const correctNumber = document.querySelector('[data-correct="true"]');
+            if (correctNumber) {
+                correctNumber.style.textShadow = '0 0 10px gold';
+                correctNumber.style.transform = 'scale(1.2)';
+            }
+
+            feedbackTimeoutId = setTimeout(() => {
+                if (clickedNumber) clickedNumber.classList.remove('incorrect-clicked');
+                generateProblem();
+            }, 1000);
+        }
+
+
+        // --- 問題生成 ---
+        function generateProblem() {
+            gameContainer.innerHTML = '';
+            hideMessage();
+            isDuringFeedback = false;
+            disableNumbers(false);
+
+            if (!relaxMode) {
+                timeLeft = timeLimit;
+                timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+
+            let selectedColorValue = colorSelect.value;
+            if (relaxMode || selectedColorValue === 'random') {
+                const colorKeys = Object.keys(baseColors);
+                let availableColors = colorKeys.filter(key => key !== lastBaseColor);
+                if (availableColors.length === 0) availableColors = colorKeys;
+                selectedColorValue = availableColors[Math.floor(Math.random() * availableColors.length)];
+                lastBaseColor = selectedColorValue;
+            } else {
+                lastBaseColor = selectedColorValue;
+            }
+            
+            const baseColor = baseColors[selectedColorValue];
+            const level = parseInt(levelSelect.value);
+            const config = levelConfig[level];
+
+            const targetColorR = Math.max(0, Math.min(255, baseColor.r + config.diff));
+            const targetColorG = Math.max(0, Math.min(255, baseColor.g + config.diff));
+            const targetColorB = Math.max(0, Math.min(255, baseColor.b + config.diff));
+            const baseColorCss = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
+            const targetColorCss = `rgb(${targetColorR}, ${targetColorG}, ${targetColorB})`;
+
+            const targetIndex = Math.floor(Math.random() * config.count);
+            const targetDigit = Math.floor(Math.random() * 10);
+            
+            const positions = [];
+
+            for (let i = 0; i < config.count; i++) {
+                const numChar = document.createElement('span');
+                numChar.classList.add('number-char');
+                
+                const digit = (i === targetIndex) ? targetDigit : Math.floor(Math.random() * 10);
+                numChar.textContent = digit;
+                
+                // 位置とスタイルをランダムに設定
+                const fontSize = Math.random() * (config.maxFs - config.minFs) + config.minFs;
+                const rotation = Math.random() * 90 - 45;
+                
+                // 重なりを避ける簡単なチェック
+                let x, y, attempts = 0;
+                do {
+                    x = Math.random() * (gameContainer.clientWidth - fontSize * 2) + fontSize;
+                    y = Math.random() * (gameContainer.clientHeight - fontSize * 2) + fontSize;
+                    attempts++;
+                } while (attempts < 20 && positions.some(p => Math.hypot(p.x - x, p.y - y) < p.fs/2 + fontSize/2));
+                positions.push({x: x, y: y, fs: fontSize});
+
+                numChar.style.fontSize = `${fontSize}px`;
+                numChar.style.transform = `rotate(${rotation}deg)`;
+                numChar.style.left = `${x}px`;
+                numChar.style.top = `${y}px`;
+
+                if (i === targetIndex) {
+                    numChar.style.color = targetColorCss;
+                    numChar.dataset.correct = "true";
+                    numChar.onclick = () => { if (!isDuringFeedback && gameActive) handleCorrectAnswer(numChar); };
+                } else {
+                    numChar.style.color = baseColorCss;
+                    numChar.onclick = () => { if (!isDuringFeedback && gameActive) handleIncorrectAnswer(numChar); };
+                }
+                gameContainer.appendChild(numChar);
+            }
+        }
+        
+        // --- 結果表示とデータ収集 (変更なし) ---
+        function setupIntervalDataCollection() {
+            timeLabels = []; correctCountsPerInterval = []; incorrectCountsPerInterval = [];
+            totalAnswerTimesPerInterval = []; answersPerInterval = [];
+            let currentInterval = 0;
+            intervalTimer = setInterval(() => {
+                const startTime = currentInterval * intervalDuration;
+                const endTime = (currentInterval + 1) * intervalDuration;
+                timeLabels.push(`${startTime}-${endTime}秒`);
+                correctCountsPerInterval.push(0); incorrectCountsPerInterval.push(0);
+                totalAnswerTimesPerInterval.push(0); answersPerInterval.push(0);
+                currentInterval++;
+            }, intervalDuration * 1000);
+            // 最初のインターバルを手動で追加
+            timeLabels.push(`0-${intervalDuration}秒`);
+            correctCountsPerInterval.push(0); incorrectCountsPerInterval.push(0);
+            totalAnswerTimesPerInterval.push(0); answersPerInterval.push(0);
+        }
+
+        function showGameOverResults(correct, incorrect, score, time, isRelaxMode) {
+            modalTitle.textContent = isRelaxMode ? 'リラックスモード終了！' : 'ゲーム終了！';
+            modalCorrectCount.textContent = correct;
+            modalIncorrectCount.textContent = incorrect;
+            
+            const totalAttempts = correct + incorrect;
+            const accuracy = totalAttempts > 0 ? ((correct / totalAttempts) * 100).toFixed(1) : 0;
+            modalAccuracy.textContent = `${accuracy}%`;
+            
+            modalPlayTime.textContent = `${time}秒`;
+            modalFinalScore.textContent = score;
+
+            if (answerCountChartInstance) answerCountChartInstance.destroy();
+            if (avgAnswerTimeChartInstance) avgAnswerTimeChartInstance.destroy();
+
+            const actualIntervalCount = Math.ceil(time / intervalDuration);
+            const finalLabels = timeLabels.slice(0, actualIntervalCount);
+            const finalCorrect = correctCountsPerInterval.slice(0, actualIntervalCount);
+            const finalIncorrect = incorrectCountsPerInterval.slice(0, actualIntervalCount);
+            
+            const finalAvgTimes = finalLabels.map((_, index) => {
+                const totalAnswersInInterval = answersPerInterval[index] || 0;
+                const totalTimeInInterval = totalAnswerTimesPerInterval[index] || 0;
+                return totalAnswersInInterval > 0 ? (totalTimeInInterval / totalAnswersInInterval / 1000).toFixed(2) : 0;
+            });
+
+            const chartOptions = (titleText, yLabel) => ({
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: titleText, font: { size: 16 }, color: '#333' },
+                    legend: { position: 'bottom', labels: { color: '#555' } }
+                },
+                scales: {
+                    x: { title: { display: true, text: '経過時間', color: '#555' }, ticks: { color: '#555' } },
+                    y: { title: { display: true, text: yLabel, color: '#555' }, beginAtZero: true, ticks: { color: '#555' } }
+                }
+            });
+
+            const ctxAnswerCount = document.getElementById('answerCountChart').getContext('2d');
+            answerCountChartInstance = new Chart(ctxAnswerCount, {
+                type: 'line',
+                data: {
+                    labels: finalLabels,
+                    datasets: [
+                        { label: '正解数', data: finalCorrect, borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.2)', fill: true, tension: 0.3 },
+                        { label: '不正解数', data: finalIncorrect, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.2)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: { ...chartOptions('10秒ごとの回答数', '回答数'), scales: { ...chartOptions().scales, y: { ...chartOptions().scales.y, ticks: { ...chartOptions().scales.y.ticks, precision: 0 } } } }
+            });
+
+            const ctxAvgAnswerTime = document.getElementById('avgAnswerTimeChart').getContext('2d');
+            avgAnswerTimeChartInstance = new Chart(ctxAvgAnswerTime, {
+                type: 'line',
+                data: {
+                    labels: finalLabels,
+                    datasets: [{ label: '平均解答時間 (秒)', data: finalAvgTimes, borderColor: '#007bff', backgroundColor: 'rgba(0, 123, 255, 0.2)', fill: true, tension: 0.3 }]
+                },
+                options: { ...chartOptions('10秒ごとの平均解答時間', '時間 (秒)'), scales: { ...chartOptions().scales, y: { ...chartOptions().scales.y, ticks: { ...chartOptions().scales.y.ticks, callback: value => value + 's' } } } }
+            });
+
+            gameOverModal.style.display = 'flex';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            endGame(); // 初期状態を整える
+        });
+    </script>
+</body>
+</html>
