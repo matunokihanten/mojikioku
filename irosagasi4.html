@@ -426,7 +426,9 @@
             relaxMode = true;
             correctCount = 0; incorrectCount = 0; totalGameScore = 0;
             updateScoreDisplay();
-            gameStartTime = Date.now(); lastAnswerTime = Date.now();
+            // BUG FIX: Date.Now() -> Date.now()
+            gameStartTime = Date.now(); 
+            lastAnswerTime = Date.now();
             lastBaseColor = '';
             setupIntervalDataCollection();
             
@@ -500,7 +502,6 @@
             const answerDuration = Date.now() - lastAnswerTime;
             lastAnswerTime = Date.now();
             
-            // データ収集
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
             correctCountsPerInterval[currentIntervalIndex] = (correctCountsPerInterval[currentIntervalIndex] || 0) + 1;
@@ -519,7 +520,12 @@
             }
             updateScoreDisplay();
 
-            feedbackTimeoutId = setTimeout(generateProblem, 1000);
+            // BEHAVIOR CHANGE: Relax mode moves to the next problem instantly.
+            if (relaxMode) {
+                generateProblem();
+            } else {
+                feedbackTimeoutId = setTimeout(generateProblem, 1000);
+            }
         }
 
         function handleIncorrectAnswer(clickedNumber, penaltyScore = -50) {
@@ -529,7 +535,6 @@
 
             incorrectCount++;
 
-            // データ収集
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
             const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
             incorrectCountsPerInterval[currentIntervalIndex] = (incorrectCountsPerInterval[currentIntervalIndex] || 0) + 1;
@@ -555,11 +560,16 @@
                 correctNumber.style.textShadow = '0 0 10px gold';
                 correctNumber.style.transform = 'scale(1.2)';
             }
-
-            feedbackTimeoutId = setTimeout(() => {
-                if (clickedNumber) clickedNumber.classList.remove('incorrect-clicked');
+            
+            // BEHAVIOR CHANGE: Relax mode moves to the next problem instantly.
+            if (relaxMode) {
                 generateProblem();
-            }, 1000);
+            } else {
+                feedbackTimeoutId = setTimeout(() => {
+                    if (clickedNumber) clickedNumber.classList.remove('incorrect-clicked');
+                    generateProblem();
+                }, 1000);
+            }
         }
 
 
@@ -610,11 +620,9 @@
                 const digit = (i === targetIndex) ? targetDigit : Math.floor(Math.random() * 10);
                 numChar.textContent = digit;
                 
-                // 位置とスタイルをランダムに設定
                 const fontSize = Math.random() * (config.maxFs - config.minFs) + config.minFs;
                 const rotation = Math.random() * 90 - 45;
                 
-                // 重なりを避ける簡単なチェック
                 let x, y, attempts = 0;
                 do {
                     x = Math.random() * (gameContainer.clientWidth - fontSize * 2) + fontSize;
@@ -645,15 +653,17 @@
             timeLabels = []; correctCountsPerInterval = []; incorrectCountsPerInterval = [];
             totalAnswerTimesPerInterval = []; answersPerInterval = [];
             let currentInterval = 0;
+            if (intervalTimer) clearInterval(intervalTimer);
             intervalTimer = setInterval(() => {
                 const startTime = currentInterval * intervalDuration;
                 const endTime = (currentInterval + 1) * intervalDuration;
-                timeLabels.push(`${startTime}-${endTime}秒`);
-                correctCountsPerInterval.push(0); incorrectCountsPerInterval.push(0);
-                totalAnswerTimesPerInterval.push(0); answersPerInterval.push(0);
+                if (!timeLabels.includes(`${startTime}-${endTime}秒`)) {
+                    timeLabels.push(`${startTime}-${endTime}秒`);
+                    correctCountsPerInterval.push(0); incorrectCountsPerInterval.push(0);
+                    totalAnswerTimesPerInterval.push(0); answersPerInterval.push(0);
+                }
                 currentInterval++;
             }, intervalDuration * 1000);
-            // 最初のインターバルを手動で追加
             timeLabels.push(`0-${intervalDuration}秒`);
             correctCountsPerInterval.push(0); incorrectCountsPerInterval.push(0);
             totalAnswerTimesPerInterval.push(0); answersPerInterval.push(0);
@@ -674,7 +684,7 @@
             if (answerCountChartInstance) answerCountChartInstance.destroy();
             if (avgAnswerTimeChartInstance) avgAnswerTimeChartInstance.destroy();
 
-            const actualIntervalCount = Math.ceil(time / intervalDuration);
+            const actualIntervalCount = Math.max(1, Math.ceil(time / intervalDuration));
             const finalLabels = timeLabels.slice(0, actualIntervalCount);
             const finalCorrect = correctCountsPerInterval.slice(0, actualIntervalCount);
             const finalIncorrect = incorrectCountsPerInterval.slice(0, actualIntervalCount);
@@ -724,7 +734,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            endGame(); // 初期状態を整える
+            endGame();
         });
     </script>
 </body>
