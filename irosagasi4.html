@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字の色を探すゲーム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(to right, #6a85b6 0%, #bac8e0 100%);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+        .controls {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        .controls label {
+            font-weight: bold;
+            color: #555;
+            margin-right: 5px;
+            white-space: nowrap;
+        }
+        .controls select, .controls button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .controls select:focus, .controls button:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+        }
+        .controls button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .controls button:hover:not(:disabled) {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #endButton {
+            background-color: #dc3545;
+        }
+        #endButton:hover:not(:disabled) {
+            background-color: #c82333;
+        }
+        #relaxModeButton {
+            background-color: #007bff;
+        }
+        #relaxModeButton:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #timer {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .container {
+            position: relative;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            width: 95vw;
+            max-width: 500px;
+            height: 500px;
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .number-char {
+            position: absolute;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease-out, text-shadow 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .number-char:hover:not(.disabled) {
+            transform: scale(1.2);
+            text-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .number-char.disabled {
+            cursor: default;
+        }
+        .message {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            min-width: 150px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(5px);
+            box-sizing: border-box;
+        }
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #resultMessage.correct {
+            color: #28a745;
+        }
+        #resultMessage.incorrect {
+            color: #dc3545;
+        }
+        #resultMessage.info {
+            color: #007bff;
+        }
+        #score {
+            font-size: 16px;
+            margin-top: 8px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        #totalScore {
+            font-size: 22px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.3);
+            margin-top: 5px;
+        }
+        #initialMessage {
+            font-size: 1.1em;
+            color: #555;
+            padding: 10px;
+        }
+        
+        .number-char.correct-answer {
+             animation: light-pulse 0.8s forwards;
+             z-index: 10;
+        }
+
+        @keyframes light-pulse {
+            0% { transform: scale(1.1); text-shadow: 0 0 5px gold; }
+            50% { transform: scale(1.4); text-shadow: 0 0 25px gold, 0 0 40px white; }
+            100% { transform: scale(1.2); text-shadow: 0 0 5px gold; }
+        }
+
+        .number-char.incorrect-clicked {
+            animation: shake 0.3s ease-in-out;
+            text-shadow: 0 0 10px #dc3545;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        /* ゲームオーバー結果表示用モーダル (変更なし) */
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px); justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe; margin: auto; padding: 25px; border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 600px;
+            text-align: center; position: relative; animation: fadeInScale 0.3s ease-out forwards;
+        }
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .close-button {
+            color: #aaa; float: right; font-size: 28px; font-weight: bold;
+            position: absolute; top: 10px; right: 15px; cursor: pointer;
+        }
+        .close-button:hover, .close-button:focus { color: #000; text-decoration: none; }
+        .modal-content h2 { color: #333; margin-top: 0; margin-bottom: 15px; font-size: 1.8em; }
+        .modal-content p { font-size: 1.1em; margin-bottom: 8px; color: #555; }
+        .modal-content p strong { color: #222; font-weight: bold; }
+        .chart-container { width: 100%; max-width: 500px; height: 250px; margin: 20px auto 0; }
+
+        /* スマートフォン向け調整 */
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5em; }
+            .controls { flex-direction: column; gap: 10px; padding: 10px; }
+            .controls > div { width: 100%; display: flex; justify-content: center; align-items: center; }
+            .controls select, .controls button { width: auto; flex-grow: 1; font-size: 13px; padding: 7px 10px; }
+            .container { max-width: 95vw; height: auto; aspect-ratio: 1 / 1; min-height: 300px; }
+            .message { font-size: 16px; padding: 7px 10px; }
+            #score { font-size: 15px; }
+            #totalScore { font-size: 20px; }
+            .modal-content { padding: 15px; }
+            .modal-content h2 { font-size: 1.5em; }
+            .modal-content p { font-size: 1em; }
+            .chart-container { height: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>数字の色を探すゲーム</h1>
+
+    <div class="controls">
+        <div>
+            <label for="colorSelect">基本色:</label>
+            <select id="colorSelect">
+                <option value="grey">グレー</option>
+                <option value="blue">青</option>
+                <option value="green">緑</option>
+                <option value="purple">紫</option>
+                <option value="random">ランダム</option>
+            </select>
+        </div>
+        <div>
+            <label for="level">レベル:</label>
+            <select id="level">
+                <option value="1">レベル 1 (とても簡単)</option>
+                <option value="2">レベル 2 (簡単)</option>
+                <option value="3">レベル 3 (普通)</option>
+                <option value="4">レベル 4</option>
+                <option value="5">レベル 5</option>
+                <option value="6">レベル 6</option>
+                <option value="7">レベル 7 (難しい)</option>
+                <option value="8">レベル 8 (とても難しい)</option>
+                <option value="9">レベル 9 (超難しい)</option>
+                <option value="10">レベル 10 (極めて困難)</option>
+            </select>
+        </div>
+        <button id="startButton" onclick="startGame()">開始</button>
+        <button id="relaxModeButton" onclick="startRelaxMode()">リラックスモード</button>
+        <button id="endButton" onclick="endGame()">終了</button>
+    </div>
+
+    <div id="timer">残り時間: 5秒</div>
+    <div class="container" id="gameContainer">
+        <p id="initialMessage">上の設定を選んで「開始」ボタンを押してください。<br>パネルの中に一つだけ色が違う数字があるので、それをクリックしてください。</p>
+    </div>
+    <div class="message" id="resultMessage"></div>
+    <div class="message" id="score">正解数: 0</div>
+    <div class="message" id="totalScore">総合スコア: 0</div>
+
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <h2 id="modalTitle">ゲーム終了</h2>
+            <p>総正解数: <strong id="modalCorrectCount">0</strong> 回</p>
+            <p>総不正解数: <strong id="modalIncorrectCount">0</strong> 回</p>
+            <p>正解率: <strong id="modalAccuracy">0%</strong></p>
+            <p>プレイ時間: <strong id="modalPlayTime">0秒</strong></p>
+            <p>最終スコア: <strong id="modalFinalScore">0</strong> 点</p>
+            
+            <div class="chart-container">
+                <canvas id="answerCountChart"></canvas>
+            </div>
+            <div class="chart-container" style="margin-top: 15px;">
+                <canvas id="avgAnswerTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 変数定義 ---
+        let correctCount = 0, incorrectCount = 0, totalGameScore = 0;
+        let isDuringFeedback = false, gameActive = false, relaxMode = false;
+        let feedbackTimeoutId = null, timerInterval = null;
+        const timeLimit = 5;
+        let timeLeft = timeLimit;
+        let gameStartTime = 0, lastAnswerTime = 0;
+        let lastBaseColor = '';
+
+        // データ収集用
+        let timeLabels = [], correctCountsPerInterval = [], incorrectCountsPerInterval = [];
+        let totalAnswerTimesPerInterval = [], answersPerInterval = [];
+        let intervalTimer = null;
+        const intervalDuration = 10;
+
+        // --- DOM要素 ---
+        const startButton = document.getElementById('startButton');
+        const relaxModeButton = document.getElementById('relaxModeButton');
+        const endButton = document.getElementById('endButton');
+        const colorSelect = document.getElementById('colorSelect');
+        const levelSelect = document.getElementById('level');
+        const resultMessage = document.getElementById('resultMessage');
+        const scoreDisplay = document.getElementById('score');
+        const totalScoreDisplay = document.getElementById('totalScore');
+        const gameContainer = document.getElementById('gameContainer');
+        const timerDisplay = document.getElementById('timer');
+        const initialMessage = document.getElementById('initialMessage');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalCorrectCount = document.getElementById('modalCorrectCount');
+        const modalIncorrectCount = document.getElementById('modalIncorrectCount');
+        const modalAccuracy = document.getElementById('modalAccuracy');
+        const modalPlayTime = document.getElementById('modalPlayTime');
+        const modalFinalScore = document.getElementById('modalFinalScore');
+        let answerCountChartInstance = null, avgAnswerTimeChartInstance = null;
+
+        // --- ゲーム設定 ---
+        const levelConfig = {
+            1: { count: 40, diff: 80, minFs: 20, maxFs: 30 },
+            2: { count: 50, diff: 60, minFs: 20, maxFs: 30 },
+            3: { count: 60, diff: 45, minFs: 18, maxFs: 28 },
+            4: { count: 70, diff: 35, minFs: 18, maxFs: 28 },
+            5: { count: 80, diff: 25, minFs: 16, maxFs: 26 },
+            6: { count: 90, diff: 20, minFs: 16, maxFs: 26 },
+            7: { count: 100, diff: 15, minFs: 14, maxFs: 24 },
+            8: { count: 120, diff: 10, minFs: 14, maxFs: 24 },
+            9: { count: 140, diff: 7, minFs: 12, maxFs: 22 },
+            10: { count: 150, diff: 5, minFs: 12, maxFs: 22 }
+        };
+
+        const baseColors = {
+            grey:   { r: 80, g: 80, b: 80 },
+            blue:   { r: 0, g: 50, b: 150 },
+            green:  { r: 0, g: 100, b: 50 },
+            purple: { r: 100, g: 0, b: 100 }
+        };
+
+        // --- 初期化 ---
+        endButton.disabled = true;
+        timerDisplay.style.display = 'none';
+        updateScoreDisplay();
+
+        closeModalButton.onclick = () => { gameOverModal.style.display = 'none'; };
+        window.onclick = (event) => { if (event.target === gameOverModal) { gameOverModal.style.display = 'none'; } };
+
+        // --- UI更新関数 ---
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `正解数: ${correctCount}`;
+            totalScoreDisplay.textContent = `総合スコア: ${totalGameScore}`;
+            scoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff';
+            totalScoreDisplay.style.color = relaxMode ? '#FFD700' : '#fff';
+        }
+
+        function showMessage(text, type) {
+            resultMessage.innerHTML = text;
+            resultMessage.className = 'message show';
+            if (type) resultMessage.classList.add(type);
+        }
+
+        function hideMessage() {
+            resultMessage.className = 'message';
+            resultMessage.classList.remove('info', 'correct', 'incorrect');
+        }
+        
+        function disableNumbers(disable) {
+            const numbers = gameContainer.children;
+            for (let i = 0; i < numbers.length; i++) {
+                if (numbers[i].classList.contains('number-char')) {
+                     if (disable) numbers[i].classList.add('disabled');
+                     else numbers[i].classList.remove('disabled');
+                }
+            }
+        }
+        
+        // --- ゲームフロー ---
+        function startGame() {
+            resetGameStates();
+            relaxMode = false;
+            correctCount = 0; incorrectCount = 0; totalGameScore = 0;
+            updateScoreDisplay();
+            gameStartTime = Date.now(); lastAnswerTime = Date.now();
+            lastBaseColor = '';
+            setupIntervalDataCollection();
+
+            startButton.textContent = 'リスタート';
+            relaxModeButton.disabled = true;
+            colorSelect.disabled = false; levelSelect.disabled = false;
+            endButton.disabled = false;
+            gameActive = true;
+            timerDisplay.style.display = 'block';
+            initialMessage.style.display = 'none';
+            generateProblem();
+        }
+
+        function startRelaxMode() {
+            resetGameStates();
+            relaxMode = true;
+            correctCount = 0; incorrectCount = 0; totalGameScore = 0;
+            updateScoreDisplay();
+            gameStartTime = Date.now(); lastAnswerTime = Date.now();
+            lastBaseColor = '';
+            setupIntervalDataCollection();
+            
+            startButton.disabled = true;
+            relaxModeButton.textContent = 'リラックスモード中';
+            relaxModeButton.disabled = true;
+            endButton.disabled = false;
+            gameActive = true;
+            timerDisplay.style.display = 'none';
+            initialMessage.style.display = 'none';
+            colorSelect.value = 'random';
+            colorSelect.disabled = true; levelSelect.disabled = true;
+            generateProblem();
+        }
+
+        function endGame() {
+            if (!gameActive && gameOverModal.style.display === 'flex') return;
+            
+            const playDuration = gameActive ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
+            
+            if(gameActive) {
+                showGameOverResults(correctCount, incorrectCount, totalGameScore, playDuration, relaxMode);
+            }
+            
+            resetGameStates();
+            gameActive = false; isDuringFeedback = false;
+
+            gameContainer.innerHTML = '';
+            gameContainer.appendChild(initialMessage);
+            initialMessage.style.display = 'block';
+
+            startButton.textContent = '開始';
+            startButton.disabled = false;
+            relaxModeButton.textContent = 'リラックスモード';
+            relaxModeButton.disabled = false;
+            endButton.disabled = true;
+            timerDisplay.textContent = `残り時間: ${timeLimit}秒`;
+            timerDisplay.style.display = 'none';
+            colorSelect.disabled = false; levelSelect.disabled = false;
+
+            correctCount = 0; incorrectCount = 0; totalGameScore = 0;
+            updateScoreDisplay();
+        }
+
+        function resetGameStates() {
+            if (feedbackTimeoutId) clearTimeout(feedbackTimeoutId);
+            if (timerInterval) clearInterval(timerInterval);
+            if (intervalTimer) clearInterval(intervalTimer);
+            timerInterval = null; feedbackTimeoutId = null; intervalTimer = null;
+            hideMessage();
+        }
+        
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.textContent = `残り時間: ${timeLeft}秒`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                if (gameActive && !isDuringFeedback && !relaxMode) {
+                    handleIncorrectAnswer(null, -100); 
+                }
+            }
+        }
+        
+        // --- 回答処理 ---
+        function handleCorrectAnswer(clickedNumber) {
+            isDuringFeedback = true;
+            disableNumbers(true);
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+            const answerDuration = Date.now() - lastAnswerTime;
+            lastAnswerTime = Date.now();
+            
+            // データ収集
+            const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+            const currentIntervalIndex = Math.floor(elapsed / intervalDuration);
+            correctCountsPerInterval[currentIntervalIndex] = (correctCountsPerInterval[currentIntervalIndex] || 0) + 1;
+            totalAnswerTimesPerInterval[currentIntervalIndex] = (totalAnswerTimesPerInterval[currentIntervalIndex] || 0) + answerDuration;
+            answersPerInterval[currentIntervalIndex] = (answersPerInterval[currentIntervalIndex
