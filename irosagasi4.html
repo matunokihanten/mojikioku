@@ -523,7 +523,7 @@
 
             // リラックスモードではすぐに次の問題へ、通常モードでは1秒後に次の問題へ
             if (relaxMode) {
-                generateProblem();
+                feedbackTimeoutId = setTimeout(generateProblem, 200); // すぐに切り替え (アニメーションを少しだけ待つ)
             } else {
                 feedbackTimeoutId = setTimeout(generateProblem, 1000);
             }
@@ -565,7 +565,10 @@
             
             // リラックスモードではすぐに次の問題へ、通常モードでは1秒後に次の問題へ
             if (relaxMode) {
-                generateProblem();
+                feedbackTimeoutId = setTimeout(() => {
+                    if (clickedNumber) clickedNumber.classList.remove('incorrect-clicked');
+                    generateProblem();
+                }, 200); // すぐに切り替え (アニメーションを少しだけ待つ)
             } else {
                 feedbackTimeoutId = setTimeout(() => {
                     if (clickedNumber) clickedNumber.classList.remove('incorrect-clicked');
@@ -635,19 +638,22 @@
                 const maxAttempts = 200; // 配置試行回数の上限
 
                 // 数字の境界ボックスの許容範囲 (例: 文字サイズの半分)
-                const padding = fontSize * 0.7; 
+                // この値を調整することで、数字同士の間隔をコントロールできる
+                const padding = fontSize * 0.6; // 少し重なる可能性を減らすために0.7から0.6に調整
+
+                // 重なり判定を円で行うため、中心座標からの距離を使用
+                const charRadius = fontSize / 2; 
 
                 while (collided && attempts < maxAttempts) {
-                    x = Math.random() * (gameContainer.clientWidth - fontSize * 2) + fontSize;
-                    y = Math.random() * (gameContainer.clientHeight - fontSize * 2) + fontSize;
+                    // gameContainerのパディング分を考慮して、- fontSize * 2 + fontSize としていたのを調整
+                    // より広い範囲でランダムに配置を試みる
+                    x = Math.random() * (gameContainer.clientWidth - fontSize) + (fontSize / 2);
+                    y = Math.random() * (gameContainer.clientHeight - fontSize) + (fontSize / 2);
                     
                     collided = false;
                     for (const p of placedPositions) {
-                        // 重なり判定をより正確にするために、数字の実際のサイズを考慮
-                        // 簡単な円判定で代用 (中心間の距離と半径の合計を比較)
-                        const dist = Math.hypot(p.x - x, p.y - y);
-                        // p.fs と fontSize は文字の高さ、widthも考慮するとより正確
-                        const minDistance = (p.fs + fontSize) / 2 + padding; 
+                        const dist = Math.hypot(p.x - x, p.y - y); // 中心間の距離
+                        const minDistance = (p.radius + charRadius) + padding; // 半径の合計 + パディング
 
                         if (dist < minDistance) {
                             collided = true;
@@ -661,7 +667,7 @@
                     // console.warn("数字の配置に失敗しました。重なる可能性があります。");
                     // 配置できなかった場合は、重なる可能性を許容して配置する
                 }
-                placedPositions.push({ x: x, y: y, fs: fontSize }); // 配置された数字の情報を記録
+                placedPositions.push({ x: x, y: y, radius: charRadius, fs: fontSize }); // 配置された数字の情報を記録
 
                 numChar.style.fontSize = `${fontSize}px`;
                 numChar.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`; // 中心を基準に回転・配置
