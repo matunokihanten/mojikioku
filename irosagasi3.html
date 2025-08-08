@@ -103,7 +103,7 @@
 
         .container {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
             gap: 5px;
             justify-content: center;
             margin-top: 10px;
@@ -291,6 +291,24 @@
             margin: 20px auto 0;
         }
 
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+
         /* スマートフォン向け調整 */
         @media (max-width: 600px) {
             h1 {
@@ -351,6 +369,12 @@
     <h1>色を探すゲーム</h1>
 
     <div class="controls">
+        <div class="radio-group">
+            <label><input type="radio" name="gridSize" value="2" checked> 2x2</label>
+            <label><input type="radio" name="gridSize" value="3"> 3x3</label>
+            <label><input type="radio" name="gridSize" value="4"> 4x4</label>
+            <label><input type="radio" name="gridSize" value="5" checked> 5x5</label>
+        </div>
         <div>
             <label for="colorSelect">基本色:</label>
             <select id="colorSelect">
@@ -457,6 +481,9 @@
 
         let answerCountChartInstance = null;
         let avgAnswerTimeChartInstance = null;
+        
+        // ラジオボタンの要素を取得
+        const gridSizeRadios = document.querySelectorAll('input[name="gridSize"]');
 
         const levelColorDifferences = {
             1: 200, 2: 150, 3: 120, 4: 100, 5: 80,
@@ -472,6 +499,26 @@
             grey: { r: 150, g: 150, b: 150 }
         };
 
+        // マスの初期値を設定
+        gridSizeRadios.forEach(radio => {
+            if (radio.value === '5') {
+                radio.checked = true;
+            }
+        });
+
+        // CSSのGrid設定を動的に変更
+        function updateGridSize(size) {
+            gameContainer.style.setProperty('--grid-cols', size);
+        }
+
+        // ラジオボタンの変更を監視してCSSを更新
+        gridSizeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const newSize = e.target.value;
+                updateGridSize(newSize);
+            });
+        });
+
         // --- 初期設定 ---
         function initializeGameDisplay() {
             endButton.disabled = true;
@@ -483,6 +530,9 @@
             gameContainer.style.display = 'flex'; // initialMessageを中央に配置するため
             initialMessage.style.display = 'block';
             gameContainer.appendChild(initialMessage);
+            
+            // 初期値の5x5をセット
+            updateGridSize(5);
         }
         
         closeModalButton.onclick = () => gameOverModal.style.display = 'none';
@@ -722,6 +772,10 @@
                 if (timerInterval) clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 1000);
             }
+            
+            const selectedGridSize = document.querySelector('input[name="gridSize"]:checked').value;
+            updateGridSize(selectedGridSize);
+            const boxCount = selectedGridSize * selectedGridSize;
 
             let selectedColorValue = colorSelect.value;
             // randomが選択されている場合、またはリラックスモードで前回と同じ色にならないようにする
@@ -737,8 +791,6 @@
             const level = parseInt(levelSelect.value);
             let colorDifference = levelColorDifferences[level] || 80;
 
-            const boxCount = 25; // 5x5の25マス
-            
             const targetColor = {
                 r: Math.max(0, baseColor.r - colorDifference),
                 g: Math.max(0, baseColor.g - colorDifference),
