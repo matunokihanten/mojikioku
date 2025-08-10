@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>数字記憶ゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ベースリセット */
@@ -10,26 +11,21 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent; /* タップ時のハイライトを非表示 */
     }
     
     body {
-      background: linear-gradient(135deg, #0f0f23, #1a1a3e, #2d1b69, #4a148c);
-      background-size: 300% 300%;
-      animation: gradientShift 10s ease infinite;
+      background: #000; /* 背景を黒に変更 */
       font-family: 'Roboto', sans-serif;
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+      justify-content: center;
+      padding: 10px;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden; /* スクロールを禁止 */
     }
 
     /* 浮遊粒子効果 */
@@ -67,15 +63,19 @@
       border-radius: 25px;
       border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
-      padding: 40px 50px;
-      margin-bottom: 30px;
-      width: 90%;
+      padding: 30px;
+      margin-bottom: 20px;
+      width: 95%;
       max-width: 900px;
       text-align: center;
       transform: translateY(0);
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex-grow: 1;
     }
 
     .container::before {
@@ -101,7 +101,7 @@
       transform: translateY(-5px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 10px 20px rgba(0, 0, 0, 0.4);
     }
-    
+
     /* 設定画面 */
     #settingsContainer h1 {
       font-family: 'Playfair Display', serif;
@@ -118,6 +118,10 @@
     @keyframes titlePulse {
       0% { transform: scale(1); }
       100% { transform: scale(1.05); }
+    }
+    
+    #settingsContainer label {
+      font-size: 1.2em;
     }
     
     #settingsContainer select,
@@ -167,6 +171,9 @@
     /* ゲーム画面 */
     #gameContainer {
       display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
     }
     
     /* 固定の指示文：上部に「数字を覚えてね」 */
@@ -191,18 +198,16 @@
       font-size: 8em;
       font-weight: bold;
       margin-bottom: 30px;
-      height: 200px;
+      height: 100px;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1;
-      /* 元のグラデーションテキストから単色黒へ */
       color: #333; 
-      /* グラデーションは削除 */
       -webkit-text-fill-color: #333; 
-      background-clip: border-box; /* clipをborder-boxに戻す */
+      background-clip: border-box;
       animation: numberPulse 1s ease-in-out infinite alternate;
-      text-shadow: 0 0 50px rgba(0, 0, 0, 0.3); /* テキストシャドウを黒に合わせて調整 */
+      text-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
     }
 
     @keyframes numberPulse {
@@ -229,8 +234,9 @@
     #userInput {
       font-size: 2em;
       padding: 15px 20px;
-      width: 300px;
-      margin-bottom: 30px;
+      width: 90%;
+      max-width: 300px;
+      margin: 15px auto; /* キーパッドの下に配置するためにマージンを調整 */
       text-align: center;
       border: 3px solid transparent;
       border-radius: 15px;
@@ -253,16 +259,17 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-gap: 15px;
+      width: 95%;
       max-width: 400px;
-      margin: 25px auto;
+      margin: 0px auto; /* 画面中央に配置 */
     }
     
     #keypad button {
       background: linear-gradient(135deg, #667eea, #764ba2);
       color: #fff;
-      font-size: 2em;
+      font-size: 2.5em; /* フォントサイズを大きく */
       font-weight: bold;
-      padding: 25px;
+      padding: 30px; /* パディングを大きく */
       border: none;
       border-radius: 20px;
       cursor: pointer;
@@ -270,10 +277,11 @@
       box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
       position: relative;
       overflow: hidden;
+      aspect-ratio: 1 / 1; /* ボタンを正方形にする */
     }
 
     #keypad button.clear-button {
-      background: linear-gradient(135deg, #FFC107, #FF9800); /* オレンジ系の色 */
+      background: linear-gradient(135deg, #FFC107, #FF9800);
       color: #333;
     }
 
@@ -313,7 +321,7 @@
     /* 正誤メッセージ */
     #status {
       font-size: 1.6em;
-      margin: 20px 0;
+      margin: 15px 0;
       min-height: 35px;
       font-weight: 500;
       animation: statusBounce 0.5s ease-in-out;
@@ -325,27 +333,31 @@
       80% { transform: translateY(-5px); }
     }
     
-    /* 入力履歴：10列グリッド */
+    /* 入力履歴：5列グリッド */
     #historyContainer {
       display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      grid-gap: 8px;
-      margin-top: 30px;
-      max-width: 500px;
+      grid-template-columns: repeat(5, 1fr);
+      grid-gap: 5px;
+      margin-top: 15px;
+      width: 100%;
+      max-width: 400px;
       margin-left: auto;
       margin-right: auto;
     }
     
     .history-number {
-      font-size: 1.1em;
+      font-size: 1em;
       font-weight: bold;
-      padding: 10px;
+      padding: 8px;
       border: 2px solid rgba(255, 255, 255, 0.3);
       border-radius: 10px;
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
       transition: all 0.3s ease;
       animation: historyAppear 0.5s ease-out;
-      color: #fff; /* 履歴の数字のデフォルト色 */
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     @keyframes historyAppear {
@@ -369,14 +381,22 @@
     }
     
     /* 答え／終了ボタン */
+    #gameButtons {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 15px;
+    }
+
     #showAnswerButton,
     #endButton {
-      width: 160px;
-      margin: 15px;
+      width: 45%;
+      margin: 0;
       border: none;
       border-radius: 15px;
-      padding: 15px 20px;
-      font-size: 1.1em;
+      padding: 15px 10px;
+      font-size: 1em;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -420,35 +440,80 @@
     }
 
     /* レスポンシブ対応 */
-    @media (max-width: 768px) {
-      .container {
-        padding: 30px 25px;
-        width: 95%;
+    @media (orientation: portrait) and (max-width: 768px) {
+      body {
+        justify-content: flex-start;
+        padding-top: 20px;
       }
-      
+      .container {
+        padding: 20px;
+        margin-bottom: 15px;
+        flex-grow: 0;
+      }
+      #settingsContainer {
+        min-height: 250px;
+        justify-content: flex-start;
+      }
+      #gameContainer {
+        min-height: 80vh;
+        justify-content: space-between;
+      }
+      #settingsContainer h1 {
+        font-size: 2.5em;
+        margin-bottom: 20px;
+      }
+      #settingsContainer select,
+      #settingsContainer button {
+        padding: 12px 20px;
+        font-size: 1.1em;
+      }
+      #instruction {
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
       #numberDisplay {
         font-size: 6em;
-        height: 150px;
+        height: 80px;
       }
-      
+      #prompt {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+      }
+      #userInput {
+        font-size: 1.8em;
+        width: 100%;
+        max-width: 250px;
+        margin: 15px auto;
+      }
       #keypad {
         max-width: 300px;
         grid-gap: 10px;
+        margin-top: 10px;
       }
-      
       #keypad button {
         font-size: 1.8em;
-        padding: 20px;
+        padding: 15px;
       }
-      
-      #userInput {
-        width: 250px;
-        font-size: 1.8em;
+      #status {
+        font-size: 1.4em;
+        margin: 10px 0;
       }
-      
       #historyContainer {
-        max-width: 300px;
         grid-template-columns: repeat(5, 1fr);
+        grid-gap: 5px;
+        margin-top: 10px;
+      }
+      .history-number {
+        font-size: 0.9em;
+        padding: 5px;
+      }
+      #gameButtons {
+        margin-top: 10px;
+      }
+      #showAnswerButton,
+      #endButton {
+        font-size: 0.9em;
+        padding: 12px 5px;
       }
     }
   </style>
@@ -473,12 +538,14 @@
     <div id="instruction">数字を覚えてね</div>
     <div id="numberDisplay">&nbsp;</div>
     <div id="prompt"></div>
-    <input type="text" id="userInput" readonly>
     <div id="keypad"></div>
+    <input type="text" id="userInput" readonly>
     <div id="status"></div>
     <div id="historyContainer"></div>
-    <button id="showAnswerButton">答え</button>
-    <button id="endButton">終了</button>
+    <div id="gameButtons">
+      <button id="showAnswerButton">答え</button>
+      <button id="endButton">終了</button>
+    </div>
   </div>
 
   <script>
@@ -538,7 +605,7 @@
       document.getElementById("status").textContent = "";
 
       document.getElementById("settingsContainer").style.display = "none";
-      document.getElementById("gameContainer").style.display = "block";
+      document.getElementById("gameContainer").style.display = "flex";
 
       createKeypad();
       startRound();
@@ -561,7 +628,7 @@
       document.getElementById("status").textContent = "";
 
       document.getElementById("gameContainer").style.display = "none";
-      document.getElementById("settingsContainer").style.display = "block";
+      document.getElementById("settingsContainer").style.display = "flex";
     }
 
     // 答えボタン押下：正解(prevNumber)を青色で表示し、入力開始まで保持
@@ -677,10 +744,12 @@
         answerRevealed = false;
       }
       const inputField = document.getElementById("userInput");
-      inputField.value += digit.toString();
-      
-      // 入力フィールドにアニメーション効果
-      restartAnimation(inputField, "statusBounce 0.3s ease-out");
+      if (inputField.value.length < digitCount) {
+        inputField.value += digit.toString();
+        
+        // 入力フィールドにアニメーション効果
+        restartAnimation(inputField, "statusBounce 0.3s ease-out");
+      }
       
       if (inputField.value.length === digitCount) {
         setTimeout(checkAnswer, 200); // 入力完了後、少し待ってから判定
@@ -731,7 +800,7 @@
       }, 1500); // 正誤表示後、少し待ってから次のラウンドへ
     }
 
-    // 履歴に正解数字を追加（10列グリッド）
+    // 履歴に正解数字を追加（5列グリッド）
     function addToHistory(num, isCorrect) {
       const historyContainer = document.getElementById("historyContainer");
       const span = document.createElement("span");
@@ -743,6 +812,7 @@
         span.classList.add("incorrect");
       }
       historyContainer.appendChild(span);
+      historyContainer.scrollTop = historyContainer.scrollHeight;
     }
   </script>
 </body>
