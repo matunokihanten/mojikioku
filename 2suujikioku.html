@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>数字記憶ゲーム</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -167,6 +168,43 @@
     #showAnswerButton:hover, #endButton:hover {
       transform: scale(1.05);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* スマートフォン向け（画面幅600px以下）のスタイル */
+    @media (max-width: 600px) {
+      body {
+        padding: 20px 10px;
+      }
+      .container {
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      #numberDisplay {
+        font-size: 5em;
+        height: 150px;
+        margin-bottom: 10px;
+      }
+      #instruction {
+        font-size: 1.5em;
+      }
+      #userInput {
+        font-size: 1.5em;
+        width: 80%;
+      }
+      #keypad button {
+        font-size: 1.5em;
+        padding: 15px;
+      }
+      #historyContainer {
+        grid-template-columns: repeat(5, 1fr); /* 10列から5列に減らす */
+        grid-gap: 3px;
+        max-width: 100%;
+      }
+      #showAnswerButton,
+      #endButton {
+        width: 100%;
+        max-width: 150px;
+      }
     }
   </style>
 </head>
