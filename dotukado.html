@@ -3,55 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>ドッツカード</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* 上部に寄せる */
             align-items: center;
             height: 100vh;
-            background-color: black; /* 宇宙空間に合うように背景色を黒に */
-            color: white; /* テキスト色を白に */
+            margin: 0; /* bodyのマージンをリセット */
+            padding: 10px; /* 全体のパディング */
+            background-color: black;
+            color: white;
             font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            box-sizing: border-box; /* paddingを含めて高さを計算 */
         }
         #canvas {
             position: relative;
-            width: 400px;
-            height: 400px;
-            border: 1px solid white; /* 境界線を白に変更 */
+            width: 90vw; /* 画面幅の90% */
+            max-width: 400px;
+            height: 90vw; /* 縦横比を1:1に保つ */
+            max-height: 400px;
+            border: 1px solid white;
             margin-bottom: 20px;
             overflow: hidden;
-            /* 宇宙空間の背景画像を設定 */
-            background-image: url('http://googleusercontent.com/generated_image_content/0'); /* 画像URLを挿入 */
-            background-size: cover; /* キャンバス全体に画像をフィット */
+            background-color: black; /* 宇宙の背景画像は削除 */
         }
         .dot {
             position: absolute;
-            /* 光沢のある球体に見せるためのスタイル */
             background: radial-gradient(circle at 70% 40%, #ff0000, #800000);
             border-radius: 50%;
-            width: 60px; /* デフォルトのサイズ */
+            width: 60px;
             height: 60px;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* 影を濃く */
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
         .inputs {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin-bottom: 20px;
+            width: 100%;
         }
         .input-row {
             display: flex;
             justify-content: center;
+            flex-wrap: wrap; /* スマホ画面で折り返す */
+            gap: 10px; /* 各入力間の隙間 */
             margin-bottom: 10px;
+            width: 100%;
         }
         .input-row > div {
-            margin-right: 10px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        label {
+            white-space: nowrap; /* テキストの折り返しを防ぐ */
         }
         .buttons {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-            grid-template-rows: repeat(auto-fill, minmax(40px, 1fr));
             gap: 5px;
             width: 90%;
             max-width: 600px;
@@ -63,24 +76,56 @@
             height: 40px;
             box-sizing: border-box;
             font-size: 16px;
-            background-color: rgba(255, 255, 255, 0.8); /* ボタンの背景を半透明に */
+            background-color: rgba(255, 255, 255, 0.8);
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
         .buttons button:hover {
-            background-color: rgba(255, 255, 255, 1); /* ホバー時の背景色 */
+            background-color: rgba(255, 255, 255, 1);
         }
         #practiceResult {
             font-size: 24px;
             margin-top: 10px;
             color: blue;
             font-weight: bold;
+            height: 30px; /* 高さを固定してレイアウトのずれを防ぐ */
         }
         #result {
             font-size: 20px;
             margin-top: 10px;
             font-weight: bold;
+            height: 30px; /* 高さを固定してレイアウトのずれを防ぐ */
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: none;
+        }
+        @media (max-width: 600px) {
+            .input-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .input-row > div {
+                flex-direction: row;
+                justify-content: space-between;
+                width: 100%;
+            }
+            .buttons {
+                grid-template-columns: repeat(5, 1fr);
+            }
         }
     </style>
 </head>
@@ -110,23 +155,27 @@
                 <input type="number" id="maxDots" value="10" min="1" max="100">
             </div>
         </div>
-        <div>
-            <label for="practiceInterval">練習の表示時間 (秒):</label>
-            <select id="practiceInterval">
-                <option value="0.1" selected>0.1</option>
-                <option value="0.2">0.2</option>
-                <option value="0.5">0.5</option>
-                <option value="1.0">1.0</option>
-            </select>
+        <div class="input-row">
+            <div>
+                <label for="practiceInterval">練習の表示時間 (秒):</label>
+                <select id="practiceInterval">
+                    <option value="0.1" selected>0.1</option>
+                    <option value="0.2">0.2</option>
+                    <option value="0.5">0.5</option>
+                    <option value="1.0">1.0</option>
+                </select>
+            </div>
         </div>
-        <p id="practiceResult"></p>
     </div>
+    <p id="practiceResult"></p>
     <div id="canvas"></div>
     <p id="result"></p>
     <div class="buttons"></div>
-    <button onclick="drawDots()">スタート</button>
-    <button onclick="practice()">練習</button>
-    <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
+    <div class="controls">
+        <button onclick="drawDots()">スタート</button>
+        <button onclick="practice()">練習</button>
+        <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
+    </div>
 
     <script>
         let practiceTimeout;
@@ -232,7 +281,6 @@
                 for (let i = 0; i < count; i++) {
                     const dotElement = document.createElement("div");
                     dotElement.classList.add("dot");
-                     // 練習モードの玉も光沢を持たせる
                     dotElement.style.background = 'radial-gradient(circle at 70% 40%, #ff0000, #800000)';
                     dotElement.style.width = `${dotSize}px`;
                     dotElement.style.height = `${dotSize}px`;
