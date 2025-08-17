@@ -122,9 +122,9 @@
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
-            display: flex; /* Flexboxを有効にする */
-            justify-content: center; /* 水平方向の中央揃え */
-            align-items: center; /* 垂直方向の中央揃え */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .buttons button:hover {
             background-color: rgba(102, 255, 255, 0.4);
@@ -135,7 +135,14 @@
             transform: translateY(0);
         }
 
-        button {
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
             background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
@@ -148,12 +155,12 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
         }
-        button:hover {
+        .controls button:hover {
             background-color: #45a049;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
         }
-        button:active {
+        .controls button:active {
             transform: translateY(0);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
@@ -163,17 +170,25 @@
         #stopPracticeButton:hover {
             background-color: #da190b;
         }
+        
+        /* 正解・不正解表示用のコンテナ */
+        #result-container {
+            height: 30px; /* 文字が表示される領域の高さに固定 */
+            margin-top: 5px;
+            margin-bottom: 5px; /* ボタンとの間に余白を確保 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         #practiceResult {
             font-size: 22px;
-            margin-top: 5px;
             color: #00FFFF;
             font-weight: bold;
             text-shadow: 0 0 10px #00FFFF;
         }
         #result {
             font-size: 20px;
-            margin-top: 5px;
             font-weight: bold;
             text-shadow: 0 0 8px;
         }
@@ -223,9 +238,11 @@
         <p id="practiceResult"></p>
     </div>
     <div id="canvas"></div>
-    <p id="result"></p>
+    <div id="result-container">
+        <p id="result"></p>
+    </div>
     <div class="buttons"></div>
-    <div>
+    <div class="controls">
         <button onclick="drawDots()">スタート</button>
         <button onclick="practice()">練習</button>
         <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
