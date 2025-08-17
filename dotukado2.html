@@ -38,7 +38,7 @@
             position: relative;
             width: 90%;
             max-width: 400px;
-            height: 40vh;
+            height: 40vh; /* デフォルトの高さ */
             max-height: 400px;
             border: 2px solid #66FFFF;
             box-shadow: 0 0 15px #66FFFF;
@@ -46,6 +46,11 @@
             overflow: hidden;
             background-color: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
+            transition: height 0.5s ease-in-out; /* 高さを滑らかに変化させる */
+        }
+        #canvas.expanded {
+            height: 70vh; /* 拡大時の高さ */
+            max-height: 700px;
         }
         .dot {
             position: absolute;
@@ -65,6 +70,10 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
             width: 95%;
+            transition: all 0.5s ease-in-out; /* 表示/非表示を滑らかに */
+        }
+        .inputs.hidden {
+            display: none;
         }
         .input-row {
             display: flex;
@@ -170,12 +179,18 @@
         #stopPracticeButton:hover {
             background-color: #da190b;
         }
+
+        #hideSettingsButton, #resetButton {
+            background-color: #555;
+        }
+        #hideSettingsButton:hover, #resetButton:hover {
+            background-color: #777;
+        }
         
-        /* 正解・不正解表示用のコンテナ */
         #result-container {
-            height: 30px; /* 文字が表示される領域の高さに固定 */
+            height: 30px;
             margin-top: 5px;
-            margin-bottom: 5px; /* ボタンとの間に余白を確保 */
+            margin-bottom: 5px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -246,6 +261,8 @@
         <button onclick="drawDots()">スタート</button>
         <button onclick="practice()">練習</button>
         <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
+        <button id="hideSettingsButton" onclick="toggleSettings()">設定を隠す</button>
+        <button id="resetButton" onclick="resetApp()">リセット</button>
     </div>
 
     <script>
@@ -416,6 +433,47 @@
             document.getElementById("canvas").innerHTML = "";
             document.getElementById("practiceResult").textContent = "";
             document.getElementById("stopPracticeButton").style.display = "none";
+        }
+
+        function toggleSettings() {
+            const inputs = document.querySelector('.inputs');
+            const canvas = document.getElementById('canvas');
+            const button = document.getElementById('hideSettingsButton');
+
+            if (inputs.classList.contains('hidden')) {
+                inputs.classList.remove('hidden');
+                canvas.classList.remove('expanded');
+                button.textContent = '設定を隠す';
+            } else {
+                inputs.classList.add('hidden');
+                canvas.classList.add('expanded');
+                button.textContent = '設定を表示';
+            }
+        }
+
+        function resetApp() {
+            stopPractice();
+            
+            // 入力フィールドを初期値に戻す
+            document.getElementById('dotSize').value = 60;
+            document.getElementById('backgroundColor').value = 'black';
+            document.getElementById('minDots').value = 1;
+            document.getElementById('maxDots').value = 10;
+            document.getElementById('practiceInterval').value = 0.1;
+
+            // 表示を初期状態に戻す
+            const inputs = document.querySelector('.inputs');
+            const canvas = document.getElementById('canvas');
+            const hideButton = document.getElementById('hideSettingsButton');
+            inputs.classList.remove('hidden');
+            canvas.classList.remove('expanded');
+            hideButton.textContent = '設定を隠す';
+
+            document.getElementById("result").textContent = "";
+            document.getElementById("practiceResult").textContent = "";
+            document.querySelector('.buttons').innerHTML = "";
+            document.getElementById("canvas").style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
+
         }
     </script>
 </body>
