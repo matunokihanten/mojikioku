@@ -8,26 +8,33 @@
         body {
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* 上部に寄せる */
+            justify-content: flex-start;
             align-items: center;
             height: 100vh;
-            margin: 0; /* bodyのマージンをリセット */
-            padding: 10px; /* 全体のパディング */
+            margin: 0;
+            padding: 10px;
             background-color: black;
             color: white;
             font-family: 'Segoe UI', 'Meiryo', sans-serif;
-            box-sizing: border-box; /* paddingを含めて高さを計算 */
+            box-sizing: border-box;
         }
         #canvas {
             position: relative;
-            width: 90vw; /* 画面幅の90% */
+            width: 90vw;
             max-width: 400px;
-            height: 90vw; /* 縦横比を1:1に保つ */
+            height: 90vw;
             max-height: 400px;
             border: 1px solid white;
             margin-bottom: 20px;
             overflow: hidden;
-            background-color: black; /* 宇宙の背景画像は削除 */
+            background-color: black;
+            transition: all 0.5s ease-in-out; /* スムーズなサイズ変更 */
+        }
+        .canvas-fullscreen {
+            width: 95vw !important;
+            height: 95vw !important;
+            max-width: 95vw !important;
+            max-height: 95vh !important;
         }
         .dot {
             position: absolute;
@@ -43,12 +50,16 @@
             align-items: center;
             margin-bottom: 20px;
             width: 100%;
+            transition: all 0.5s ease-in-out;
+        }
+        .inputs.hidden {
+            display: none;
         }
         .input-row {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap; /* スマホ画面で折り返す */
-            gap: 10px; /* 各入力間の隙間 */
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 10px;
             width: 100%;
         }
@@ -60,7 +71,7 @@
             text-align: center;
         }
         label {
-            white-space: nowrap; /* テキストの折り返しを防ぐ */
+            white-space: nowrap;
         }
         .buttons {
             display: grid;
@@ -89,13 +100,13 @@
             margin-top: 10px;
             color: blue;
             font-weight: bold;
-            height: 30px; /* 高さを固定してレイアウトのずれを防ぐ */
+            height: 30px;
         }
         #result {
             font-size: 20px;
             margin-top: 10px;
             font-weight: bold;
-            height: 30px; /* 高さを固定してレイアウトのずれを防ぐ */
+            height: 30px;
         }
         .controls {
             display: flex;
@@ -175,6 +186,8 @@
         <button onclick="drawDots()">スタート</button>
         <button onclick="practice()">練習</button>
         <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
+        <button onclick="toggleSettings()">設定を隠す</button>
+        <button onclick="resetPage()">リセット</button>
     </div>
 
     <script>
@@ -338,6 +351,25 @@
             document.getElementById("canvas").innerHTML = "";
             document.getElementById("practiceResult").textContent = "";
             document.getElementById("stopPracticeButton").style.display = "none";
+        }
+
+        function toggleSettings() {
+            const inputs = document.querySelector('.inputs');
+            const canvas = document.getElementById('canvas');
+            const toggleButton = document.querySelector('button[onclick="toggleSettings()"]');
+
+            inputs.classList.toggle('hidden');
+            canvas.classList.toggle('canvas-fullscreen');
+
+            if (inputs.classList.contains('hidden')) {
+                toggleButton.textContent = '設定を表示';
+            } else {
+                toggleButton.textContent = '設定を隠す';
+            }
+        }
+
+        function resetPage() {
+            location.reload();
         }
     </script>
 </body>
