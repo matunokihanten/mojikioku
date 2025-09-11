@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>銀河渦巻アニメーション</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Inter', sans-serif;
+      color: #fff;
+    }
+    canvas {
+      display: block;
+    }
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      color: #fff;
+      transition: opacity 0.3s ease;
+    }
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #controls label {
+      font-size: 14px;
+    }
+    #controls input[type="range"] {
+      -webkit-appearance: none;
+      width: 200px;
+      height: 6px;
+      background: #444;
+      border-radius: 5px;
+      outline: none;
+    }
+    #controls input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #ffaa00;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 600px;
+    }
+    .button-container button {
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #1a1a2e, #0a0a14);
+      color: #88aaff;
+      cursor: pointer;
+      box-shadow: 3px 3px 6px #08080f, -3px -3px 6px #22223c;
+      transition: all 0.2s ease;
+    }
+    .button-container button:hover {
+      background: linear-gradient(145deg, #2b2b4d, #1c1c2e);
+      transform: translateY(-1px);
+      box-shadow: 5px 5px 10px #08080f, -5px -5px 10px #22223c;
+    }
+    .button-container button:active {
+      transform: translateY(0);
+      box-shadow: inset 2px 2px 4px #08080f, inset -2px -2px 4px #2223c;
+    }
+    .radio-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+      color: #fff;
+      font-size: 14px;
+    }
+    .radio-container input[type="radio"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+    .radio-container input[type="radio"]:checked::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      background-color: #ffaa00;
+      border-radius: 50%;
+    }
+    #toggleControls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      color: #88aaff;
+      cursor: pointer;
+      box-shadow: 3px 3px 6px #08080f;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    #toggleControls:hover {
+      background: rgba(0, 0, 0, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="galaxyCanvas"></canvas>
+  <button id="toggleControls">コントロール非表示</button>
+  <div id="controls">
+    <div class="button-container">
+      <button id="btnMode1">モード1</button>
+      <button id="btnMode2">モード2</button>
+      <button id="btnMode3">モード3</button>
+      <button id="btnMode4">モード4</button>
+      <button id="btnMode5">モード5</button>
+      <button id="btnMode6">モード6</button>
+      <button id="btnMode7">モード7</button>
+      <button id="btnMode8">モード8</button>
+      <button id="btnMode9">モード9</button>
+      <button id="btnMode10">モード10</button>
+      <button id="btnMode11">モード11</button>
+      <button id="btnMode12">モード12</button>
+      <button id="btnMode13">モード13</button>
+      <button id="btnMode14">モード14</button>
+      <button id="btnMode15">モード15</button>
+      <button id="btnMode16">モード16</button>
+      <button id="btnMode17">モード17</button>
+      <button id="btnMode18">モード18</button>
+      <button id="btnMode19">モード19</button>
+      <button id="btnMode20">モード20</button>
+    </div>
+    <label>速度</label>
+    <input type="range" id="speedSlider" min="0.1" max="100.0" value="1.0" step="1.0">
+    <label>線の数</label>
+    <input type="range" id="zoomSlider" min="100" max="5000" value="2500" step="100">
+    <label>渦巻の大きさ</label>
+    <input type="range" id="sizeSlider" min="100" max="800" value="400" step="50">
+    <div class="radio-container">
+      <label>
+        <input type="radio" name="colorMode" value="colorful" checked>
+        カラフル
+      </label>
+      <label>
+        <input type="radio" name="colorMode" value="fixed">
+        固定色
+      </label>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('galaxyCanvas');
+    const ctx = canvas.getContext('2d');
+    const speedSlider = document.getElementById('speedSlider');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const sizeSlider = document.getElementById('sizeSlider');
+    const colorModeRadios = document.querySelectorAll('input[name="colorMode"]');
+    const controlsDiv = document.getElementById('controls');
+    const toggleButton = document.getElementById('toggleControls');
+
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+    let particles = [];
+    let particleCount = 5000;
+    let spiralSize = 400; // New variable for spiral size
+    let currentMode = 'mode1';
+    let isColorful = true;
+    let colorMix = 0;
+    let hueOffset = 0;
+
+    // Adjust canvas size to fit the window
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      mouseX = canvas.width / 2;
+      mouseY = canvas.height / 2;
+      initParticles(); 
+    }
+
+    // Initialize particles
+    function initParticles() {
+      particles = [];
+      particleCount = parseInt(zoomSlider.value);
+      for (let i = 0; i < particleCount; i++) {
+        // 線の総数に関係なく、渦巻のサイズが一定になるように距離を計算
+        const distance = (i / particleCount) * spiralSize + Math.random() * 50;
+        const angle = i * 0.15;
+        particles.push({
+          x: distance * Math.cos(angle),
+          y: distance * Math.sin(angle),
+          distance: distance,
+          angle: angle,
+          velocity: 0.005 + Math.random() * 0.005,
+          color: `hsl(${i * 0.1}, 100%, 50%)`,
+        });
+      }
+    }
+
+    // Drawing loop
+    function draw() {
+      const speed = parseFloat(speedSlider.value);
+      
+      // Fill the background with a transparent color to create a trail effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw particles
+      ctx.beginPath();
+      
+      particles.forEach(p => {
+        // Apply different logic for each mode
+        switch(currentMode) {
+          case 'mode1':
+            // Basic spiral
+            p.angle += p.velocity * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode2':
+            // Velocity changes with distance from center
+            p.angle += (p.velocity + (p.distance/500)) * speed;
+            p.velocity = 0.005 + Math.sin(p.angle) * 0.005;
+            break;
+          case 'mode3':
+            // Color changes over time
+            p.angle += p.velocity * speed;
+            p.color = `hsl(${p.angle * 10 % 360}, 100%, 50%)`;
+            break;
+          case 'mode4':
+            // Spiral rotating in the opposite direction
+            p.angle -= p.velocity * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode5':
+            // Two spirals intertwining
+            p.angle += p.velocity * speed;
+            p.angle -= (p.distance/spiralSize) * 0.05 * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode6':
+            // Pulsing spiral
+            p.angle += p.velocity * speed;
+            p.distance = (p.distance * 0.99) + 0.1 + Math.sin(p.angle) * 0.5;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode7':
+            // Spiral with two centers
+            p.angle += p.velocity * speed;
+            const x1 = (p.distance / 2) * Math.cos(p.angle);
+            const y1 = (p.distance / 2) * Math.sin(p.angle);
+            const x2 = (p.distance / 2) * Math.cos(p.angle + Math.PI);
+            const y2 = (p.distance / 2) * Math.sin(p.angle + Math.PI);
+            p.x = mouseX + x1;
+            p.y = mouseY + y1;
+            break;
+          case 'mode8':
+            // Fractal spiral
+            p.angle += p.velocity * speed;
+            p.distance = p.distance * 1.01;
+            if (p.distance > spiralSize * 1.5) {
+              p.distance = 0;
+            }
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode9':
+            // Color-inverting spiral
+            p.angle += p.velocity * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode10':
+            // Spiral being sucked into the center
+            p.angle += p.velocity * speed;
+            p.distance -= 1 * speed;
+            if (p.distance < 0) {
+              p.distance = spiralSize;
+              p.angle = Math.random() * Math.PI * 2;
+            }
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode11':
+            // Spiraling outward from a fixed point
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + 0.5 * speed;
+            if (p.distance > spiralSize) {
+              p.distance = 0;
+            }
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode12':
+            // Wave-like spiral
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + Math.sin(p.angle * 5) * 2;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode13':
+            // Densely packed spiral
+            p.angle += p.velocity * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.05;
+            break;
+          case 'mode14':
+            // Chaotic spiral
+            p.angle += (p.velocity + Math.random() * 0.02) * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode15':
+            // Spiral with an expanding and contracting core
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + Math.sin(p.angle) * 5;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode16':
+            // Spiral with multiple rotating arms
+            p.angle += p.velocity * speed;
+            p.angle += Math.sin(p.distance/10) * 0.01 * speed;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode17':
+            // Reverse-pulsing spiral
+            p.angle += p.velocity * speed;
+            p.distance = (p.distance * 1.01) - 0.1 - Math.sin(p.angle) * 0.5;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode18':
+            // Concentric circle spiral
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + 0.1;
+            if (p.distance > spiralSize) {
+              p.distance = 0;
+            }
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode19':
+            // Ribbon-like spiral
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + Math.sin(p.angle * 2) * 2;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+          case 'mode20':
+            // Spiral with a distorted center
+            p.angle += p.velocity * speed;
+            p.distance = p.distance + Math.cos(p.angle) * 10;
+            p.velocity = 0.005 + (p.distance / spiralSize) * 0.02;
+            break;
+        }
+
+        const x = p.distance * Math.cos(p.angle);
+        const y = p.distance * Math.sin(p.angle);
+
+        // Apply offset from the center
+        const finalX = mouseX + x;
+        const finalY = mouseY + y;
+
+        // Change color
+        let hue;
+        if (isColorful) {
+          hueOffset = (hueOffset + 0.1) % 360;
+          hue = (p.angle * 180 / Math.PI + hueOffset + 360) % 360;
+        } else {
+          hue = 200; // Fixed blue hue
+        }
+        const lightness = 50 + (p.distance / spiralSize) * 50;
+        ctx.strokeStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+        ctx.lineWidth = 1.5;
+
+        // Draw the line
+        if (p === particles[0]) {
+          ctx.moveTo(finalX, finalY);
+        } else {
+          ctx.lineTo(finalX, finalY);
+        }
+      });
+      
+      ctx.stroke(); 
+
+      requestAnimationFrame(draw);
+    }
+
+    // Event listeners
+    window.addEventListener('resize', resizeCanvas);
+    canvas.addEventListener('mousemove', (e) => {
+      // マウス位置をキャンバス内に制限
+      mouseX = Math.min(Math.max(0, e.clientX), canvas.width);
+      mouseY = Math.min(Math.max(0, e.clientY), canvas.height);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      // タッチ位置をキャンバス内に制限
+      mouseX = Math.min(Math.max(0, touch.clientX), canvas.width);
+      mouseY = Math.min(Math.max(0, touch.clientY), canvas.height);
+    });
+    
+    // Mode buttons
+    for (let i = 1; i <= 20; i++) {
+        document.getElementById(`btnMode${i}`).addEventListener('click', () => { 
+            currentMode = `mode${i}`; 
+            initParticles(); 
+        });
+    }
+
+    // Radio button for color mode
+    colorModeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        isColorful = e.target.value === 'colorful';
+      });
+    });
+
+    // Zoom slider for particle count
+    zoomSlider.addEventListener('input', () => {
+      initParticles();
+    });
+
+    // New size slider for spiral size
+    sizeSlider.addEventListener('input', (e) => {
+      spiralSize = parseInt(e.target.value);
+      initParticles();
+    });
+
+    // Toggle controls visibility
+    toggleButton.addEventListener('click', () => {
+        const isHidden = controlsDiv.classList.toggle('hidden');
+        toggleButton.textContent = isHidden ? 'コントロール表示' : 'コントロール非表示';
+    });
+
+    // Initialize and start animation
+    window.onload = () => {
+      resizeCanvas();
+      initParticles();
+      draw();
+    };
+  </script>
+</body>
+</html>
