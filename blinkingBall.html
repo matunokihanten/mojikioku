@@ -3,72 +3,218 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>点滅する球 (100モード)</title>
+  <title>究極の点滅球 (100モード)</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      color: #fff;
+      text-align: center;
+      transition: background-color 0.5s ease;
+    }
+
+    #appContainer {
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      max-width: 90%;
       margin: 20px;
     }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    }
+    
+    #statusInfo {
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        font-weight: bold;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    
+    #statusInfo span {
+        display: block;
+        margin-top: 5px;
+    }
+
     #blinkingBall {
-      border: 1px solid black;
+      border: 3px solid #fff;
+      border-radius: 10px;
       display: block;
-      margin-bottom: 20px;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
     }
+
     #modeButtons {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 10px;
+      margin-bottom: 20px;
+      max-width: 600px;
+      width: 100%;
     }
-    #modeButtons button {
-      padding: 6px 12px;
-      font-size: 12px;
+
+    .mode-button {
+      padding: 12px 15px;
+      font-size: 0.8em;
+      font-weight: bold;
       cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      transition: all 0.3s ease;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mode-button:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+    }
+
+    .mode-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .pagination-button {
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+      border: 2px solid #fff;
+      border-radius: 50px;
+      background-color: transparent;
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    .pagination-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination-button:disabled {
+      border-color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-  <canvas id="blinkingBall" width="500" height="500"></canvas>
-  <div id="modeButtons"></div>
+  <div id="appContainer">
+    <h1>究極の点滅球</h1>
+    <div id="statusInfo">
+      <span id="currentModeLabel">現在のモード: 未選択</span>
+      <span id="currentBlinkHzLabel">点滅速度: 0 Hz</span>
+    </div>
+    <canvas id="blinkingBall" width="500" height="500"></canvas>
+    <div id="modeButtons"></div>
+    <div class="pagination">
+        <button id="prevPageBtn" class="pagination-button">◀ 前へ</button>
+        <button id="nextPageBtn" class="pagination-button">次へ ▶</button>
+    </div>
+  </div>
 
   <script>
     const canvas = document.getElementById('blinkingBall');
     const ctx = canvas.getContext('2d');
+    const buttonsContainer = document.getElementById('modeButtons');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const currentModeLabel = document.getElementById('currentModeLabel');
+    const currentBlinkHzLabel = document.getElementById('currentBlinkHzLabel');
 
-    // 現在の設定
+    const BALL_RADIUS = 100;
+    const CANVAS_WIDTH = 500;
+    const CANVAS_HEIGHT = 500;
+    const BALL_CENTER_X = CANVAS_WIDTH / 2;
+    const BALL_CENTER_Y = CANVAS_HEIGHT / 2;
+    const MODES_PER_PAGE = 10;
+
     let ballColor = "red";
     let bgColor = "cyan";
     let isVisible = true;
     let blinkInterval;
-    let currentBlinkHz = 2;
+    let currentBlinkHz = 0;
+    let currentPage = 0;
+
+    // Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    // オシレーターとゲインノードを接続
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // 初期設定
+    oscillator.type = 'sine';
+    oscillator.start();
+    gainNode.gain.value = 0; // 最初は音量を0に
 
     // キャンバス描画用関数
     function drawBall() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // 背景塗りつぶし
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // 玉の描画（可視状態の場合）
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       if (isVisible) {
         ctx.beginPath();
-        ctx.arc(250, 250, 100, 0, Math.PI * 2);
+        ctx.arc(BALL_CENTER_X, BALL_CENTER_Y, BALL_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = ballColor;
         ctx.fill();
         ctx.closePath();
       }
     }
 
-    // 点滅時に表示・非表示を切り替える
+    // 点滅処理
     function blinkBall() {
       isVisible = !isVisible;
       drawBall();
+      
+      // 点滅に合わせて音をオン/オフ
+      if (isVisible) {
+        gainNode.gain.value = 0.5; // 音を出す
+      } else {
+        gainNode.gain.value = 0; // 音を消す
+      }
     }
 
-    // 点滅速度の更新
+    // 点滅速度と音の周波数の更新
     function updateBlinkSpeed(speedInHz) {
       clearInterval(blinkInterval);
-      const speedInMs = 1000 / speedInHz;
-      blinkInterval = setInterval(blinkBall, speedInMs);
       currentBlinkHz = speedInHz;
+      
+      // 音の周波数を設定（周波数は点滅速度に合わせる）
+      oscillator.frequency.value = speedInHz;
+
+      if (speedInHz > 0) {
+        const speedInMs = 1000 / (speedInHz * 2);
+        blinkInterval = setInterval(blinkBall, speedInMs);
+      } else {
+        gainNode.gain.value = 0; // 0Hzの場合は音を停止
+      }
+      currentBlinkHzLabel.textContent = `点滅速度: ${speedInHz.toFixed(1)} Hz`;
     }
 
     // 16進カラーをランダム生成する関数
@@ -83,20 +229,25 @@
 
     // モードを適用する関数
     function setMode(mode) {
+      // ユーザーの操作がなければオーディオコンテキストは起動しないため、最初にクリックされたときに再開する
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       ballColor = mode.ballColor === "random" ? getRandomColor() : mode.ballColor;
       bgColor = mode.bgColor === "random" ? getRandomColor() : mode.bgColor;
-      if (mode.blinkHz === "random") {
-        const randomHz = Math.floor(Math.random() * 40) + 1;
-        updateBlinkSpeed(randomHz);
-      } else {
-        updateBlinkSpeed(mode.blinkHz);
-      }
+      
+      const newHz = mode.blinkHz === "random" ? (Math.floor(Math.random() * 40) + 1) : mode.blinkHz;
+      updateBlinkSpeed(newHz);
+      
       // モード切替時は玉を表示して描画
       isVisible = true;
       drawBall();
+      
+      currentModeLabel.textContent = `現在のモード: ${mode.label}`;
     }
 
-    // 100モードの定義
+    // 100モードの定義 (元のコードから変更なし)
     const modes = [
       { id: 1,  label: "目覚める", ballColor: "red", bgColor: "cyan", blinkHz: 35 },
       { id: 2,  label: "落ち着く", ballColor: "blue", bgColor: "lightblue", blinkHz: 2 },
@@ -200,18 +351,48 @@
       { id: 100, label: "終幕の美学", ballColor: "silver", bgColor: "darkslateblue", blinkHz: 10 }
     ];
 
-    // 各モードに対応するボタンを生成
-    const buttonsContainer = document.getElementById('modeButtons');
-    modes.forEach(mode => {
-      const btn = document.createElement('button');
-      btn.textContent = mode.id + ". " + mode.label;
-      btn.addEventListener('click', () => setMode(mode));
-      buttonsContainer.appendChild(btn);
+    // ページネーションとボタン描画
+    function renderButtons() {
+      buttonsContainer.innerHTML = '';
+      const start = currentPage * MODES_PER_PAGE;
+      const end = start + MODES_PER_PAGE;
+      const modesToShow = modes.slice(start, end);
+
+      modesToShow.forEach(mode => {
+        const btn = document.createElement('button');
+        btn.classList.add('mode-button');
+        btn.textContent = `${mode.id}. ${mode.label}`;
+        btn.addEventListener('click', () => setMode(mode));
+        buttonsContainer.appendChild(btn);
+      });
+
+      prevPageBtn.disabled = currentPage === 0;
+      nextPageBtn.disabled = end >= modes.length;
+    }
+
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 0) {
+        currentPage--;
+        renderButtons();
+      }
     });
 
-    // 初期描画
-    updateBlinkSpeed(currentBlinkHz);
-    drawBall();
+    nextPageBtn.addEventListener('click', () => {
+      if ((currentPage + 1) * MODES_PER_PAGE < modes.length) {
+        currentPage++;
+        renderButtons();
+      }
+    });
+
+    // 初期化
+    function initialize() {
+        renderButtons();
+        drawBall();
+        updateBlinkSpeed(0); // 初期状態は停止
+        currentModeLabel.textContent = "現在のモード: 停止中";
+    }
+
+    initialize();
   </script>
 </body>
 </html>
