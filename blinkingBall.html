@@ -56,6 +56,46 @@
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
     }
 
+    /* 玉の立体感を出すための影を追加 */
+    .ball-3d {
+        -webkit-box-shadow: 
+            inset 0 0 50px rgba(0,0,0,0.8), 
+            0 0 20px rgba(255,255,255,0.7), 
+            0 0 40px rgba(255,255,255,0.5),
+            0 0 60px rgba(255,255,255,0.3);
+        box-shadow: 
+            inset 0 0 50px rgba(0,0,0,0.8), 
+            0 0 20px rgba(255,255,255,0.7), 
+            0 0 40px rgba(255,255,255,0.5),
+            0 0 60px rgba(255,255,255,0.3);
+    }
+    
+    .mode-selection {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .mode-selection input[type="radio"] {
+        display: none;
+    }
+
+    .mode-selection label {
+        cursor: pointer;
+        padding: 8px 16px;
+        border: 2px solid #fff;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+    }
+
+    .mode-selection input[type="radio"]:checked + label {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+
     #modeButtons {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -89,7 +129,7 @@
 
     .mode-button:active {
       transform: translateY(0);
-      box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
+      box-shadow: 2px 2px 5px rgba(255, 255, 255, 0.2);
     }
 
     .pagination {
@@ -128,6 +168,15 @@
       <span id="currentModeLabel">現在のモード: 未選択</span>
       <span id="currentBlinkHzLabel">点滅速度: 0 Hz</span>
     </div>
+    
+    <div class="mode-selection">
+        <input type="radio" id="mode2d" name="ballMode" value="2d" checked>
+        <label for="mode2d">2Dモード</label>
+        
+        <input type="radio" id="mode3d" name="ballMode" value="3d">
+        <label for="mode3d">3Dモード</label>
+    </div>
+    
     <canvas id="blinkingBall" width="500" height="500"></canvas>
     <div id="modeButtons"></div>
     <div class="pagination">
@@ -144,6 +193,8 @@
     const nextPageBtn = document.getElementById('nextPageBtn');
     const currentModeLabel = document.getElementById('currentModeLabel');
     const currentBlinkHzLabel = document.getElementById('currentBlinkHzLabel');
+    const mode2dRadio = document.getElementById('mode2d');
+    const mode3dRadio = document.getElementById('mode3d');
 
     const BALL_RADIUS = 100;
     const CANVAS_WIDTH = 500;
@@ -178,10 +229,31 @@
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
       if (isVisible) {
         ctx.beginPath();
         ctx.arc(BALL_CENTER_X, BALL_CENTER_Y, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = ballColor;
+        
+        // 描画モードに応じて玉を描画
+        if (mode2dRadio.checked) {
+            ctx.fillStyle = ballColor;
+        } else {
+            // 3D効果のためにグラデーションを適用
+            const gradient = ctx.createRadialGradient(
+                BALL_CENTER_X + BALL_RADIUS / 3, 
+                BALL_CENTER_Y - BALL_RADIUS / 3, 
+                0,
+                BALL_CENTER_X, 
+                BALL_CENTER_Y, 
+                BALL_RADIUS
+            );
+            gradient.addColorStop(0, '#ffffff'); // ハイライト
+            gradient.addColorStop(0.5, ballColor); // 中心色
+            gradient.addColorStop(1, '#000000'); // 影
+
+            ctx.fillStyle = gradient;
+        }
+        
         ctx.fill();
         ctx.closePath();
       }
@@ -382,6 +454,13 @@
         currentPage++;
         renderButtons();
       }
+    });
+
+    // ラジオボタンの変更を監視
+    document.querySelectorAll('input[name="ballMode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            drawBall(); // モードが変わったら玉を再描画
+        });
     });
 
     // 初期化
