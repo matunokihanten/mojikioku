@@ -2,326 +2,506 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>点滅する球とモードボタン</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>究極の点滅球 DX</title>
   <style>
     body {
-      font-family: sans-serif;
-    }
-    canvas {
-      display: block;
-      margin: 20px auto;
-      border: 1px solid black;
-    }
-    .buttons {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      color: #fff;
       text-align: center;
+      transition: background-color 0.5s ease;
+      overflow-x: hidden;
+    }
+
+    #appContainer {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      max-width: 95%;
+      margin: 20px;
+    }
+
+    h1 {
+      font-size: clamp(1.5em, 5vw, 2.5em);
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+      animation: fadeIn 1s ease-in-out;
+    }
+    
+    #statusInfo {
+        margin-bottom: 20px;
+        font-size: clamp(1em, 3vw, 1.2em);
+        font-weight: bold;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    }
+    
+    #statusInfo span {
+        display: block;
+        margin-top: 5px;
+    }
+
+    #blinkingBall {
+      border: 3px solid #fff;
+      border-radius: 10px;
+      display: block;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .ball-3d {
+      box-shadow: 
+        inset 0 0 50px rgba(0,0,0,0.8), 
+        0 0 20px rgba(255,255,255,0.7), 
+        0 0 40px rgba(255,255,255,0.5),
+        0 0 60px rgba(255,255,255,0.3);
+    }
+
+    .control-group {
+        margin-bottom: 20px;
+    }
+    
+    .mode-selection, .wave-selection {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .control-group label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    input[type="radio"] {
+        display: none;
+    }
+
+    input[type="radio"] + label {
+        cursor: pointer;
+        padding: 8px 16px;
+        border: 2px solid #fff;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    input[type="radio"]:checked + label {
+        background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .volume-control {
+        margin-top: 15px;
+    }
+
+    .volume-control input[type="range"] {
+        width: 100%;
+        max-width: 250px;
+        -webkit-appearance: none;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 5px;
+        outline: none;
+        transition: background 0.2s;
+    }
+
+    .volume-control input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+
+    #modeButtons {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .mode-button {
+      padding: 12px 15px;
+      font-size: 0.8em;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      transition: all 0.3s ease;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+    }
+
+    .mode-button:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+    }
+
+    .mode-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
+    }
+    
+    .tooltip {
+        visibility: hidden;
+        opacity: 0;
+        background-color: rgba(0,0,0,0.8);
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 10px;
+        position: absolute;
+        z-index: 1;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: normal;
+        min-width: 150px;
+        font-size: 0.7em;
+        transition: opacity 0.3s;
+    }
+    
+    .mode-button:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
       margin-top: 20px;
     }
-    .buttons button {
-      margin: 5px;
-      padding: 8px 12px;
-      font-size: 14px;
+
+    .pagination-button {
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+      border: 2px solid #fff;
+      border-radius: 50px;
+      background-color: transparent;
+      color: #fff;
+      transition: all 0.3s ease;
     }
+
+    .pagination-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination-button:disabled {
+      border-color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: not-allowed;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* レスポンシブデザインの調整 */
+    @media (max-width: 768px) {
+      #modeButtons {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
   </style>
 </head>
 <body>
-  <canvas id="blinkingBall" width="500" height="500"></canvas>
+  <div id="appContainer">
+    <h1>究極の点滅球 DX</h1>
+    <div id="statusInfo">
+      <span id="currentModeLabel">現在のモード: 未選択</span>
+      <span id="currentBlinkHzLabel">点滅速度: 0 Hz</span>
+    </div>
+    
+    <div class="control-group">
+        <label>描画モード</label>
+        <div class="mode-selection">
+            <input type="radio" id="mode2d" name="ballMode" value="2d" checked>
+            <label for="mode2d">2Dモード</label>
+            <input type="radio" id="mode3d" name="ballMode" value="3d">
+            <label for="mode3d">3Dモード</label>
+        </div>
+    </div>
+    
+    <canvas id="blinkingBall" width="500" height="500"></canvas>
+    
+    <div class="control-group">
+        <label>音のカスタマイズ</label>
+        <div class="wave-selection">
+            <input type="radio" id="sine" name="waveType" value="sine" checked>
+            <label for="sine">正弦波</label>
+            <input type="radio" id="square" name="waveType" value="square">
+            <label for="square">矩形波</label>
+            <input type="radio" id="sawtooth" name="waveType" value="sawtooth">
+            <label for="sawtooth">ノコギリ波</label>
+            <input type="radio" id="triangle" name="waveType" value="triangle">
+            <label for="triangle">三角波</label>
+        </div>
+        <div class="volume-control">
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5">
+        </div>
+    </div>
 
-  <div class="buttons">
-    <button id="btnWakeUp">目が覚めるボタン</button>
-    <button id="btnRelax">リラックスボタン</button>
-    <button id="btnMeditation">瞑想ボタン</button>
-    <button id="btnFocus">集中ボタン</button>
-    <button id="btnHappy">楽しい気分ボタン</button>
-    <button id="btnRainbow">虹ボタン</button>
-    <button id="btnFlashDance">フラッシュダンスボタン</button>
-    <button id="btnMagic">マジックボタン</button>
-    <button id="btnCoolDown">クールダウンボタン</button>
-    <button id="btnEnergy">元気アップボタン</button>
-    <button id="btnSoftLight">柔らかいライトボタン</button>
-    <button id="btnStarlit">星空ボタン</button>
-    <button id="btnForest">森の中ボタン</button>
-    <button id="btnSunset">夕焼けボタン</button>
-    <button id="btnBeach">ビーチボタン</button>
-    <button id="btnParty">パーティーボタン</button>
-    <button id="btnRain">雨音ボタン</button>
-    <button id="btnGoodNight">おやすみボタン</button>
-    <button id="btnReading">読書モードボタン</button>
-    <button id="btnFantasy">幻想モードボタン</button>
-    <button id="btnSelfSuggestion">自己暗示ボタン</button>
+    <div id="modeButtons"></div>
+    <div class="pagination">
+        <button id="prevPageBtn" class="pagination-button">◀ 前へ</button>
+        <button id="nextPageBtn" class="pagination-button">次へ ▶</button>
+    </div>
   </div>
 
   <script>
     const canvas = document.getElementById('blinkingBall');
     const ctx = canvas.getContext('2d');
+    const buttonsContainer = document.getElementById('modeButtons');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const currentModeLabel = document.getElementById('currentModeLabel');
+    const currentBlinkHzLabel = document.getElementById('currentBlinkHzLabel');
+    const mode2dRadio = document.getElementById('mode2d');
+    const mode3dRadio = document.getElementById('mode3d');
+    const waveTypeRadios = document.querySelectorAll('input[name="waveType"]');
+    const volumeSlider = document.getElementById('volumeSlider');
+
+    const BALL_RADIUS = 100;
+    const CANVAS_WIDTH = 500;
+    const CANVAS_HEIGHT = 500;
+    const BALL_CENTER_X = CANVAS_WIDTH / 2;
+    const BALL_CENTER_Y = CANVAS_HEIGHT / 2;
+    const MODES_PER_PAGE = 10;
+
+    let ballColor = "red";
+    let bgColor = "cyan";
+    let isVisible = true;
+    let blinkInterval;
+    let currentBlinkHz = 0;
+    let currentPage = 0;
+
+    // Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
     
-    // グローバル変数
-    let mode = "normal";        // 現在のモード
-    let selectedColor = "red";  // 現在の球の色
-    let isVisible = true;       // 球が表示されるか（true: 表示 / false: 非表示）
-    let blinkInterval;          // 点滅用のinterval ID
-    
-    // モードごとの配列とインデックス
-    const rainbowColors = ["red", "orange", "yellow", "green", "blue", "purple"];
-    let rainbowIndex = 0;
-    const gradientColors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
-    let gradientIndex = 0;
-    const sunsetColors = ["orange", "pink", "purple"];
-    let sunsetIndex = 0;
-    
-    // 補色を返す関数（背景色用）
-    function getComplementaryColor(color) {
-      switch (color) {
-        case 'red': return 'cyan';
-        case 'yellow': return 'blue';
-        case 'blue': return 'yellow';
-        case 'green': return 'magenta';
-        case 'purple': return 'lime';
-        case 'orange': return 'aqua';
-        case 'cyan': return 'red';
-        case 'pink': return 'lightgreen';
-        case 'magenta': return 'green';
-        default: return 'white';
-      }
-    }
-    
-    // ランダムな色を返す
-    function getRandomColor() {
-      const colors = ["red", "yellow", "blue", "green", "purple", "orange", "cyan", "magenta", "pink", "lime", "aqua"];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-    
-    // ★追加エフェクト用の補助関数
-    
-    // 星空モード：ランダムな小さな星を描画
-    function drawStars() {
-      for (let i = 0; i < 50; i++) {
-        let starX = Math.random() * canvas.width;
-        let starY = Math.random() * canvas.height;
-        let starRadius = Math.random() * 2;
-        ctx.beginPath();
-        ctx.arc(starX, starY, starRadius, 0, Math.PI * 2);
-        ctx.fillStyle = "white";
-        ctx.fill();
-      }
-    }
-    
-    // 雨音モード：ランダムな雨滴（線）を描画
-    function drawRain() {
-      for (let i = 0; i < 20; i++) {
-        let dropX = Math.random() * canvas.width;
-        let dropY = Math.random() * canvas.height;
-        ctx.beginPath();
-        ctx.moveTo(dropX, dropY);
-        ctx.lineTo(dropX, dropY + 10);
-        ctx.strokeStyle = "blue";
-        ctx.stroke();
-      }
-    }
-    
-    // 森モード：簡単な樹木（長方形＋三角形）を描画
-    function drawForest() {
-      for (let i = 0; i < 5; i++) {
-        let treeX = i * (canvas.width / 5) + Math.random() * 20;
-        let treeHeight = 50 + Math.random() * 50;
-        ctx.fillStyle = "darkgreen";
-        ctx.fillRect(treeX, canvas.height - treeHeight, 20, treeHeight);
-        ctx.beginPath();
-        ctx.moveTo(treeX - 10, canvas.height - treeHeight);
-        ctx.lineTo(treeX + 30, canvas.height - treeHeight);
-        ctx.lineTo(treeX + 10, canvas.height - treeHeight - 40);
-        ctx.fillStyle = "green";
-        ctx.fill();
-      }
-    }
-    
-    // 幻想モード：中心から放射状に線を描画
-    function drawFantasy() {
-      ctx.beginPath();
-      ctx.strokeStyle = "magenta";
-      ctx.lineWidth = 2;
-      ctx.moveTo(250, 250);
-      for (let i = 0; i < 6; i++) {
-        let angle = Math.random() * 2 * Math.PI;
-        ctx.lineTo(250 + Math.cos(angle) * 100, 250 + Math.sin(angle) * 100);
-        ctx.moveTo(250, 250);
-      }
-      ctx.stroke();
-    }
-    
-    // 描画のメイン関数
+    oscillator.type = 'sine';
+    oscillator.start();
+    gainNode.gain.value = 0;
+
     function drawBall() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       
-      // モードに応じて球の色を決定
-      let ballColor = selectedColor;
-      if (mode === "rainbow") {
-        ballColor = rainbowColors[rainbowIndex];
-        rainbowIndex = (rainbowIndex + 1) % rainbowColors.length;
-      } else if (mode === "flashDance" || mode === "party") {
-        ballColor = getRandomColor();
-      } else if (mode === "gradient") {
-        ballColor = gradientColors[gradientIndex];
-        gradientIndex = (gradientIndex + 1) % gradientColors.length;
-      } else if (mode === "sunset") {
-        ballColor = sunsetColors[sunsetIndex];
-        sunsetIndex = (sunsetIndex + 1) % sunsetColors.length;
-      } else if (mode === "fantasy") {
-        ballColor = "pink";
-      }
-      
-      // 背景を補色で描画
-      ctx.fillStyle = getComplementaryColor(ballColor);
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // モードごとの追加描画（星空、雨、森、幻想など）
-      if (mode === "starlit") {
-        drawStars();
-      } else if (mode === "rain") {
-        drawRain();
-      } else if (mode === "forest") {
-        drawForest();
-      } else if (mode === "fantasy") {
-        drawFantasy();
-      }
-      
-      // 球の描画（steady/selfSuggestionモードの場合は常に表示）
-      if (isVisible || mode === "steady" || mode === "selfSuggestion") {
+      if (isVisible) {
         ctx.beginPath();
-        ctx.arc(250, 250, 100, 0, Math.PI * 2);
-        ctx.fillStyle = ballColor;
+        ctx.arc(BALL_CENTER_X, BALL_CENTER_Y, BALL_RADIUS, 0, Math.PI * 2);
+        
+        if (mode2dRadio.checked) {
+            ctx.fillStyle = ballColor;
+            canvas.classList.remove('ball-3d');
+        } else {
+            const gradient = ctx.createRadialGradient(
+                BALL_CENTER_X + BALL_RADIUS / 3, 
+                BALL_CENTER_Y - BALL_RADIUS / 3, 
+                0,
+                BALL_CENTER_X, 
+                BALL_CENTER_Y, 
+                BALL_RADIUS
+            );
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.5, ballColor);
+            gradient.addColorStop(1, '#000000');
+
+            ctx.fillStyle = gradient;
+            canvas.classList.add('ball-3d');
+        }
+        
         ctx.fill();
         ctx.closePath();
-        
-        // 自己暗示モードの場合、メッセージを表示
-        if (mode === "selfSuggestion") {
-          ctx.font = "24px sans-serif";
-          ctx.fillStyle = "black";
-          ctx.textAlign = "center";
-          ctx.fillText("あなたは素晴らしい！", 250, 260);
-        }
+      } else {
+        canvas.classList.remove('ball-3d');
       }
     }
-    
-    // 点滅用の関数（表示/非表示のトグル）
+
     function blinkBall() {
       isVisible = !isVisible;
       drawBall();
+      
+      if (isVisible) {
+        gainNode.gain.value = volumeSlider.value;
+      } else {
+        gainNode.gain.value = 0;
+      }
     }
-    
-    // 点滅速度（Hz）を更新する
+
     function updateBlinkSpeed(speedInHz) {
       clearInterval(blinkInterval);
-      const speedInMs = 1000 / speedInHz;
-      blinkInterval = setInterval(blinkBall, speedInMs);
-    }
-    
-    // 指定したモードに切り替える
-    // color: 初期の球の色, frequency: 点滅速度 (Hz), newMode: モード識別文字列
-    function setMode(color, frequency, newMode) {
-      mode = newMode;
-      selectedColor = color;
-      isVisible = true;
-      // 各特殊モード用のインデックスリセット
-      if (newMode === "rainbow") {
-        rainbowIndex = 0;
+      currentBlinkHz = speedInHz;
+      
+      oscillator.frequency.value = speedInHz;
+
+      if (speedInHz > 0) {
+        const speedInMs = 1000 / (speedInHz * 2);
+        blinkInterval = setInterval(blinkBall, speedInMs);
+      } else {
+        gainNode.gain.value = 0;
       }
-      if (newMode === "gradient") {
-        gradientIndex = 0;
-      }
-      if (newMode === "sunset") {
-        sunsetIndex = 0;
-      }
-      clearInterval(blinkInterval);
-      updateBlinkSpeed(frequency);
+      currentBlinkHzLabel.textContent = `点滅速度: ${speedInHz.toFixed(1)} Hz`;
     }
-    
-    // 点滅しない（常時表示）モードに切替え
-    // steadyModeName は "steady" や "reading" として区別可能
-    function setSteadyMode(color, steadyModeName) {
-      mode = steadyModeName;
-      selectedColor = color;
-      clearInterval(blinkInterval);
-      isVisible = true;
-      drawBall();
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
     }
-    
-    // 自己暗示モード：点滅をやめてメッセージ表示
-    function setSelfSuggestionMode() {
-      mode = "selfSuggestion";
-      clearInterval(blinkInterval);
+
+    function setMode(mode) {
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      ballColor = mode.ballColor === "random" ? getRandomColor() : mode.ballColor;
+      bgColor = mode.bgColor === "random" ? getRandomColor() : mode.bgColor;
+      
+      const newHz = mode.blinkHz === "random" ? (Math.floor(Math.random() * 40) + 1) : mode.blinkHz;
+      updateBlinkSpeed(newHz);
+      
       isVisible = true;
       drawBall();
+      
+      currentModeLabel.textContent = `現在のモード: ${mode.label}`;
     }
+
+    // モード定義をカテゴリ分け
+    const modes = [
+      { category: "覚醒 & 集中", id: 1,  label: "目覚める", ballColor: "red", bgColor: "cyan", blinkHz: 35, desc: "活力ある一日をスタートさせたい時に。" },
+      { category: "覚醒 & 集中", id: 2,  label: "集中力向上", ballColor: "yellow", bgColor: "blue", blinkHz: 10, desc: "仕事や勉強で集中力を高めたい時に。" },
+      { category: "覚醒 & 集中", id: 3,  label: "エネルギーチャージ", ballColor: "orange", bgColor: "aqua", blinkHz: 30, desc: "疲労回復とエネルギーを補充したい時に。" },
+      { category: "覚醒 & 集中", id: 4,  label: "スピードアップ", ballColor: "silver", bgColor: "black", blinkHz: 35, desc: "素早い思考と反応速度を求める時に。" },
+      { category: "覚醒 & 集中", id: 5,  label: "活力の源", ballColor: "red", bgColor: "orange", blinkHz: 28, desc: "内なる活力を引き出したい時に。" },
+
+      { category: "リラックス & 瞑想", id: 6,  label: "落ち着く", ballColor: "blue", bgColor: "lightblue", blinkHz: 2, desc: "心を落ち着かせ、穏やかな気分になりたい時に。" },
+      { category: "リラックス & 瞑想", id: 7,  label: "瞑想モード", ballColor: "purple", bgColor: "lavender", blinkHz: 1, desc: "深い瞑想状態に入りたい時に。" },
+      { category: "リラックス & 瞑想", id: 8,  label: "心のリセット", ballColor: "gray", bgColor: "lightgray", blinkHz: 5, desc: "ストレスを解放し、心をリセットしたい時に。" },
+      { category: "リラックス & 瞑想", id: 9,  label: "ストレスリリース", ballColor: "green", bgColor: "lightgreen", blinkHz: 2, desc: "日々のストレスを和らげたい時に。" },
+      { category: "リラックス & 瞑想", id: 10, label: "睡眠促進", ballColor: "navy", bgColor: "midnightblue", blinkHz: 1, desc: "安らかな眠りに誘われたい時に。" },
+
+      { category: "創造性 & インスピレーション", id: 11, label: "創造性解放", ballColor: "magenta", bgColor: "lime", blinkHz: 15, desc: "新しいアイデアを思いつきたい時に。" },
+      { category: "創造性 & インスピレーション", id: 12, label: "フロー状態", ballColor: "indigo", bgColor: "peachpuff", blinkHz: 7, desc: "集中と創造性が高まる状態を求める時に。" },
+      { category: "創造性 & インスピレーション", id: 13, label: "インスピレーション", ballColor: "coral", bgColor: "lavender", blinkHz: 7, desc: "心の奥からインスピレーションを引き出したい時に。" },
+      { category: "創造性 & インスピレーション", id: 14, label: "キャンバスの奇跡", ballColor: "coral", bgColor: "peachpuff", blinkHz: 10, desc: "芸術的な感性を刺激したい時に。" },
+      { category: "創造性 & インスピレーション", id: 15, label: "革新的ビジョン", ballColor: "chartreuse", bgColor: "darkgreen", blinkHz: 13, desc: "画期的なアイデアや未来のビジョンを思い描きたい時に。" },
+      
+      { category: "ランダム & スペシャル", id: 16, label: "ランダムカラーチャレンジ", ballColor: "random", bgColor: "random", blinkHz: "random", desc: "何が起こるか分からない、刺激的な体験を求める時に。" },
+      { category: "ランダム & スペシャル", id: 17, label: "奇跡の瞬間", ballColor: "magenta", bgColor: "turquoise", blinkHz: 20, desc: "不思議な気分を味わいたい時に。" },
+      { category: "ランダム & スペシャル", id: 18, label: "電子の鼓動", ballColor: "deeppink", bgColor: "darkviolet", blinkHz: 30, desc: "テクノや電子音楽のようなリズムで心拍数を高めたい時に。" },
+      { category: "ランダム & スペシャル", id: 19, label: "天の領域", ballColor: "royalblue", bgColor: "lightsteelblue", blinkHz: 7, desc: "非日常的な感覚を求める時に。" },
+      { category: "ランダム & スペシャル", id: 20, label: "電光石火", ballColor: "gold", bgColor: "royalblue", blinkHz: 40, desc: "極限の集中力と反射速度を試したい時に。" }
+    ];
+
+    function renderButtons() {
+      buttonsContainer.innerHTML = '';
+      
+      // カテゴリごとにボタンをグループ化
+      const categories = {};
+      modes.forEach(mode => {
+        if (!categories[mode.category]) {
+          categories[mode.category] = [];
+        }
+        categories[mode.category].push(mode);
+      });
+      
+      // ページ内のカテゴリとモードを表示
+      const start = currentPage * MODES_PER_PAGE;
+      const end = start + MODES_PER_PAGE;
+      const modesToShow = modes.slice(start, end);
+
+      modesToShow.forEach(mode => {
+        const btn = document.createElement('button');
+        btn.classList.add('mode-button');
+        btn.innerHTML = `${mode.id}. ${mode.label}<span class="tooltip">${mode.desc}</span>`;
+        btn.addEventListener('click', () => setMode(mode));
+        buttonsContainer.appendChild(btn);
+      });
+
+      prevPageBtn.disabled = currentPage === 0;
+      nextPageBtn.disabled = end >= modes.length;
+    }
+
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 0) {
+        currentPage--;
+        renderButtons();
+      }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+      if ((currentPage + 1) * MODES_PER_PAGE < modes.length) {
+        currentPage++;
+        renderButtons();
+      }
+    });
+
+    document.querySelectorAll('input[name="ballMode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            drawBall();
+        });
+    });
     
-    // 各ボタンにイベントリスナーを設定
-    document.getElementById("btnWakeUp").addEventListener("click", function() {
-      setMode("red", 30, "normal");
-    });
-    document.getElementById("btnRelax").addEventListener("click", function() {
-      setMode("green", 2, "normal");
-    });
-    document.getElementById("btnMeditation").addEventListener("click", function() {
-      setMode("purple", 1, "normal");
-    });
-    document.getElementById("btnFocus").addEventListener("click", function() {
-      setMode("blue", 7, "normal");
-    });
-    document.getElementById("btnHappy").addEventListener("click", function() {
-      setMode("yellow", 5, "normal");
-    });
-    document.getElementById("btnRainbow").addEventListener("click", function() {
-      setMode("red", 3, "rainbow");
-    });
-    document.getElementById("btnFlashDance").addEventListener("click", function() {
-      setMode("red", 10, "flashDance");
-    });
-    document.getElementById("btnMagic").addEventListener("click", function() {
-      setMode("red", 2, "gradient");
-    });
-    document.getElementById("btnCoolDown").addEventListener("click", function() {
-      setMode("cyan", 2, "normal");
-    });
-    document.getElementById("btnEnergy").addEventListener("click", function() {
-      setMode("red", 35, "normal");
-    });
-    document.getElementById("btnSoftLight").addEventListener("click", function() {
-      setSteadyMode("orange", "steady");
-    });
-    document.getElementById("btnStarlit").addEventListener("click", function() {
-      setMode("white", 2, "starlit");
-    });
-    document.getElementById("btnForest").addEventListener("click", function() {
-      setMode("green", 3, "forest");
-    });
-    document.getElementById("btnSunset").addEventListener("click", function() {
-      setMode("orange", 3, "sunset");
-    });
-    document.getElementById("btnBeach").addEventListener("click", function() {
-      setMode("aqua", 2, "normal");
-    });
-    document.getElementById("btnParty").addEventListener("click", function() {
-      setMode("red", 15, "party");
-    });
-    document.getElementById("btnRain").addEventListener("click", function() {
-      setMode("blue", 2, "rain");
-    });
-    document.getElementById("btnGoodNight").addEventListener("click", function() {
-      setMode("darkblue", 1, "normal");
-    });
-    document.getElementById("btnReading").addEventListener("click", function() {
-      setSteadyMode("white", "steady");
-    });
-    document.getElementById("btnFantasy").addEventListener("click", function() {
-      setMode("pink", 2, "fantasy");
-    });
-    document.getElementById("btnSelfSuggestion").addEventListener("click", function() {
-      setSelfSuggestionMode();
+    waveTypeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            oscillator.type = radio.value;
+        });
     });
     
-    // 初期設定：デフォルトは 2Hz で点滅
-    updateBlinkSpeed(2);
-    drawBall();
+    volumeSlider.addEventListener('input', () => {
+        if (isVisible) {
+            gainNode.gain.value = volumeSlider.value;
+        }
+    });
+
+    function initialize() {
+        renderButtons();
+        drawBall();
+        updateBlinkSpeed(0);
+        currentModeLabel.textContent = "現在のモード: 停止中";
+        
+        // 初回ロード時に3Dモードのクラスを追加しておく
+        if (mode3dRadio.checked) {
+            canvas.classList.add('ball-3d');
+        }
+    }
+
+    initialize();
   </script>
 </body>
 </html>
