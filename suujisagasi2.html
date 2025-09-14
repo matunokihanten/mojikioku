@@ -139,7 +139,7 @@
       '#9b59b6','#3498db','#f1c40f','#e67e22','#7f8c8d'
     ];
     const MIN_NUMBER = 1, MAX_NUMBER = 100;
-    const MAX_PLACEMENT_ATTEMPTS = 5000; // 試行回数を大幅に増加
+    const MAX_PLACEMENT_ATTEMPTS = 5000;
 
     const gameBoard = document.getElementById('game-board');
     const questionEl = document.getElementById('question');
@@ -192,7 +192,6 @@
       return false;
     }
 
-    // 試行回数を増やしてランダム配置を試みる
     function findValidPosition(w, h, existingRects) {
       let attempts = 0;
       while (attempts < MAX_PLACEMENT_ATTEMPTS) {
@@ -228,6 +227,7 @@
       return cell;
     }
     
+    // 修正箇所：ランダム配置が失敗した場合、自動的にリセットする
     function placeBoardNumbers(nums) {
       gameBoard.innerHTML = '';
       placedRects = [];
@@ -254,15 +254,16 @@
         } else {
           gameBoard.removeChild(cell);
           placementSucceeded = false;
-          break; // 失敗した時点でループを終了
+          break;
         }
       }
 
       if (placementSucceeded) {
         console.log('すべての数字をランダムに配置しました。');
       } else {
-        console.warn('ランダム配置に失敗しました。グリッド配置に切り替えます。');
-        placeNumbersInGrid(nums);
+        console.warn('ランダム配置に失敗しました。自動リセットします。');
+        // 自動リセットして再試行
+        setTimeout(setupGame, 100);
       }
     }
 
