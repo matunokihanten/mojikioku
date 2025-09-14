@@ -9,18 +9,20 @@
   html, body {
     height: 100%; margin: 0; padding: 0; overflow: hidden;
     font-family: 'Arial', sans-serif;
-    background-color: #3498db; color: #fff; user-select: none;
+    background-color: #34495e;
+    color: #fff; user-select: none;
     display: flex; justify-content: center; align-items: center;
   }
   #game-container {
     width: 90vw; max-width: 700px;
     height: 90vh; max-height: 900px;
-    background-color: #2c3e50; border-radius: 15px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    background-color: #2c3e50; border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     display: flex; flex-direction: column; align-items: center;
     padding: 1.5vh 1.5vw;
     box-sizing: border-box;
     position: relative;
+    border: 3px solid #f39c12;
   }
   .header {
     width: 100%;
@@ -28,7 +30,8 @@
     display: flex; flex-direction: column; align-items: center;
   }
   .mode-selection {
-    display: flex; justify-content: center; gap: 15px; margin-bottom: 1vh;
+    display: flex; justify-content: center; gap: 10px;
+    margin-bottom: 1vh;
   }
   .mode-selection input[type=radio] {
     display: none;
@@ -36,28 +39,41 @@
   .mode-selection label {
     background: #f1c40f; color: #2c3e50;
     padding: 8px 20px;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.1em;
+    box-shadow: 0 5px 0 #d1ab0e;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
   }
   .mode-selection input[type=radio]:checked + label {
     background: #e74c3c;
     color: white;
+    box-shadow: 0 5px 0 #c0392b;
+  }
+  .mode-selection label:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #d1ab0e;
+  }
+  .mode-selection input[type=radio]:checked + label:active {
+    box-shadow: 0 2px 0 #c0392b;
   }
   #reset-button, #endless-stop-button {
-    background-color: #f1c40f;
-    color: #2c3e50;
+    background-color: #3498db;
+    color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 10px 25px;
     font-size: 1.1em;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    margin: 0 10px 1vh 10px;
+    margin: 0 8px 1vh 8px;
+    box-shadow: 0 5px 0 #2980b9;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
   }
   #reset-button:active, #endless-stop-button:active {
-    transform: scale(0.95);
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #2980b9;
   }
   .difficulty-selection {
     width: 100%;
@@ -70,30 +86,41 @@
     display: none;
   }
   .difficulty-selection label {
-    background-color: #f1c40f;
+    background-color: #95a5a6;
     color: #2c3e50;
-    border-radius: 8px;
+    border-radius: 10px;
     text-align: center;
     padding: 6px 0;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1em;
     cursor: pointer;
+    box-shadow: 0 4px 0 #7f8c8d;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
   }
   .difficulty-selection input[type=radio]:checked + label {
-    background-color: #e74c3c;
+    background-color: #2ecc71;
     color: white;
+    box-shadow: 0 4px 0 #27ae60;
+  }
+  .difficulty-selection label:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #7f8c8d;
+  }
+  .difficulty-selection input[type=radio]:checked + label:active {
+    box-shadow: 0 1px 0 #27ae60;
   }
   #question {
     width: 100%;
-    background: white;
+    background: #ecf0f1;
     color: #2c3e50;
-    font-weight: 700;
-    font-size: 1.7em;
-    padding: 0.8vh 15vw;
-    border-radius: 10px;
+    font-weight: 800;
+    font-size: clamp(1.5em, 5vw, 2.2em);
+    padding: 1vh 15vw;
+    border-radius: 12px;
     margin-bottom: 1vh;
     box-sizing: border-box;
     text-align: center;
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
   }
   #timer {
     font-size: 1.3em;
@@ -108,15 +135,16 @@
     width: 100%;
     flex-grow: 1;
     background-color: #ecf0f1;
-    border-radius: 10px;
+    border-radius: 15px;
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    grid-auto-rows: minmax(2.9rem, auto);
+    grid-auto-rows: minmax(1.5rem, auto);
     gap: 5px;
     padding: 10px;
     box-sizing: border-box;
     overflow-y: auto;
     user-select: none;
+    box-shadow: inset 0 5px 10px rgba(0,0,0,0.3);
   }
   .number-cell {
     font-weight: 700;
@@ -125,24 +153,30 @@
     justify-content: center;
     align-items: center;
     white-space: nowrap;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 6px #8884;
-    border-radius: 6px;
-    outline: solid 2px #ddd6;
-    font-size: 1.2rem;
+    background: #fff;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    border-radius: 8px;
+    outline: solid 2px #ddd;
+    font-size: clamp(0.8rem, 3vw, 1.2rem);
     color: #000;
-    transition: opacity 0.3s;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .number-cell:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.2);
   }
   .number-cell.found {
     opacity: 0.2;
     pointer-events: none;
     filter: grayscale(1);
+    transform: none;
+    box-shadow: none;
   }
   #game-over-message {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.7); color: #fff; display: none;
+    background-color: rgba(0,0,0,0.8); color: #fff; display: none;
     flex-direction: column; justify-content: center; align-items: center;
-    border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
+    border-radius: 15px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
     z-index: 20;
   }
   #game-over-message p {
@@ -379,14 +413,15 @@
           cell.textContent = newNumber;
           cell.dataset.number = newNumber;
           cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
-          
-          numbersPanel = Array.from(gameBoard.querySelectorAll('.number-cell'))
-            .map(c => parseInt(c.dataset.number, 10));
 
-          numbersLeft = [...numbersPanel];
+          const indexToReplace = numbersLeft.indexOf(currentTarget);
+          if (indexToReplace !== -1) {
+            numbersLeft.splice(indexToReplace, 1, newNumber);
+          } else {
+             numbersLeft.push(newNumber);
+          }
           shuffleArray(numbersLeft);
         } else {
-          // 全ての数字が配置された場合はリセット
           setupGame();
           return;
         }
