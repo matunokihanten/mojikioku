@@ -165,12 +165,34 @@
                 min-width: auto;
             }
         }
+        
+        /* --- ラジオボタンのスタイル --- */
+        .mode-selection {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            margin-right: 15px; /* 右側に少しスペースを追加 */
+            white-space: nowrap;
+            order: 0;
+        }
+
+        .mode-selection input[type="radio"] {
+            margin-right: 5px;
+        }
+
     </style>
 </head>
 <body>
 
     <div id="game-container">
         <div class="header">
+            <div class="mode-selection">
+                <input type="radio" id="timeMode" name="gameMode" value="time">
+                <label for="timeMode">タイム</label>
+                <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
+                <label for="relaxMode">リラックス</label>
+            </div>
+            
             <button id="reset-button" title="リセット">🔄 リセット</button>
             <select id="difficulty-select">
                 <option value="25">初級 (25)</option>
@@ -199,6 +221,10 @@
             const timerEl = document.getElementById('timer');
             const gameOverMessage = document.getElementById('game-over-message');
             const finalTimeEl = document.getElementById('final-time');
+            
+            // --- 追加したDOM要素の取得 ---
+            const timeModeRadio = document.getElementById('timeMode');
+            const relaxModeRadio = document.getElementById('relaxMode');
 
             // --- ゲームの状態を管理する変数 ---
             let allNumbers = [];
@@ -209,6 +235,8 @@
             let startTime = 0;
             let timerInterval = null;
             let currentDifficulty = 100;
+            let isTimeMode = false; // 新しい状態変数
+            let numbersToAdd = []; // リラックスモード用：ボードに追加する数字の候補リスト
 
             // --- 定数 ---
             const MIN_NUMBER = 1;
@@ -240,6 +268,64 @@
                 const seconds = Math.floor((elapsedTime % 60000) / 1000);
                 timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
+            
+            // --- 新しい数字をボードに追加する関数 ---
+            function addNewNumber() {
+                if (numbersToAdd.length === 0) return; // 追加する数字がなければ何もしない
+
+                const newNumber = numbersToAdd.shift(); // 候補リストから最初の数字を削除して取得
+                
+                const cell = document.createElement('div');
+                cell.classList.add('number-cell');
+                cell.textContent = newNumber;
+                cell.dataset.number = newNumber;
+                
+                const baseFontSize = getRandomInt(
+                    Math.min(18, gameBoard.clientHeight / 15), 
+                    Math.min(45, gameBoard.clientHeight / 8)
+                );
+                const color = COLORS[getRandomInt(0, COLORS.length - 1)];
+                const rotation = getRandomInt(-45, 45);
+                
+                cell.style.fontSize = `${baseFontSize}px`;
+                cell.style.color = color;
+                cell.style.transform = `rotate(${rotation}deg)`;
+                
+                gameBoard.appendChild(cell);
+                const cellWidth = cell.offsetWidth;
+                const cellHeight = cell.offsetHeight;
+
+                let top, left;
+                let overlapDetected = true;
+                let attempts = 0;
+
+                // 既存の数字の位置情報を取得
+                const placedRects = Array.from(gameBoard.children).map(child => child.getBoundingClientRect());
+                
+                if (gameBoard.clientHeight > cellHeight && gameBoard.clientWidth > cellWidth) {
+                    while (overlapDetected && attempts < MAX_ATTEMPTS_POSITIONING) {
+                        top = getRandomInt(0, gameBoard.clientHeight - cellHeight);
+                        left = getRandomInt(0, gameBoard.clientWidth - cellWidth);
+
+                        const newRect = {
+                            left: left, right: left + cellWidth,
+                            top: top, bottom: top + cellHeight
+                        };
+
+                        if (!isOverlapping(newRect, placedRects)) {
+                            overlapDetected = false;
+                        }
+                        attempts++;
+                    }
+                }
+
+                cell.style.top = `${top}px`;
+                cell.style.left = `${left}px`;
+                cell.addEventListener('click', handleNumberClick);
+
+                // 新しく追加した数字も探索対象リストに追加
+                numbersToFind.push(newNumber);
+            }
 
             // --- 数字が重なっているかチェックする関数 ---
             function isOverlapping(newRect, existingRects) {
@@ -262,6 +348,13 @@
                 timerEl.textContent = '00:00';
                 startTime = 0;
                 gameStarted = false;
+                
+                // --- 追加: モードによってタイマーの表示/非表示を切り替え ---
+                if (isTimeMode) {
+                    timerEl.style.display = 'block';
+                } else {
+                    timerEl.style.display = 'none';
+                }
 
                 allNumbers = [];
                 for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
@@ -272,6 +365,12 @@
                 numbersToDisplay = allNumbers.slice(0, currentDifficulty);
                 numbersToFind = [...numbersToDisplay];
                 shuffleArray(numbersToFind);
+                
+                // --- リラックスモード用の候補リストを準備 ---
+                if (!isTimeMode) {
+                    numbersToAdd = allNumbers.filter(num => !numbersToDisplay.includes(num));
+                    shuffleArray(numbersToAdd);
+                }
                 
                 const placedRects = [];
                 
@@ -331,19 +430,27 @@
                     questionEl.textContent = 'クリア!🎉';
                     clearInterval(timerInterval);
                     gameStarted = false;
+                    
+                    // --- 追加: リラックスモードでは最終時間を表示しない ---
+                    if (isTimeMode) {
+                        finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+                    } else {
+                        finalTimeEl.textContent = ''; // リラックスモードでは空にする
+                    }
                     gameOverMessage.style.display = 'flex';
-                    finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+                    
                     return;
                 }
 
                 currentTarget = numbersToFind[0];
                 questionEl.textContent = `${currentTarget} はどこ？`;
 
-                if (!gameStarted) {
+                // --- 追加: タイムモードでのみタイマーを開始 ---
+                if (!gameStarted && isTimeMode) {
                     startTime = Date.now();
                     timerInterval = setInterval(updateTimer, 1000);
-                    gameStarted = true;
                 }
+                gameStarted = true;
             }
 
             function handleNumberClick(event) {
@@ -352,14 +459,32 @@
                 if (clickedNumber === currentTarget) {
                     event.target.classList.add('found');
                     numbersToFind.shift();
+                    
+                    // --- リラックスモードの追加機能 ---
+                    if (!isTimeMode) {
+                        addNewNumber(); // 新しい数字を追加
+                        shuffleArray(numbersToFind); // 次に探す数字をシャッフルしてランダムにする
+                    }
+
                     askNewQuestion();
                 }
             }
 
             resetButton.addEventListener('click', setupGame);
+            
             difficultySelect.addEventListener('change', (event) => {
                 currentDifficulty = parseInt(event.target.value, 10);
                 localStorage.setItem('gameDifficulty', currentDifficulty);
+                setupGame();
+            });
+
+            // --- 追加: モード選択のイベントリスナー ---
+            timeModeRadio.addEventListener('change', () => {
+                isTimeMode = true;
+                setupGame();
+            });
+            relaxModeRadio.addEventListener('change', () => {
+                isTimeMode = false;
                 setupGame();
             });
 
@@ -370,7 +495,15 @@
             }
             
             // 遅延させて初期化することで、レイアウト計算後のボードサイズを取得
-            setTimeout(setupGame, 100);
+            setTimeout(() => {
+                // 初期ロード時にリラックスモードが選択されていることを確認
+                if (relaxModeRadio.checked) {
+                    isTimeMode = false;
+                } else {
+                    isTimeMode = true;
+                }
+                setupGame();
+            }, 100);
 
             let resizeTimer;
             window.addEventListener('resize', () => {
