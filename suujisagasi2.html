@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字探し脳トレゲーム - 進化版</title>
+    <style>
+        /* --- 全体のスタイル --- */
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh; /* 画面高さ全体を使う */
+            margin: 0;
+            background-color: #3498db; /* 画像を参考に青系の背景色 */
+            color: #fff;
+            user-select: none; /* テキスト選択を無効化 */
+            padding: 20px; /* 上下の余白 */
+            box-sizing: border-box; /* paddingをwidth/heightに含める */
+        }
+
+        /* --- ゲームコンテナ --- */
+        #game-container {
+            width: 95%;
+            max-width: 700px; /* 最大幅を少し広げる */
+            text-align: center;
+            background-color: #2c3e50;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            position: relative; /* 子要素のabsolute配置の基準 */
+        }
+
+        /* --- ヘッダー（問題文、タイマー、ボタン） --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* 小さい画面で折り返す */
+        }
+
+        #question {
+            font-size: 2em;
+            font-weight: bold;
+            background-color: #fff;
+            color: #2c3e50;
+            padding: 10px 20px;
+            border-radius: 10px;
+            flex-grow: 1; /* 中央のスペースを埋める */
+            margin: 0 10px;
+            min-width: 150px; /* 小さい画面での最低幅 */
+        }
+        
+        #timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #f1c40f;
+            margin-right: 10px;
+            min-width: 80px; /* 小さい画面での最低幅 */
+        }
+
+        /* --- ボタンの共通スタイル --- */
+        .header button, #difficulty-select {
+            font-size: 1.2em; /* ボタンのサイズ調整 */
+            padding: 8px 15px;
+            border: none;
+            background-color: #f1c40f; /* 黄色いボタン */
+            color: #2c3e50;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            margin: 5px; /* ボタン間のスペース */
+        }
+        
+        #difficulty-select {
+            appearance: none; /* デフォルトのスタイルを無効化 */
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            padding-right: 30px; /* アイコン分のスペース */
+        }
+
+        .header button:hover, #difficulty-select:hover {
+            background-color: #e6b700;
+        }
+
+        .header button:active {
+            transform: scale(0.95);
+        }
+
+        /* --- 数字が表示されるゲームボード --- */
+        #game-board {
+            position: relative; /* 数字のabsolute配置の基準 */
+            width: 100%;
+            aspect-ratio: 4 / 5; /* 縦横比を画像に近づける */
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden; /* ボード外にはみ出さないように */
+            margin-top: 10px;
+        }
+        
+        /* --- 個々の数字のスタイル --- */
+        .number-cell {
+            position: absolute;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s, transform 0.1s;
+            line-height: 1; /* 行の高さを1に設定して余分なスペースをなくす */
+            padding: 2px; /* クリックしやすいようにパディングを追加 */
+            box-sizing: border-box; /* paddingをwidth/heightに含める */
+            white-space: nowrap; /* 数字が改行されないように */
+        }
+
+        .number-cell:hover {
+            transform: scale(1.1); /* マウスオーバーで少し大きくする */
+            z-index: 10; /* 重なり時に手前に表示 */
+        }
+        
+        /* --- 正解して見つけた数字のスタイル --- */
+        .number-cell.found {
+            opacity: 0.2;
+            cursor: default;
+            pointer-events: none; /* クリックできなくする */
+        }
+
+        /* --- ゲームオーバー/クリア時のメッセージ --- */
+        #game-over-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+            z-index: 20; /* 数字の上に表示 */
+            display: none; /* 最初は非表示 */
+        }
+        #game-over-message p {
+            margin: 10px 0;
+        }
+        #final-time {
+            color: #f1c40f;
+            font-size: 1.2em;
+        }
+
+        /* --- レスポンシブ対応 --- */
+        @media (max-width: 600px) {
+            #question {
+                font-size: 1.5em;
+                margin: 0 5px;
+            }
+            .header button, #difficulty-select {
+                font-size: 1em;
+                padding: 6px 10px;
+            }
+            #timer {
+                font-size: 1.2em;
+            }
+            #game-over-message {
+                font-size: 1.8em;
+            }
+        }
+        @media (max-width: 400px) {
+            .header {
+                flex-direction: column;
+            }
+            .header button, #difficulty-select {
+                width: 90%;
+            }
+            #question {
+                margin: 10px 0;
+                width: 90%;
+            }
+            #timer {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="header">
+            <button id="reset-button" title="リセット">🔄 リセット</button>
+            <select id="difficulty-select">
+                <option value="25">初級 (25個)</option>
+                <option value="50">中級 (50個)</option>
+                <option value="100" selected>上級 (100個)</option>
+            </select>
+            <div id="timer">00:00</div>
+        </div>
+        <div id="question"></div>
+        <div id="game-board"></div>
+
+        <div id="game-over-message">
+            <p>ゲームクリア！</p>
+            <p id="final-time"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM要素の取得 ---
+            const gameBoard = document.getElementById('game-board');
+            const questionEl = document.getElementById('question');
+            const resetButton = document.getElementById('reset-button');
+            const difficultySelect = document.getElementById('difficulty-select');
+            const timerEl = document.getElementById('timer');
+            const gameOverMessage = document.getElementById('game-over-message');
+            const finalTimeEl = document.getElementById('final-time');
+
+            // --- ゲームの状態を管理する変数 ---
+            let allNumbers = []; // 1-100の数字全て
+            let numbersToDisplay = []; // ボードに表示する数字（選択された難易度に基づく）
+            let numbersToFind = []; // これから探す数字のリスト (numbersToDisplayのシャッフル版)
+            let currentTarget = null; // 今探している数字
+            let gameStarted = false;
+            let startTime = 0;
+            let timerInterval = null;
+            let currentDifficulty = 100; // 現在の難易度（表示する数字の数）
+
+            // --- 定数 ---
+            const MIN_NUMBER = 1;
+            const MAX_NUMBER = 100;
+            const COLORS = [ // 数字の色をランダムにするための配列
+                '#e74c3c', '#f39c12', '#1abc9c', '#2980b9', '#8e44ad', 
+                '#2c3e50', '#d35400', '#c0392b', '#16a085', '#34495e',
+                '#9b59b6', '#3498db', '#f1c40f', '#e67e22', '#7f8c8d'
+            ];
+            const MAX_ATTEMPTS_POSITIONING = 200; // 位置決めを試行する最大回数
+
+            // --- ヘルパー関数: 範囲内のランダムな整数を生成 ---
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            // --- ヘルパー関数: 配列をシャッフル（Fisher-Yatesアルゴリズム） ---
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            // --- タイマーの更新 ---
+            function updateTimer() {
+                const elapsedTime = Date.now() - startTime;
+                const minutes = Math.floor(elapsedTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // --- 数字が重なっているかチェックする関数 ---
+            function isOverlapping(newRect, existingRects) {
+                for (const rect of existingRects) {
+                    if (!(newRect.right < rect.left || 
+                          newRect.left > rect.right || 
+                          newRect.bottom < rect.top || 
+                          newRect.top > rect.bottom)) {
+                        return true; // 重なっている
+                    }
+                }
+                return false; // 重なっていない
+            }
+
+            // --- ゲームの初期化と開始 ---
+            function setupGame() {
+                // ゲームクリアメッセージを非表示に
+                gameOverMessage.style.display = 'none';
+
+                // 既存の数字を全て消去
+                gameBoard.innerHTML = '';
+                
+                // タイマーをリセット
+                clearInterval(timerInterval);
+                timerEl.textContent = '00:00';
+                startTime = 0;
+                gameStarted = false;
+
+                // 全ての数字を生成
+                allNumbers = [];
+                for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
+                    allNumbers.push(i);
+                }
+
+                // 難易度に応じて表示する数字を選ぶ
+                shuffleArray(allNumbers);
+                numbersToDisplay = allNumbers.slice(0, currentDifficulty);
+
+                // 探す数字のリストも初期化してシャッフル
+                numbersToFind = [...numbersToDisplay];
+                shuffleArray(numbersToFind);
+                
+                // 配置済みの数字の座標とサイズを格納する配列
+                const placedRects = [];
+
+                // 全ての数字をボードに配置（重なりを避ける）
+                numbersToDisplay.forEach(num => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('number-cell');
+                    cell.textContent = num;
+                    cell.dataset.number = num; // データ属性に数字を保存
+
+                    // --- スタイルをランダムに設定 ---
+                    const baseFontSize = getRandomInt(18, 45); // フォントサイズ
+                    const color = COLORS[getRandomInt(0, COLORS.length - 1)]; // 色
+                    const rotation = getRandomInt(-45, 45); // 回転
+                    
+                    cell.style.fontSize = `${baseFontSize}px`;
+                    cell.style.color = color;
+                    cell.style.transform = `rotate(${rotation}deg)`;
+                    
+                    // とりあえずDOMに追加してサイズを測定
+                    gameBoard.appendChild(cell);
+                    const cellWidth = cell.offsetWidth;
+                    const cellHeight = cell.offsetHeight;
+
+                    let top, left;
+                    let overlapDetected = true;
+                    let attempts = 0;
+
+                    // 重ならない位置が見つかるまで試行
+                    while (overlapDetected && attempts < MAX_ATTEMPTS_POSITIONING) {
+                        top = getRandomInt(0, gameBoard.clientHeight - cellHeight);
+                        left = getRandomInt(0, gameBoard.clientWidth - cellWidth);
+
+                        const newRect = {
+                            left: left,
+                            right: left + cellWidth,
+                            top: top,
+                            bottom: top + cellHeight
+                        };
+
+                        if (!isOverlapping(newRect, placedRects)) {
+                            overlapDetected = false;
+                            placedRects.push(newRect);
+                        }
+                        attempts++;
+                    }
+
+                    // 位置を適用
+                    cell.style.top = `${top}px`;
+                    cell.style.left = `${left}px`;
+                    
+                    // クリックイベントを追加
+                    cell.addEventListener('click', handleNumberClick);
+                });
+
+                // 最初の問題を出題
+                askNewQuestion();
+            }
+
+            // --- 新しい問題を出題 ---
+            function askNewQuestion() {
+                // 探す数字がなくなったらゲームクリア
+                if (numbersToFind.length === 0) {
+                    questionEl.textContent = 'クリア!🎉';
+                    clearInterval(timerInterval); // タイマー停止
+                    gameStarted = false;
+                    gameOverMessage.style.display = 'flex'; // ゲームクリアメッセージ表示
+                    finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+
+                    // 全ての数字を再度表示して祝福
+                    document.querySelectorAll('.number-cell').forEach(cell => {
+                        cell.classList.remove('found');
+                    });
+                    return;
+                }
+
+                // 次に探す数字をリストの先頭から取得
+                currentTarget = numbersToFind[0];
+                questionEl.textContent = `${currentTarget} はどこ？`;
+
+                // ゲームがまだ始まっていなければタイマーを開始
+                if (!gameStarted) {
+                    startTime = Date.now();
+                    timerInterval = setInterval(updateTimer, 1000);
+                    gameStarted = true;
+                }
+            }
+
+            // --- 数字がクリックされたときの処理 ---
+            function handleNumberClick(event) {
+                // ゲームが開始していない、またはクリア済みの場合は何もしない
+                if (!gameStarted && numbersToFind.length === 0) return;
+
+                // クリックされた数字を取得（文字列から数値に変換）
+                const clickedNumber = parseInt(event.target.dataset.number, 10);
+                
+                // 正解かどうか判定
+                if (clickedNumber === currentTarget) {
+                    // 正解の場合
+                    event.target.classList.add('found'); // 'found'クラスを追加して見た目を変える
+                    numbersToFind.shift(); // 探すリストから先頭を削除
+                    askNewQuestion(); // 次の問題へ
+                } else {
+                    // 不正解の場合（今回は何もしないが、効果音などを追加できる）
+                }
+            }
+
+            // --- リセットボタンのイベントリスナー ---
+            resetButton.addEventListener('click', setupGame);
+
+            // --- 難易度選択のイベントリスナー ---
+            difficultySelect.addEventListener('change', (event) => {
+                currentDifficulty = parseInt(event.target.value, 10);
+                localStorage.setItem('gameDifficulty', currentDifficulty); // 難易度を保存
+                setupGame(); // 新しい難易度でゲームをセットアップ
+            });
+
+            // --- ページの読み込み時に難易度を復元 ---
+            const savedDifficulty = localStorage.getItem('gameDifficulty');
+            if (savedDifficulty) {
+                currentDifficulty = parseInt(savedDifficulty, 10);
+                difficultySelect.value = currentDifficulty;
+            }
+
+            // --- ゲーム開始 ---
+            setupGame();
+
+            // ボードのサイズが確定してから数字を配置するために、リサイズイベントも監視
+            window.addEventListener('resize', () => {
+                 // 小さな遅延を設けて、リサイズが完了してから再配置
+                setTimeout(setupGame, 300);
+            });
+        });
+    </script>
+</body>
+</html>
