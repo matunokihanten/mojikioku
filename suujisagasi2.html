@@ -56,7 +56,8 @@
       min-height: 0;
     }
     .number-cell {
-      position: absolute; font-weight: bold; cursor: pointer;
+      position: absolute;
+      font-weight: bold; cursor: pointer;
       display: flex; justify-content: center; align-items: center;
       transition: opacity 0.3s, transform 0.1s;
       line-height: 1; padding: 2px; box-sizing: border-box; white-space: nowrap;
@@ -137,7 +138,8 @@
       '#2c3e50','#d35400','#c0392b','#16a085','#34495e',
       '#9b59b6','#3498db','#f1c40f','#e67e22','#7f8c8d'
     ];
-    const MIN_NUMBER = 1, MAX_NUMBER = 100, MAX_ATTEMPTS = 500;
+    const MIN_NUMBER = 1, MAX_NUMBER = 100;
+    const MAX_PLACEMENT_ATTEMPTS = 5000; // 試行回数を大幅に増加
 
     const gameBoard = document.getElementById('game-board');
     const questionEl = document.getElementById('question');
@@ -190,10 +192,10 @@
       return false;
     }
 
+    // 試行回数を増やしてランダム配置を試みる
     function findValidPosition(w, h, existingRects) {
       let attempts = 0;
-      const maxAttempts = 500;
-      while (attempts < maxAttempts) {
+      while (attempts < MAX_PLACEMENT_ATTEMPTS) {
         const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
         const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
         const rect = {
@@ -210,68 +212,57 @@
       return null;
     }
 
-    function createNumberCell(num, fontSize) {
+    function createNumberCell(num, fontSize, isRandom = true) {
       const cell = document.createElement('div');
       cell.classList.add('number-cell');
       cell.textContent = num;
       cell.dataset.number = num;
       cell.style.fontSize = fontSize + 'px';
       cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
-      cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
+      
+      if (isRandom) {
+        cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
+      } else {
+        cell.style.transform = `rotate(0deg)`;
+      }
       return cell;
     }
     
-    function addNumberToBoard(num) {
-      const fontMin = Math.min(18, gameBoard.clientHeight / 15);
-      const fontMax = Math.max(24, gameBoard.clientHeight / 8);
-      const cell = createNumberCell(num, getRandomInt(fontMin, fontMax));
-      
-      cell.style.visibility = 'hidden';
-      gameBoard.appendChild(cell);
-      const w = cell.offsetWidth, h = cell.offsetHeight;
-      
-      const pos = findValidPosition(w, h, placedRects);
-      
-      if (pos) {
-        cell.style.left = pos.left + 'px';
-        cell.style.top = pos.top + 'px';
-        cell.style.visibility = 'visible';
-        placedRects.push(pos.rect);
-        cell.addEventListener('click', handleNumberClick);
-        return cell;
-      } else {
-        gameBoard.removeChild(cell);
-        return null;
-      }
-    }
-
     function placeBoardNumbers(nums) {
       gameBoard.innerHTML = '';
       placedRects = [];
-      const maxAttempts = nums.length * 10;
-      let attempt = 0;
-      
       const cellsToPlace = [...nums];
-      
-      while (cellsToPlace.length > 0 && attempt < maxAttempts) {
-          const num = cellsToPlace[0];
-          const cell = addNumberToBoard(num);
-          if (cell) {
-              cellsToPlace.shift();
-          } else {
-              attempt++;
-              if (attempt >= maxAttempts) {
-                  console.warn('ランダム配置に失敗しました。グリッド配置に切り替えます。');
-                  placeNumbersInGrid(nums);
-                  return;
-              }
-          }
+      let placementSucceeded = true;
+
+      for (let i = 0; i < cellsToPlace.length; i++) {
+        const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+        const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+        const cell = createNumberCell(cellsToPlace[i], getRandomInt(fontMin, fontMax));
+
+        cell.style.visibility = 'hidden';
+        gameBoard.appendChild(cell);
+        const w = cell.offsetWidth, h = cell.offsetHeight;
+        
+        const pos = findValidPosition(w, h, placedRects);
+        
+        if (pos) {
+          cell.style.left = pos.left + 'px';
+          cell.style.top = pos.top + 'px';
+          cell.style.visibility = 'visible';
+          placedRects.push(pos.rect);
+          cell.addEventListener('click', handleNumberClick);
+        } else {
+          gameBoard.removeChild(cell);
+          placementSucceeded = false;
+          break; // 失敗した時点でループを終了
+        }
       }
-      if(cellsToPlace.length > 0) {
+
+      if (placementSucceeded) {
+        console.log('すべての数字をランダムに配置しました。');
+      } else {
         console.warn('ランダム配置に失敗しました。グリッド配置に切り替えます。');
         placeNumbersInGrid(nums);
-      } else {
-        console.log('すべての数字をランダムに配置しました。');
       }
     }
 
@@ -283,7 +274,7 @@
       const boardH = gameBoard.clientHeight;
       const cellMargin = 5;
 
-      const tempCell = createNumberCell(nums[0], 20);
+      const tempCell = createNumberCell(nums[0], 20, false);
       gameBoard.appendChild(tempCell);
       const cellW = tempCell.offsetWidth;
       const cellH = tempCell.offsetHeight;
@@ -298,13 +289,12 @@
       const startY = (boardH - totalGridHeight) / 2;
 
       nums.forEach((num, index) => {
-        const cell = createNumberCell(num, 20);
+        const cell = createNumberCell(num, 20, false);
         const col = index % numCols;
         const row = Math.floor(index / numCols);
 
         cell.style.left = (startX + col * (cellW + cellMargin)) + 'px';
         cell.style.top = (startY + row * (cellH + cellMargin)) + 'px';
-        cell.style.transform = `rotate(0deg)`;
 
         gameBoard.appendChild(cell);
         cell.addEventListener('click', handleNumberClick);
@@ -329,7 +319,9 @@
       numbersPanel = allNumbers.slice(0, currentDifficulty);
       numbersLeft = [...numbersPanel];
       shuffleArray(numbersLeft);
+      
       placeBoardNumbers(numbersPanel);
+      
       askNewQuestion(true);
     }
 
@@ -342,11 +334,32 @@
         
         if (newNumberPool.length > 0) {
           const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
-          addNumberToBoard(newNumber);
-          numbersLeft.push(newNumber);
+          const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+          const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+          const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+
+          cell.style.visibility = 'hidden';
+          gameBoard.appendChild(cell);
+          const w = cell.offsetWidth, h = cell.offsetHeight;
+          const pos = findValidPosition(w, h, placedRects);
+
+          if(pos) {
+            cell.style.left = pos.left + 'px';
+            cell.style.top = pos.top + 'px';
+            cell.style.visibility = 'visible';
+            placedRects.push(pos.rect);
+            cell.addEventListener('click', handleNumberClick);
+            numbersLeft.push(newNumber);
+          } else {
+            gameBoard.removeChild(cell);
+            const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+              .map(c => parseInt(c.dataset.number, 10));
+            numbersLeft = [...currentNumbersOnBoard];
+            shuffleArray(numbersLeft);
+          }
         }
       }
-
+      
       if (isTimeMode && numbersLeft.length === 0) {
         allNumbers = [];
         for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
@@ -355,8 +368,6 @@
         numbersLeft = [...numbersPanel];
         shuffleArray(numbersLeft);
         
-        gameBoard.innerHTML = '';
-        placedRects = [];
         placeBoardNumbers(numbersPanel);
       }
 
@@ -408,7 +419,24 @@
         
         if (pool.length > 0) {
           const newNumber = pool[getRandomInt(0, pool.length - 1)];
-          addNumberToBoard(newNumber);
+          const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+          const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+          const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+
+          cell.style.visibility = 'hidden';
+          gameBoard.appendChild(cell);
+          const w = cell.offsetWidth, h = cell.offsetHeight;
+          const pos = findValidPosition(w, h, placedRects);
+
+          if (pos) {
+            cell.style.left = pos.left + 'px';
+            cell.style.top = pos.top + 'px';
+            cell.style.visibility = 'visible';
+            placedRects.push(pos.rect);
+            cell.addEventListener('click', handleNumberClick);
+          } else {
+            gameBoard.removeChild(cell);
+          }
         }
         numbersLeft = numbersLeft.filter(n => n !== tapped);
       }
