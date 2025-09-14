@@ -1,516 +1,436 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>数字探し脳トレゲーム - UI/UX調整版</title>
-    <style>
-        /* --- ページ全体の基本設定 --- */
-        html, body {
-            height: 100%;
-            margin: 0;
-            overflow: hidden; /* ページ全体のスクロールを完全に禁止 */
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #3498db;
-            color: #fff;
-            user-select: none;
-            padding: 1vh 1vw; /* 画面端に少し余白を持たせる */
-            box-sizing: border-box;
-        }
-
-        /* --- ゲームコンテナ --- */
-        #game-container {
-            width: 100%;
-            height: 100%;
-            max-width: 700px; /* PCでの最大幅 */
-            max-height: 900px; /* PCでの最大高 */
-            display: flex;
-            flex-direction: column; /* 要素を縦に並べる */
-            text-align: center;
-            background-color: #2c3e50;
-            padding: clamp(10px, 2vh, 20px); /* 画面サイズに応じてパディングを調整 */
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            box-sizing: border-box;
-        }
-
-        /* --- ヘッダー（操作エリア） --- */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap; /* 小さい画面で折り返す */
-            margin-bottom: clamp(10px, 2vh, 20px);
-            flex-shrink: 0; /* ヘッダーが縮まないようにする */
-        }
-
-        #question {
-            font-size: clamp(1.2em, 4vw, 2em); /* 画面幅に応じてフォントサイズを調整 */
-            font-weight: bold;
-            background-color: #fff;
-            color: #2c3e50;
-            padding: 1vh 2vw;
-            border-radius: 10px;
-            flex-grow: 1;
-            margin: 5px;
-            order: 2; /* 表示順を中央に */
-        }
-        
-        #timer {
-            font-size: clamp(1em, 3.5vw, 1.5em);
-            font-weight: bold;
-            color: #f1c40f;
-            min-width: 70px;
-            text-align: right;
-            order: 3; /* 表示順を右に */
-        }
-
-        .header button, #difficulty-select {
-            font-size: clamp(0.9em, 3vw, 1.2em);
-            padding: 1vh 1.5vw;
-            border: none;
-            background-color: #f1c40f;
-            color: #2c3e50;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s;
-            margin: 5px;
-            white-space: nowrap; /* テキストが改行しないように */
-        }
-        
-        #reset-button { order: 1; } /* 表示順を左に */
-        #difficulty-select { order: 1; } /* 表示順を左に */
-        
-        #difficulty-select {
-            appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            padding-right: 30px;
-        }
-
-        .header button:active { transform: scale(0.95); }
-
-        /* --- 数字が表示されるゲームボード --- */
-        #game-board {
-            position: relative;
-            width: 100%;
-            flex-grow: 1; /* 残りのスペースを全て埋める */
-            background-color: #ecf0f1;
-            border-radius: 10px;
-            overflow: hidden;
-            min-height: 0; /* flexアイテムの縮小に関するバグを防ぐ */
-        }
-        
-        /* --- 個々の数字のスタイル --- */
-        .number-cell {
-            position: absolute;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.3s, transform 0.1s;
-            line-height: 1;
-            padding: 2px;
-            box-sizing: border-box;
-            white-space: nowrap;
-        }
-
-        .number-cell.found {
-            opacity: 0.2;
-            cursor: default;
-            pointer-events: none;
-        }
-
-        /* --- ゲームオーバー/クリア時のメッセージ --- */
-        #game-over-message {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            display: none; /* 最初は非表示 */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            font-size: clamp(1.8em, 6vw, 2.5em);
-            font-weight: bold;
-            z-index: 20;
-        }
-        #game-over-message p { margin: 10px 0; }
-        #final-time { color: #f1c40f; font-size: 1.2em; }
-        
-        /* --- 特に縦長・低身長の画面への対応 --- */
-        @media (max-width: 450px) {
-            .header {
-                flex-direction: row;
-                justify-content: space-around;
-            }
-            #question {
-                width: 100%;
-                margin: 5px 0;
-                text-align: center;
-            }
-            #timer {
-                min-width: auto;
-            }
-        }
-        
-        /* --- ラジオボタンのスタイル --- */
-        .mode-selection {
-            display: flex;
-            align-items: center;
-            flex-wrap: nowrap;
-            margin-right: 15px; /* 右側に少しスペースを追加 */
-            white-space: nowrap;
-            order: 0;
-        }
-
-        .mode-selection input[type="radio"] {
-            margin-right: 5px;
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>数字探し脳トレゲーム - 多数から1個探し</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #3498db; color: #fff; user-select: none;
+      padding: 1vh 1vw; box-sizing: border-box;
+    }
+    #game-container {
+      width: 100%; height: 100%; max-width: 700px; max-height: 900px;
+      display: flex; flex-direction: column; text-align: center;
+      background-color: #2c3e50;
+      padding: clamp(10px, 2vh, 20px); border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2); box-sizing: border-box;
+      position: relative;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; margin-bottom: clamp(10px,2vh,20px); flex-shrink: 0;
+    }
+    #question {
+      font-size: clamp(1.2em, 4vw, 2em); font-weight: bold;
+      background-color: #fff; color: #2c3e50;
+      padding: 1vh 2vw; border-radius: 10px; flex-grow: 1; margin: 5px;
+      order: 2;
+    }
+    #timer {
+      font-size: clamp(1em, 3.5vw, 1.5em); font-weight: bold; color: #f1c40f;
+      min-width: 70px; text-align: right; order: 3; display: none;
+    }
+    .header button, #difficulty-select {
+      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+      border: none; background-color: #f1c40f; color: #2c3e50; border-radius: 8px;
+      cursor: pointer; transition: transform 0.1s, background-color 0.2s;
+      margin: 5px; white-space: nowrap;
+    }
+    #reset-button { order: 1; }
+    #endless-stop-button { order: 4; display: none; }
+    #difficulty-select { order: 1; padding-right: 30px; }
+    #difficulty-select {
+      appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .header button:active { transform: scale(0.95); }
+    #game-board {
+      position: relative; width: 100%; flex-grow: 1;
+      background-color: #ecf0f1; border-radius: 10px; overflow: hidden;
+      min-height: 0;
+    }
+    .number-cell {
+      position: absolute; font-weight: bold; cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.3s, transform 0.1s;
+      line-height: 1; padding: 2px; box-sizing: border-box; white-space: nowrap;
+      background: #fff9; box-shadow: 0 2px 6px #8884; border-radius: 6px;
+      outline: solid 2px #ddd6; z-index: 3; user-select: none;
+    }
+    .number-cell.found {
+      opacity: 0.2; pointer-events: none; filter: grayscale(1);
+    }
+    #game-over-message {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7); color: #fff; display: none;
+      flex-direction: column; justify-content: center; align-items: center;
+      border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
+      z-index: 20;
+    }
+    #game-over-message p { margin: 10px 0; }
+    #final-time { color: #f1c40f; font-size: 1.2em; }
+    #chart-section {
+      display: none; position: absolute; top: 0; left: 0;
+      width: 100%; height:100%; background: rgba(10,10,40, 0.95);
+      z-index:22; justify-content: center; align-items: center; flex-direction:column;
+    }
+    #chart-canvas { max-width: 90vw; max-height: 50vh; background: #fff; border-radius: 16px; }
+    #close-chart {
+      margin-top:16px; padding: 1em 2em; font-size: 1.2em; background:#f1c40f; color:#2c3e50;
+      border: none; border-radius: 8px; cursor: pointer;
+      transition:background 0.2s;
+    }
+    #close-chart:active { background: #fff24a; }
+    @media (max-width: 450px) {
+      .header { flex-direction: row; justify-content: space-around; }
+      #question { width: 100%; margin: 5px 0; text-align: center; }
+      #timer { min-width: auto; }
+    }
+    .mode-selection {
+      display: flex; align-items: center; flex-wrap:nowrap;
+      margin-right: 15px; white-space: nowrap; order: 0;
+    }
+    .mode-selection input[type="radio"] { margin-right: 5px; }
+  </style>
 </head>
 <body>
-
-    <div id="game-container">
-        <div class="header">
-            <div class="mode-selection">
-                <input type="radio" id="timeMode" name="gameMode" value="time">
-                <label for="timeMode">タイム</label>
-                <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
-                <label for="relaxMode">リラックス</label>
-            </div>
-            
-            <button id="reset-button" title="リセット">🔄 リセット</button>
-            <select id="difficulty-select">
-                <option value="25">初級 (25)</option>
-                <option value="50">中級 (50)</option>
-                <option value="100" selected>上級 (100)</option>
-            </select>
-            <div id="question"></div>
-            <div id="timer">00:00</div>
-        </div>
-        <div id="game-board"></div>
-        <div id="game-over-message">
-            <p>ゲームクリア！</p>
-            <p id="final-time"></p>
-        </div>
+<div id="game-container">
+  <div class="header">
+    <div class="mode-selection">
+      <input type="radio" id="timeMode" name="gameMode" value="time">
+      <label for="timeMode">タイム</label>
+      <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
+      <label for="relaxMode">リラックス</label>
     </div>
+    <button id="reset-button" title="リセット">🔄 リセット</button>
+    <select id="difficulty-select">
+      <option value="25">初級 (25)</option>
+      <option value="50">中級 (50)</option>
+      <option value="100" selected>上級 (100)</option>
+    </select>
+    <button id="endless-stop-button">終了</button>
+    <div id="question"></div>
+    <div id="timer">00:00</div>
+  </div>
+  <div id="game-board"></div>
+  <div id="game-over-message">
+    <p>ゲームクリア！</p>
+    <p id="final-time"></p>
+  </div>
+  <div id="chart-section" style="display: none; align-items: center;">
+    <canvas id="chart-canvas"></canvas>
+    <button id="close-chart">閉じる</button>
+  </div>
+</div>
+<script>
+const COLORS = [
+  '#e74c3c', '#f39c12', '#1abc9c', '#2980b9', '#8e44ad',
+  '#2c3e50', '#d35400', '#c0392b', '#16a085', '#34495e',
+  '#9b59b6', '#3498db', '#f1c40f', '#e67e22', '#7f8c8d'
+];
+const MIN_NUMBER = 1, MAX_NUMBER = 100, MAX_ATTEMPTS = 500;
 
-    <script>
-        // JavaScriptのコードは前回のものから変更ありません。
-        // 機能はそのまま維持されます。
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM要素の取得 ---
-            const gameBoard = document.getElementById('game-board');
-            const questionEl = document.getElementById('question');
-            const resetButton = document.getElementById('reset-button');
-            const difficultySelect = document.getElementById('difficulty-select');
-            const timerEl = document.getElementById('timer');
-            const gameOverMessage = document.getElementById('game-over-message');
-            const finalTimeEl = document.getElementById('final-time');
-            
-            // --- 追加したDOM要素の取得 ---
-            const timeModeRadio = document.getElementById('timeMode');
-            const relaxModeRadio = document.getElementById('relaxMode');
+// DOM
+const gameBoard = document.getElementById('game-board');
+const questionEl = document.getElementById('question');
+const resetButton = document.getElementById('reset-button');
+const difficultySelect = document.getElementById('difficulty-select');
+const timerEl = document.getElementById('timer');
+const gameOverMessage = document.getElementById('game-over-message');
+const finalTimeEl = document.getElementById('final-time');
+const timeModeRadio = document.getElementById('timeMode');
+const relaxModeRadio = document.getElementById('relaxMode');
+const endlessStopButton = document.getElementById('endless-stop-button');
+const chartSection = document.getElementById('chart-section');
+const closeChartBtn = document.getElementById('close-chart');
+const chartCanvas = document.getElementById('chart-canvas');
 
-            // --- ゲームの状態を管理する変数 ---
-            let allNumbers = [];
-            let numbersToDisplay = [];
-            let numbersToFind = [];
-            let currentTarget = null;
-            let gameStarted = false;
-            let startTime = 0;
-            let timerInterval = null;
-            let currentDifficulty = 100;
-            let isTimeMode = false; // 新しい状態変数
-            let numbersToAdd = []; // リラックスモード用：ボードに追加する数字の候補リスト
+let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
+let gameStarted = false, startTime = 0, timerInterval = null, currentDifficulty = 100, isTimeMode = false;
+let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
+let placedRects = []; // 配置された要素の座標を記録
 
-            // --- 定数 ---
-            const MIN_NUMBER = 1;
-            const MAX_NUMBER = 100;
-            const COLORS = [
-                '#e74c3c', '#f39c12', '#1abc9c', '#2980b9', '#8e44ad', 
-                '#2c3e50', '#d35400', '#c0392b', '#16a085', '#34495e',
-                '#9b59b6', '#3498db', '#f1c40f', '#e67e22', '#7f8c8d'
-            ];
-            const MAX_ATTEMPTS_POSITIONING = 200;
+// Util
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+function isOverlapping(newRect, rects, pad=5) {
+  for (const rect of rects) {
+    if (!(newRect.right + pad < rect.left - pad ||
+          newRect.left - pad > rect.right + pad ||
+          newRect.bottom + pad < rect.top - pad ||
+          newRect.top - pad > rect.bottom + pad)) {
+      return true;
+    }
+  }
+  return false;
+}
+function measureCellRect(cell) {
+  return {
+    left: parseFloat(cell.style.left),
+    top: parseFloat(cell.style.top),
+    width: cell.offsetWidth,
+    height: cell.offsetHeight,
+    get right() { return this.left + this.width; },
+    get bottom() { return this.top + this.height; }
+  };
+}
 
-            // --- ヘルパー関数: 範囲内のランダムな整数を生成 ---
-            function getRandomInt(min, max) {
-                return Math.floor(Math.random() * (max - min + 1)) + min;
-            }
+function createNumberCell(num) {
+  const cell = document.createElement('div');
+  cell.classList.add('number-cell');
+  cell.textContent = num;
+  cell.dataset.number = num;
+  
+  const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+  const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+  const fontSize = getRandomInt(fontMin, fontMax);
+  const color = COLORS[getRandomInt(0, COLORS.length-1)];
+  const rotation = getRandomInt(-35, 35);
+  
+  cell.style.fontSize = fontSize + "px";
+  cell.style.color = color;
+  cell.style.transform = `rotate(${rotation}deg)`;
+  
+  return cell;
+}
 
-            // --- ヘルパー関数: 配列をシャッフル ---
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
+function findValidPosition(cellWidth, cellHeight) {
+  let attempt = 0;
+  const maxAttempts = MAX_ATTEMPTS * 3; // より多くの試行
+  
+  while (attempt < maxAttempts) {
+    const top = getRandomInt(5, Math.max(5, gameBoard.clientHeight - cellHeight - 5));
+    const left = getRandomInt(5, Math.max(5, gameBoard.clientWidth - cellWidth - 5));
+    
+    const newRect = {
+      left, 
+      top, 
+      width: cellWidth, 
+      height: cellHeight,
+      get right() { return this.left + this.width; },
+      get bottom() { return this.top + this.height; }
+    };
+    
+    if (!isOverlapping(newRect, placedRects, 8)) { // パディングを増加
+      return { top, left, rect: newRect };
+    }
+    
+    attempt++;
+  }
+  
+  // 配置できない場合は既存の配置をクリアして再試行
+  if (attempt >= maxAttempts && placedRects.length > 0) {
+    placedRects = [];
+    return findValidPosition(cellWidth, cellHeight);
+  }
+  
+  return null;
+}
 
-            // --- タイマーの更新 ---
-            function updateTimer() {
-                const elapsedTime = Date.now() - startTime;
-                const minutes = Math.floor(elapsedTime / 60000);
-                const seconds = Math.floor((elapsedTime % 60000) / 1000);
-                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
-            
-            // --- 新しい数字をボードに追加する関数 ---
-            function addNewNumber() {
-                if (numbersToAdd.length === 0) return; // 追加する数字がなければ何もしない
+function addNumberToBoard(num) {
+  const cell = createNumberCell(num);
+  
+  // 一時的にボードに追加してサイズを測定
+  cell.style.visibility = 'hidden';
+  gameBoard.appendChild(cell);
+  
+  const cellW = cell.offsetWidth;
+  const cellH = cell.offsetHeight;
+  
+  const position = findValidPosition(cellW, cellH);
+  
+  if (position) {
+    cell.style.top = `${position.top}px`;
+    cell.style.left = `${position.left}px`;
+    cell.style.visibility = 'visible';
+    placedRects.push(position.rect);
+    cell.addEventListener('click', handleNumberClick);
+    return cell;
+  } else {
+    // 配置できない場合は要素を削除
+    gameBoard.removeChild(cell);
+    return null;
+  }
+}
 
-                const newNumber = numbersToAdd.shift(); // 候補リストから最初の数字を削除して取得
-                
-                const cell = document.createElement('div');
-                cell.classList.add('number-cell');
-                cell.textContent = newNumber;
-                cell.dataset.number = newNumber;
-                
-                const baseFontSize = getRandomInt(
-                    Math.min(18, gameBoard.clientHeight / 15), 
-                    Math.min(45, gameBoard.clientHeight / 8)
-                );
-                const color = COLORS[getRandomInt(0, COLORS.length - 1)];
-                const rotation = getRandomInt(-45, 45);
-                
-                cell.style.fontSize = `${baseFontSize}px`;
-                cell.style.color = color;
-                cell.style.transform = `rotate(${rotation}deg)`;
-                
-                gameBoard.appendChild(cell);
-                const cellWidth = cell.offsetWidth;
-                const cellHeight = cell.offsetHeight;
+function placeBoardNumbers(numbers) {
+  gameBoard.innerHTML = "";
+  placedRects = [];
+  
+  numbers.forEach(num => {
+    addNumberToBoard(num);
+  });
+}
 
-                let top, left;
-                let overlapDetected = true;
-                let attempts = 0;
+function setupGame() {
+  if(chartObj){ chartObj.destroy(); chartObj=null; }
+  chartSection.style.display = 'none'; gameOverMessage.style.display = 'none';
+  gameBoard.innerHTML = '';
+  placedRects = [];
+  clearInterval(timerInterval); timerEl.textContent = '00:00';
+  startTime = 0; gameStarted = false; tapTimes = []; lastTapTime = 0;
+  endlessStopButton.style.display = isTimeMode ? "none" : "inline-block";
+  timerEl.style.display = isTimeMode ? "block" : "none";
+  allNumbers = [];
+  for(let i=MIN_NUMBER; i<=MAX_NUMBER; ++i) allNumbers.push(i);
+  shuffleArray(allNumbers);
+  numbersPanel = allNumbers.slice(0, currentDifficulty);
+  numbersLeft = [...numbersPanel]; shuffleArray(numbersLeft);
+  placeBoardNumbers(numbersPanel);
+  askNewQuestion(true);
+}
 
-                // 既存の数字の位置情報を取得
-                const placedRects = Array.from(gameBoard.children).map(child => child.getBoundingClientRect());
-                
-                if (gameBoard.clientHeight > cellHeight && gameBoard.clientWidth > cellWidth) {
-                    while (overlapDetected && attempts < MAX_ATTEMPTS_POSITIONING) {
-                        top = getRandomInt(0, gameBoard.clientHeight - cellHeight);
-                        left = getRandomInt(0, gameBoard.clientWidth - cellWidth);
+function askNewQuestion(first=false) {
+  if(numbersLeft.length === 0) {
+    if (isTimeMode) {
+      questionEl.textContent = 'クリア!🎉';
+      clearInterval(timerInterval); gameStarted=false; gameBoard.innerHTML="";
+      finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+      gameOverMessage.style.display = 'flex';
+      return;
+    } else {
+      // リラックスモードでは新しい数字セットを生成
+      shuffleArray(allNumbers);
+      numbersLeft = allNumbers.slice(0, currentDifficulty);
+    }
+  }
+  currentTarget = numbersLeft[0];
+  questionEl.textContent = `${currentTarget} を探せ！`;
+  if(!gameStarted) {
+    if(isTimeMode){ startTime = Date.now(); timerInterval = setInterval(updateTimer,1000);}
+    else { startTime = Date.now(); timerEl.textContent = '00:00'; }
+    gameStarted = true; lastTapTime = Date.now();
+  }
+}
 
-                        const newRect = {
-                            left: left, right: left + cellWidth,
-                            top: top, bottom: top + cellHeight
-                        };
+function updateTimer() {
+  const t = Date.now() - startTime;
+  const m = Math.floor(t/60000), s = Math.floor((t%60000)/1000);
+  timerEl.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
 
-                        if (!isOverlapping(newRect, placedRects)) {
-                            overlapDetected = false;
-                        }
-                        attempts++;
-                    }
-                }
+function handleNumberClick(e) {
+  if(!gameStarted || !numbersLeft.length) return;
+  const tapped = parseInt(e.target.dataset.number,10);
+  if(tapped !== currentTarget) return;
+  
+  // タップ履歴
+  let tapInterval = (Date.now()-lastTapTime)/1000;
+  lastTapTime = Date.now();
+  if(!isTimeMode) tapTimes.push(tapInterval);
+  
+  if (isTimeMode) {
+    // タイムモードでは従来通り
+    e.target.classList.add('found');
+  } else {
+    // リラックスモードでは要素を完全に削除し、新しい数字を追加
+    const cellRect = measureCellRect(e.target);
+    
+    // 配置記録から削除
+    placedRects = placedRects.filter(rect => 
+      !(Math.abs(rect.left - cellRect.left) < 1 && Math.abs(rect.top - cellRect.top) < 1)
+    );
+    
+    // DOM要素を削除
+    e.target.remove();
+    
+    // 新しい数字を追加（使用済みの数字は避ける）
+    let attempts = 0;
+    let newNumber;
+    do {
+      newNumber = getRandomInt(MIN_NUMBER, MAX_NUMBER);
+      attempts++;
+    } while (attempts < 50 && document.querySelector(`[data-number="${newNumber}"]`));
+    
+    // 新しい数字をボードに追加
+    if (attempts < 50) {
+      addNumberToBoard(newNumber);
+    }
+  }
+  
+  numbersLeft = numbersLeft.filter(n => n !== tapped);
+  askNewQuestion();
+}
 
-                cell.style.top = `${top}px`;
-                cell.style.left = `${left}px`;
-                cell.addEventListener('click', handleNumberClick);
-
-                // 新しく追加した数字も探索対象リストに追加
-                numbersToFind.push(newNumber);
-            }
-
-            // --- 数字が重なっているかチェックする関数 ---
-            function isOverlapping(newRect, existingRects) {
-                for (const rect of existingRects) {
-                    if (!(newRect.right < rect.left || 
-                          newRect.left > rect.right || 
-                          newRect.bottom < rect.top || 
-                          newRect.top > rect.bottom)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            // --- ゲームの初期化と開始 ---
-            function setupGame() {
-                gameOverMessage.style.display = 'none';
-                gameBoard.innerHTML = '';
-                clearInterval(timerInterval);
-                timerEl.textContent = '00:00';
-                startTime = 0;
-                gameStarted = false;
-                
-                // --- 追加: モードによってタイマーの表示/非表示を切り替え ---
-                if (isTimeMode) {
-                    timerEl.style.display = 'block';
-                } else {
-                    timerEl.style.display = 'none';
-                }
-
-                allNumbers = [];
-                for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
-                    allNumbers.push(i);
-                }
-                
-                shuffleArray(allNumbers);
-                numbersToDisplay = allNumbers.slice(0, currentDifficulty);
-                numbersToFind = [...numbersToDisplay];
-                shuffleArray(numbersToFind);
-                
-                // --- リラックスモード用の候補リストを準備 ---
-                if (!isTimeMode) {
-                    numbersToAdd = allNumbers.filter(num => !numbersToDisplay.includes(num));
-                    shuffleArray(numbersToAdd);
-                }
-                
-                const placedRects = [];
-                
-                numbersToDisplay.forEach(num => {
-                    const cell = document.createElement('div');
-                    cell.classList.add('number-cell');
-                    cell.textContent = num;
-                    cell.dataset.number = num;
-
-                    const baseFontSize = getRandomInt(
-                        Math.min(18, gameBoard.clientHeight / 15), 
-                        Math.min(45, gameBoard.clientHeight / 8)
-                    );
-                    const color = COLORS[getRandomInt(0, COLORS.length - 1)];
-                    const rotation = getRandomInt(-45, 45);
-                    
-                    cell.style.fontSize = `${baseFontSize}px`;
-                    cell.style.color = color;
-                    cell.style.transform = `rotate(${rotation}deg)`;
-                    
-                    gameBoard.appendChild(cell);
-                    const cellWidth = cell.offsetWidth;
-                    const cellHeight = cell.offsetHeight;
-
-                    let top, left;
-                    let overlapDetected = true;
-                    let attempts = 0;
-
-                    if (gameBoard.clientHeight > cellHeight && gameBoard.clientWidth > cellWidth) {
-                        while (overlapDetected && attempts < MAX_ATTEMPTS_POSITIONING) {
-                            top = getRandomInt(0, gameBoard.clientHeight - cellHeight);
-                            left = getRandomInt(0, gameBoard.clientWidth - cellWidth);
-
-                            const newRect = {
-                                left: left, right: left + cellWidth,
-                                top: top, bottom: top + cellHeight
-                            };
-
-                            if (!isOverlapping(newRect, placedRects)) {
-                                overlapDetected = false;
-                                placedRects.push(newRect);
-                            }
-                            attempts++;
-                        }
-                    }
-
-                    cell.style.top = `${top}px`;
-                    cell.style.left = `${left}px`;
-                    cell.addEventListener('click', handleNumberClick);
-                });
-
-                askNewQuestion();
-            }
-
-            function askNewQuestion() {
-                if (numbersToFind.length === 0) {
-                    questionEl.textContent = 'クリア!🎉';
-                    clearInterval(timerInterval);
-                    gameStarted = false;
-                    
-                    // --- 追加: リラックスモードでは最終時間を表示しない ---
-                    if (isTimeMode) {
-                        finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
-                    } else {
-                        finalTimeEl.textContent = ''; // リラックスモードでは空にする
-                    }
-                    gameOverMessage.style.display = 'flex';
-                    
-                    return;
-                }
-
-                currentTarget = numbersToFind[0];
-                questionEl.textContent = `${currentTarget} はどこ？`;
-
-                // --- 追加: タイムモードでのみタイマーを開始 ---
-                if (!gameStarted && isTimeMode) {
-                    startTime = Date.now();
-                    timerInterval = setInterval(updateTimer, 1000);
-                }
-                gameStarted = true;
-            }
-
-            function handleNumberClick(event) {
-                if (!gameStarted && numbersToFind.length === 0) return;
-                const clickedNumber = parseInt(event.target.dataset.number, 10);
-                if (clickedNumber === currentTarget) {
-                    event.target.classList.add('found');
-                    numbersToFind.shift();
-                    
-                    // --- リラックスモードの追加機能 ---
-                    if (!isTimeMode) {
-                        addNewNumber(); // 新しい数字を追加
-                        shuffleArray(numbersToFind); // 次に探す数字をシャッフルしてランダムにする
-                    }
-
-                    askNewQuestion();
-                }
-            }
-
-            resetButton.addEventListener('click', setupGame);
-            
-            difficultySelect.addEventListener('change', (event) => {
-                currentDifficulty = parseInt(event.target.value, 10);
-                localStorage.setItem('gameDifficulty', currentDifficulty);
-                setupGame();
-            });
-
-            // --- 追加: モード選択のイベントリスナー ---
-            timeModeRadio.addEventListener('change', () => {
-                isTimeMode = true;
-                setupGame();
-            });
-            relaxModeRadio.addEventListener('change', () => {
-                isTimeMode = false;
-                setupGame();
-            });
-
-            const savedDifficulty = localStorage.getItem('gameDifficulty');
-            if (savedDifficulty) {
-                currentDifficulty = parseInt(savedDifficulty, 10);
-                difficultySelect.value = currentDifficulty;
-            }
-            
-            // 遅延させて初期化することで、レイアウト計算後のボードサイズを取得
-            setTimeout(() => {
-                // 初期ロード時にリラックスモードが選択されていることを確認
-                if (relaxModeRadio.checked) {
-                    isTimeMode = false;
-                } else {
-                    isTimeMode = true;
-                }
-                setupGame();
-            }, 100);
-
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(setupGame, 300);
-            });
-        });
-    </script>
+resetButton.addEventListener('click', setupGame);
+difficultySelect.addEventListener('change', (ev)=>{
+  currentDifficulty = parseInt(ev.target.value,10);
+  localStorage.setItem('gameDifficulty',currentDifficulty);
+  setupGame();
+});
+timeModeRadio.addEventListener('change', ()=>{
+  isTimeMode=true;
+  setupGame();
+});
+relaxModeRadio.addEventListener('change', ()=>{
+  isTimeMode=false;
+  setupGame();
+});
+endlessStopButton.addEventListener('click', ()=>{
+  if(!tapTimes.length) return;
+  showTapTimesChart();
+});
+function showTapTimesChart(){
+  chartSection.style.display = 'flex';
+  if(chartObj) chartObj.destroy();
+  chartObj = new Chart(chartCanvas, {
+    type: 'line',
+    data: {
+      labels: tapTimes.map((v,i)=>`${i+1}回目`),
+      datasets:[{
+        label:'発見にかかった秒',
+        data:tapTimes,
+        borderColor:'#f1c40f',
+        fill: false, pointBackgroundColor:'#e74c3c'
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        title:{display:true, text:'数字発見にかかった時間履歴'}
+      },
+      scales:{
+        y: { beginAtZero: true, title: {display:true, text:'秒'} },
+        x: { title: {display:true, text:'発見数（回）'} }
+      }
+    }
+  });
+}
+closeChartBtn.addEventListener('click',()=>{
+  chartSection.style.display='none';
+});
+let resizeTimer;
+window.addEventListener('resize', ()=>{
+  if(handlingResize) return;
+  handlingResize = true;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{
+    setupGame();
+    handlingResize = false;
+  }, 300);
+});
+window.addEventListener('DOMContentLoaded', ()=>{
+  const saved = localStorage.getItem('gameDifficulty');
+  if(saved){ currentDifficulty=parseInt(saved,10); difficultySelect.value=currentDifficulty; }
+  setTimeout(()=>{
+    isTimeMode = !relaxModeRadio.checked ? true : false;
+    setupGame();
+  },50);
+});
+</script>
 </body>
 </html>
