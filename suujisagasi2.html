@@ -1,401 +1,436 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>数字探し脳トレゲーム 重なりなし配置版</title>
-<style>
-* { box-sizing: border-box; }
-html,body {
-    height: 100%; margin: 0; overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex; justify-content: center; align-items: center;
-    padding: 1vh 1vw; user-select: none;
-}
-#game-container {
-    width: 100%; height: 100%; max-width: 800px; max-height: 900px;
-    display: flex; flex-direction: column;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px); overflow: hidden;
-    animation: containerFadeIn 0.8s ease-out;
-}
-@keyframes containerFadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.header {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white; padding: clamp(15px, 3vh, 25px);
-    display: flex; flex-wrap: wrap;
-    align-items: center; justify-content: space-between; gap: 10px;
-}
-.logo { font-size: clamp(1.2em, 4vw, 1.8em); font-weight: bold; }
-.stats { display: flex; gap: 15px; align-items: center; font-size: clamp(0.9em, 3vw, 1.1em);}
-.stat-item { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 15px; display: flex; gap: 5px; }
-.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.mode-toggle { background: rgba(255,255,255,0.2); border-radius: 25px; padding: 5px; display: flex; gap: 5px; }
-.mode-toggle input[type="radio"] { display: none; }
-.mode-toggle label { padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; font-size: clamp(0.8em, 2.5vw, 1em);}
-.mode-toggle input[type="radio"]:checked + label { background: rgba(255,255,255,0.9); color: #4CAF50; font-weight: bold; transform: scale(1.05);}
-select, button { padding: 8px 16px; border: none; border-radius: 20px; background: rgba(255,255,255,0.9); cursor: pointer; transition: 0.3s;}
-button:hover, select:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2);}
-.game-area { flex: 1; padding: clamp(20px, 4vh, 30px); display: flex; flex-direction: column; gap: 20px; }
-.question-bar { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #fff; padding: 15px; border-radius: 15px; text-align: center; font-size: clamp(1.5em, 5vw, 2.5em); font-weight: bold; }
-#game-board { flex: 1; position: relative; border-radius: 15px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); overflow: hidden; }
-.number-cell {
-    position: absolute; font-weight: bold; cursor: pointer; border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
-    transition: all 0.3s; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    width: 40px; height: 40px; font-size: 18px; user-select:none;
-}
-.number-cell.found { animation: numberFound 0.6s ease-out forwards; pointer-events:none; }
-@keyframes numberFound { 0% {transform: scale(1.2);} 100% {transform: scale(0.6); opacity:0.2;} }
-.number-cell.target-hint { animation: targetPulse 1s infinite alternate; }
-@keyframes targetPulse { from { box-shadow: 0 0 0 rgba(0,0,0,0.2);} to { box-shadow: 0 0 20px gold; transform: scale(1.1);} }
-.progress-bar { height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden;}
-.progress-fill { height:100%; background: linear-gradient(90deg,#4CAF50,#45a049); transition: width 0.5s;}
-.hint-button { position: absolute; bottom: 20px; right: 20px; border-radius: 50%; width: 50px; height: 50px; background:#FF6B6B; color:#fff; border:none; font-size:1.2em; }
-#game-over-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center;}
-.game-over-content { background: white; padding: 40px; border-radius: 20px; max-width: 400px; text-align:center;}
-.game-over-content h2 { color:#4CAF50; }
-.achievement { display:inline-block; background: linear-gradient(135deg, #FFD700, #FFA500); padding:5px 15px; border-radius:20px; margin:5px;}
-.combo-display { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:3em; color:#FF6B6B; animation: comboAnimation 1s ease-out; }
-@keyframes comboAnimation { 0%{opacity:0;transform:scale(0.5);}50%{opacity:1;transform:scale(1.2);}100%{opacity:0;transform:scale(1);} }
-@keyframes shake {0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);} }
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>数字探し脳トレゲーム - 多数から1個探し</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #3498db; color: #fff; user-select: none;
+      padding: 1vh 1vw; box-sizing: border-box;
+    }
+    #game-container {
+      width: 100%; height: 100%; max-width: 700px; max-height: 900px;
+      display: flex; flex-direction: column; text-align: center;
+      background-color: #2c3e50;
+      padding: clamp(10px, 2vh, 20px); border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2); box-sizing: border-box;
+      position: relative;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; margin-bottom: clamp(10px,2vh,20px); flex-shrink: 0;
+    }
+    #question {
+      font-size: clamp(1.2em, 4vw, 2em); font-weight: bold;
+      background-color: #fff; color: #2c3e50;
+      padding: 1vh 2vw; border-radius: 10px; flex-grow: 1; margin: 5px;
+      order: 2;
+    }
+    #timer {
+      font-size: clamp(1em, 3.5vw, 1.5em); font-weight: bold; color: #f1c40f;
+      min-width: 70px; text-align: right; order: 3; display: none;
+    }
+    .header button, #difficulty-select {
+      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+      border: none; background-color: #f1c40f; color: #2c3e50; border-radius: 8px;
+      cursor: pointer; transition: transform 0.1s, background-color 0.2s;
+      margin: 5px; white-space: nowrap;
+    }
+    #reset-button { order: 1; }
+    #endless-stop-button { order: 4; display: none; }
+    #difficulty-select { order: 1; padding-right: 30px; }
+    #difficulty-select {
+      appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .header button:active { transform: scale(0.95); }
+    #game-board {
+      position: relative; width: 100%; flex-grow: 1;
+      background-color: #ecf0f1; border-radius: 10px; overflow: hidden;
+      min-height: 0;
+    }
+    .number-cell {
+      position: absolute; font-weight: bold; cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.3s, transform 0.1s;
+      line-height: 1; padding: 2px; box-sizing: border-box; white-space: nowrap;
+      background: #fff9; box-shadow: 0 2px 6px #8884; border-radius: 6px;
+      outline: solid 2px #ddd6; z-index: 3; user-select: none;
+    }
+    .number-cell.found {
+      opacity: 0.2; pointer-events: none; filter: grayscale(1);
+    }
+    #game-over-message {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7); color: #fff; display: none;
+      flex-direction: column; justify-content: center; align-items: center;
+      border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
+      z-index: 20;
+    }
+    #game-over-message p { margin: 10px 0; }
+    #final-time { color: #f1c40f; font-size: 1.2em; }
+    #chart-section {
+      display: none; position: absolute; top: 0; left: 0;
+      width: 100%; height:100%; background: rgba(10,10,40, 0.95);
+      z-index:22; justify-content: center; align-items: center; flex-direction:column;
+    }
+    #chart-canvas { max-width: 90vw; max-height: 50vh; background: #fff; border-radius: 16px; }
+    #close-chart {
+      margin-top:16px; padding: 1em 2em; font-size: 1.2em; background:#f1c40f; color:#2c3e50;
+      border: none; border-radius: 8px; cursor: pointer;
+      transition:background 0.2s;
+    }
+    #close-chart:active { background: #fff24a; }
+    @media (max-width: 450px) {
+      .header { flex-direction: row; justify-content: space-around; }
+      #question { width: 100%; margin: 5px 0; text-align: center; }
+      #timer { min-width: auto; }
+    }
+    .mode-selection {
+      display: flex; align-items: center; flex-wrap:nowrap;
+      margin-right: 15px; white-space: nowrap; order: 0;
+    }
+    .mode-selection input[type="radio"] { margin-right: 5px; }
+  </style>
 </head>
 <body>
-<div id="game-container">
+  <div id="game-container">
     <div class="header">
-        <div class="logo">🧠 数字探し</div>
-        <div class="stats">
-            <div class="stat-item"><span>⏱️</span><span id="timer">00:00</span></div>
-            <div class="stat-item"><span>🎯</span><span id="score">0</span></div>
-            <div class="stat-item"><span>🔥</span><span id="combo">0</span></div>
-        </div>
-        <div class="controls">
-            <div class="mode-toggle">
-                <input type="radio" id="timeMode" name="mode">
-                <label for="timeMode">タイム</label>
-                <input type="radio" id="relaxMode" name="mode" checked>
-                <label for="relaxMode">リラックス</label>
-            </div>
-            <select id="difficulty">
-                <option value="15">初心者(15)</option>
-                <option value="25">初級(25)</option>
-                <option value="50">中級(50)</option>
-                <option value="100" selected>上級(100)</option>
-                <option value="150">エキスパート(150)</option>
-            </select>
-            <button id="reset">🔄リセット</button>
-            <button id="sound">🔊</button>
-        </div>
+      <div class="mode-selection">
+        <input type="radio" id="timeMode" name="gameMode" value="time">
+        <label for="timeMode">タイム</label>
+        <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
+        <label for="relaxMode">リラックス</label>
+      </div>
+      <button id="reset-button" title="リセット">🔄 リセット</button>
+      <select id="difficulty-select">
+        <option value="25">初級 (25)</option>
+        <option value="50">中級 (50)</option>
+        <option value="100" selected>上級 (100)</option>
+      </select>
+      <button id="endless-stop-button">終了</button>
+      <div id="question"></div>
+      <div id="timer">00:00</div>
     </div>
-    <div class="game-area">
-        <div id="question" class="question-bar">ゲームを開始してください</div>
-        <div class="progress-bar"><div id="progress" class="progress-fill" style="width:0"></div></div>
-        <div id="game-board"></div>
-        <button id="hint" class="hint-button">💡</button>
+    <div id="game-board"></div>
+    <div id="game-over-message">
+      <p>ゲームクリア！</p>
+      <p id="final-time"></p>
     </div>
-</div>
-<div id="game-over-overlay">
-    <div class="game-over-content">
-        <h2 id="over-title">🎉 ゲームクリア！</h2>
-        <div id="over-stats"></div>
-        <div id="achievements"></div>
-        <button id="play-again">もう一度</button>
+    <div id="chart-section">
+      <canvas id="chart-canvas"></canvas>
+      <button id="close-chart">閉じる</button>
     </div>
-</div>
+  </div>
 
-<script>
-class NumberHunt {
-    constructor(){
-        this.board=document.getElementById("game-board");
-        this.q=document.getElementById("question");
-        this.timerEl=document.getElementById("timer");
-        this.scoreEl=document.getElementById("score");
-        this.comboEl=document.getElementById("combo");
-        this.progress=document.getElementById("progress");
-        this.resetBtn=document.getElementById("reset");
-        this.difficultySel=document.getElementById("difficulty");
-        this.soundBtn=document.getElementById("sound");
-        this.time=document.getElementById("timeMode");
-        this.relax=document.getElementById("relaxMode");
-        this.hintBtn=document.getElementById("hint");
-        this.over=document.getElementById("game-over-overlay");
-        this.overTitle=document.getElementById("over-title");
-        this.overStats=document.getElementById("over-stats");
-        this.achv=document.getElementById("achievements");
-        this.playAgain=document.getElementById("play-again");
+  <script>
+    const COLORS = [
+      '#e74c3c','#f39c12','#1abc9c','#2980b9','#8e44ad',
+      '#2c3e50','#d35400','#c0392b','#16a085','#34495e',
+      '#9b59b6','#3498db','#f1c40f','#e67e22','#7f8c8d'
+    ];
+    const MIN_NUMBER = 1, MAX_NUMBER = 100, MAX_ATTEMPTS = 500;
 
-        this.CELL_SIZE=40;
-        this.NUM_MIN=1;
-        this.NUM_MAX=100;
+    const gameBoard = document.getElementById('game-board');
+    const questionEl = document.getElementById('question');
+    const resetButton = document.getElementById('reset-button');
+    const difficultySelect = document.getElementById('difficulty-select');
+    const timerEl = document.getElementById('timer');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const finalTimeEl = document.getElementById('final-time');
+    const timeModeRadio = document.getElementById('timeMode');
+    const relaxModeRadio = document.getElementById('relaxMode');
+    const endlessStopButton = document.getElementById('endless-stop-button');
+    const chartSection = document.getElementById('chart-section');
+    const closeChartBtn = document.getElementById('close-chart');
+    const chartCanvas = document.getElementById('chart-canvas');
 
-        this.COLORS=["#e74c3c","#f39c12","#1abc9c","#2980b9","#8e44ad","#2c3e50","#d35400","#c0392b","#16a085","#34495e","#9b59b6","#3498db","#f1c40f","#e67e22","#7f8c8d"];
+    let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
+    let gameStarted = false, startTime = 0, timerInterval = null;
+    let currentDifficulty = 100, isTimeMode = false;
+    let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
+    let placedRects = [];
 
-        this.score=0; this.combo=0; this.maxCombo=0;
-        this.found=0; this.wrong=0; this.hints=0; this.start=0; this.interval=null;
-        this.current=null; this.toFind=[]; this.toAdd=[];
-        this.sound=true; this.isTime=false; this.diff=100;
-
-        this.resetBtn.onclick=()=>this.setup();
-        this.difficultySel.onchange=()=>{this.diff=+this.difficultySel.value;this.setup();};
-        this.time.onchange=()=>{this.isTime=true;this.setup();};
-        this.relax.onchange=()=>{this.isTime=false;this.setup();};
-
-        this.soundBtn.onclick=()=>{
-            this.sound=!this.sound;
-            this.soundBtn.textContent=this.sound?"🔊":"🔇";
-        };
-        this.hintBtn.onclick=()=>this.showHint();
-        this.playAgain.onclick=()=>{
-            this.over.style.display="none";
-            this.setup();
-        };
-
-        this.setup();
-        window.addEventListener('resize', ()=>this.repositionNumbers());
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    setup(){
-        clearInterval(this.interval);
-        this.board.innerHTML="";
-        this.score=0;this.combo=0;this.maxCombo=0;this.found=0;this.wrong=0;this.hints=0;
-        this.start=0;this.current=null;this.q.textContent="開始！";
-
-        // 1～100の数字配列生成してシャッフル
-        let all=[];
-        for(let i=this.NUM_MIN;i<=this.NUM_MAX;i++) all.push(i);
-        this.shuffle(all);
-
-        // 画面難易度以内で表示数字決定
-        let display=all.slice(0,this.diff);
-        this.toFind=[...display];
-        this.toAdd=all.filter(n=>!display.includes(n));
-
-        // 探す順はシャッフル
-        this.shuffle(this.toFind);
-
-        // 配置
-        this.placeNumbersNoOverlap(display);
-
-        this.ask();
-        this.updateUI();
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
     }
-
-    placeNumbersNoOverlap(nums){
-        const rect=this.board.getBoundingClientRect();
-        const positions=[]; // 置いた数字の中心座標保持
-
-        // 1回の配置試行の最大リトライ回数
-        const MAX_TRIES=200;
-
-        nums.forEach(num=>{
-            let placed=false, tries=0;
-            while(!placed&&tries<MAX_TRIES){
-                // ランダム位置（左上基準）
-                let x = Math.random()*(rect.width-this.CELL_SIZE);
-                let y = Math.random()*(rect.height-this.CELL_SIZE);
-
-                // 中心座標計算
-                let cx = x + this.CELL_SIZE/2;
-                let cy = y + this.CELL_SIZE/2;
-
-                // 既存の数字と重なり判定（中心間距離 >= CELL_SIZE を確保）
-                let collision=positions.some(pos=>{
-                    let dx=pos.x - cx;
-                    let dy=pos.y - cy;
-                    return Math.sqrt(dx*dx+dy*dy) < this.CELL_SIZE;
-                });
-
-                if(!collision){
-                    positions.push({x:cx,y:cy});
-                    const div=document.createElement("div");
-                    div.className="number-cell";
-                    div.textContent=num;
-                    div.dataset.n=num;
-                    let color=this.COLORS[Math.floor(Math.random()*this.COLORS.length)];
-                    div.style.color=color;
-                    div.style.background=`rgba(0,0,0,0.05)`;
-                    div.style.left=`${x}px`;
-                    div.style.top=`${y}px`;
-                    div.style.width=this.CELL_SIZE+"px";
-                    div.style.height=this.CELL_SIZE+"px";
-                    div.style.fontSize="18px";
-                    div.style.lineHeight=this.CELL_SIZE+"px";
-                    div.style.textAlign="center";
-                    div.onclick=e=>this.handleClick(e);
-                    this.board.appendChild(div);
-                    placed=true;
-                } else {
-                    tries++;
-                }
-            }
-            if(!placed){
-                // 万一リトライ尽きたら重ならない保証なしで配置
-                let x = Math.random()*(rect.width-this.CELL_SIZE);
-                let y = Math.random()*(rect.height-this.CELL_SIZE);
-                const div=document.createElement("div");
-                div.className="number-cell";
-                div.textContent=num;
-                div.dataset.n=num;
-                let color=this.COLORS[Math.floor(Math.random()*this.COLORS.length)];
-                div.style.color=color;
-                div.style.background=`rgba(0,0,0,0.05)`;
-                div.style.left=`${x}px`;
-                div.style.top=`${y}px`;
-                div.style.width=this.CELL_SIZE+"px";
-                div.style.height=this.CELL_SIZE+"px";
-                div.style.fontSize="18px";
-                div.style.lineHeight=this.CELL_SIZE+"px";
-                div.style.textAlign="center";
-                div.onclick=e=>this.handleClick(e);
-                this.board.appendChild(div);
-                positions.push({x:x+this.CELL_SIZE/2,y:y+this.CELL_SIZE/2});
-            }
-        });
+    function measureCellRect(cell) {
+      return {
+        left: parseFloat(cell.style.left),
+        top: parseFloat(cell.style.top),
+        width: cell.offsetWidth,
+        height: cell.offsetHeight,
+        get right() { return this.left + this.width; },
+        get bottom() { return this.top + this.height; }
+      };
     }
-
-    repositionNumbers(){
-        // ウィンドウリサイズ時に既に配置された数字を再配置（少し重なる可能性あり）
-        if(!this.board) return;
-        const rect=this.board.getBoundingClientRect();
-        const cells=[...this.board.getElementsByClassName('number-cell')];
-        const positions=[];
-        const MAX_TRIES=100;
-        cells.forEach(cell=>{
-            let placed=false, tries=0;
-            while(!placed&&tries<MAX_TRIES){
-                let x = Math.random()*(rect.width-this.CELL_SIZE);
-                let y = Math.random()*(rect.height-this.CELL_SIZE);
-                let cx = x + this.CELL_SIZE/2;
-                let cy = y + this.CELL_SIZE/2;
-                let collision=positions.some(pos=>{
-                    let dx=pos.x-cx;
-                    let dy=pos.y-cy;
-                    return Math.sqrt(dx*dx+dy*dy)<this.CELL_SIZE;
-                });
-                if(!collision){
-                    positions.push({x:cx,y:cy});
-                    cell.style.left=`${x}px`;
-                    cell.style.top=`${y}px`;
-                    placed=true;
-                } else {
-                    tries++;
-                }
-            }
-            if(!placed){
-                let x = Math.random()*(rect.width-this.CELL_SIZE);
-                let y = Math.random()*(rect.height-this.CELL_SIZE);
-                cell.style.left=`${x}px`;
-                cell.style.top=`${y}px`;
-                positions.push({x:x+this.CELL_SIZE/2,y:y+this.CELL_SIZE/2});
-            }
-        });
-    }
-
-    ask(){
-        if(!this.toFind.length){
-            this.finish();
-            return;
+    function isOverlapping(newR, rects, pad=5) {
+      for (const r of rects) {
+        if (!(newR.right + pad < r.left - pad ||
+              newR.left - pad > r.right + pad ||
+              newR.bottom + pad < r.top - pad ||
+              newR.top - pad > r.bottom + pad)) {
+          return true;
         }
-        this.current=this.toFind[0];
-        this.q.textContent=`🎯 ${this.current}を探せ！`;
-        if(!this.start&&this.isTime){
-            this.start=Date.now();
-            this.interval=setInterval(()=>this.updateTimer(),200);
+      }
+      return false;
+    }
+    function findValidPosition(w, h) {
+      let attempts = 0, max = MAX_ATTEMPTS * 2;
+      while (attempts < max) {
+        const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
+        const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
+        const rect = { left, top, width: w, height: h,
+          get right() { return this.left + this.width; },
+          get bottom() { return this.top + this.height; }
+        };
+        if (!isOverlapping(rect, placedRects, 8)) {
+          return { left, top, rect };
         }
+        attempts++;
+      }
+      return null;
     }
-    updateTimer(){
-        let t=Date.now()-this.start;
-        let m=Math.floor(t/60000);
-        let s=Math.floor((t%60000)/1000);
-        this.timerEl.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+
+    function createNumberCell(num, fontSize) {
+      const cell = document.createElement('div');
+      cell.classList.add('number-cell');
+      cell.textContent = num;
+      cell.dataset.number = num;
+      cell.style.fontSize = fontSize + 'px';
+      cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
+      cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
+      return cell;
     }
-    handleClick(e){
-        if(!this.current) return;
-        let n=+e.target.dataset.n;
-        if(n===this.current){
-            e.target.classList.add("found");
-            this.toFind.shift();
-            this.combo++;
-            this.maxCombo=Math.max(this.combo,this.maxCombo);
-            this.score+=10+this.combo*5;
-            this.found++;
-            this.showCombo();
-            if(!this.isTime && this.toAdd.length){
-                // 新しい数字を一つ追加配置
-                const next=this.toAdd.shift();
-                this.toFind.push(next);
-                this.placeNumbersNoOverlap([next]);
-                this.shuffle(this.toFind);
-            }
-            this.ask();
+
+    // relaxモード追加用：空きスペースに収まるサイズまで縮小しつつ配置
+    function addShrinkableNumber(num) {
+      const maxFont = Math.max(12, gameBoard.clientHeight / 15);
+      const minFont = 8;
+      let fontSize = getRandomInt(minFont, maxFont);
+      while (fontSize >= minFont) {
+        const cell = createNumberCell(num, fontSize);
+        cell.style.visibility = 'hidden';
+        gameBoard.appendChild(cell);
+        const w = cell.offsetWidth, h = cell.offsetHeight;
+        const pos = findValidPosition(w, h);
+        if (pos) {
+          cell.style.left = pos.left + 'px';
+          cell.style.top = pos.top + 'px';
+          cell.style.visibility = 'visible';
+          placedRects.push(pos.rect);
+          cell.addEventListener('click', handleNumberClick);
+          return cell;
+        }
+        gameBoard.removeChild(cell);
+        fontSize -= 2;
+      }
+      return null;
+    }
+
+    function addNumberToBoard(num) {
+      // 初期配置は従来のランダムサイズ固定
+      const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+      const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+      const cell = createNumberCell(num, getRandomInt(fontMin, fontMax));
+      cell.style.visibility = 'hidden';
+      gameBoard.appendChild(cell);
+      const w = cell.offsetWidth, h = cell.offsetHeight;
+      const pos = findValidPosition(w, h);
+      if (pos) {
+        cell.style.left = pos.left + 'px';
+        cell.style.top = pos.top + 'px';
+        cell.style.visibility = 'visible';
+        placedRects.push(pos.rect);
+        cell.addEventListener('click', handleNumberClick);
+        return cell;
+      }
+      gameBoard.removeChild(cell);
+      return null;
+    }
+
+    function placeBoardNumbers(nums) {
+      gameBoard.innerHTML = '';
+      placedRects = [];
+      nums.forEach(n => addNumberToBoard(n));
+    }
+
+    function setupGame() {
+      if (chartObj) { chartObj.destroy(); chartObj = null; }
+      chartSection.style.display = 'none';
+      gameOverMessage.style.display = 'none';
+      clearInterval(timerInterval);
+      timerEl.textContent = '00:00';
+      gameStarted = false;
+      tapTimes = [];
+      placedRects = [];
+      endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
+      timerEl.style.display = isTimeMode ? 'block' : 'none';
+      allNumbers = [];
+      for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
+      shuffleArray(allNumbers);
+      numbersPanel = allNumbers.slice(0, currentDifficulty);
+      numbersLeft = [...numbersPanel];
+      shuffleArray(numbersLeft);
+      placeBoardNumbers(numbersPanel);
+      askNewQuestion(true);
+    }
+
+    function askNewQuestion(first = false) {
+      if (!numbersLeft.length) {
+        if (isTimeMode) {
+          questionEl.textContent = 'クリア!🎉';
+          clearInterval(timerInterval);
+          gameStarted = false;
+          gameBoard.innerHTML = '';
+          finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+          gameOverMessage.style.display = 'flex';
+          return;
         } else {
-            this.combo=0;
-            this.wrong++;
-            e.target.style.animation="shake 0.5s";
-            setTimeout(()=>e.target.style.animation="",500);
+          shuffleArray(allNumbers);
+          numbersLeft = allNumbers.slice(0, currentDifficulty);
         }
-        this.updateUI();
-    }
-    showHint(){
-        if(!this.current) return;
-        let cells=[...this.board.querySelectorAll(`[data-n="${this.current}"]`)];
-        cells.forEach(c=>{
-            if(!c.classList.contains("found")){
-                c.classList.add("target-hint");
-                setTimeout(()=>c.classList.remove("target-hint"),2000);
-            }
-        });
-        this.hints++;
-    }
-    showCombo(){
-        if(this.combo<=1) return;
-        let cd=document.createElement("div");
-        cd.className="combo-display";
-        cd.textContent=`COMBO×${this.combo}`;
-        this.board.appendChild(cd);
-        setTimeout(()=>cd.remove(),1000);
-    }
-    updateUI(){
-        this.scoreEl.textContent=this.score;
-        this.comboEl.textContent=this.combo;
-        this.progress.style.width=`${(this.found/this.diff)*100}%`;
-    }
-    finish(){
-        clearInterval(this.interval);
-        let acc=Math.round(this.found/(this.found+this.wrong)*100)||0;
-        this.q.textContent="🎉クリア！";
-        this.over.style.display="flex";
-        this.overStats.innerHTML=`
-            <div>スコア:${this.score}</div>
-            <div>発見:${this.found}</div>
-            ${this.isTime?`<div>タイム:${this.timerEl.textContent}</div>`:""}
-            <div>最大コンボ:${this.maxCombo}</div>
-            <div>精度:${acc}%</div>
-            <div>ヒント:${this.hints}</div>
-        `;
-        let ach=[];
-        if(this.maxCombo>=10) ach.push("🔥コンボマスター");
-        if(acc===100) ach.push("🎯パーフェクト");
-        if(this.hints===0) ach.push("🧠自力クリア");
-        this.achv.innerHTML = ach.map(a=>`<div class="achievement">${a}</div>`).join('');
-    }
-    shuffle(arr){
-        for(let i=arr.length-1; i>0; i--){
-            let j=Math.floor(Math.random()*(i+1));
-            [arr[i], arr[j]]=[arr[j], arr[i]];
+      }
+      currentTarget = numbersLeft[0];
+      questionEl.textContent = `${currentTarget} を探せ！`;
+      if (!gameStarted) {
+        if (isTimeMode) {
+          startTime = Date.now();
+          timerInterval = setInterval(updateTimer, 1000);
+        } else {
+          startTime = Date.now();
+          timerEl.textContent = '00:00';
         }
+        gameStarted = true;
+        lastTapTime = Date.now();
+      }
     }
-}
 
-window.onload=()=>new NumberHunt();
-</script>
+    function updateTimer() {
+      const t = Date.now() - startTime;
+      const m = Math.floor(t/60000), s = Math.floor((t%60000)/1000);
+      timerEl.textContent =
+        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
 
+    function handleNumberClick(e) {
+      if (!gameStarted || !numbersLeft.length) return;
+      const tapped = parseInt(e.target.dataset.number, 10);
+      if (tapped !== currentTarget) return;
+
+      const interval = (Date.now() - lastTapTime)/1000;
+      lastTapTime = Date.now();
+      if (!isTimeMode) tapTimes.push(interval);
+
+      if (isTimeMode) {
+        e.target.classList.add('found');
+      } else {
+        const rect = measureCellRect(e.target);
+        placedRects = placedRects.filter(r =>
+          !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
+        );
+        e.target.remove();
+        const existing = Array.from(
+          gameBoard.querySelectorAll('.number-cell')
+        ).map(c => parseInt(c.dataset.number,10));
+        const pool = allNumbers.filter(n => !existing.includes(n));
+        if (pool.length) {
+          for (let i = 0; i < 5; i++) {
+            const num = pool[getRandomInt(0, pool.length - 1)];
+            if (addShrinkableNumber(num)) break;
+          }
+        }
+      }
+
+      numbersLeft = numbersLeft.filter(n => n !== tapped);
+      askNewQuestion();
+    }
+
+    resetButton.addEventListener('click', setupGame);
+    difficultySelect.addEventListener('change', ev => {
+      currentDifficulty = parseInt(ev.target.value, 10);
+      localStorage.setItem('gameDifficulty', currentDifficulty);
+      setupGame();
+    });
+    timeModeRadio.addEventListener('change', () => {
+      isTimeMode = true;
+      setupGame();
+    });
+    relaxModeRadio.addEventListener('change', () => {
+      isTimeMode = false;
+      setupGame();
+    });
+    endlessStopButton.addEventListener('click', () => {
+      if (!tapTimes.length) return;
+      showTapTimesChart();
+    });
+
+    function showTapTimesChart() {
+      chartSection.style.display = 'flex';
+      if (chartObj) chartObj.destroy();
+      chartObj = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+          labels: tapTimes.map((v,i)=>`${i+1}回目`),
+          datasets:[{
+            label:'発見にかかった秒',
+            data: tapTimes,
+            borderColor:'#f1c40f',
+            fill:false, pointBackgroundColor:'#e74c3c'
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{display:false},
+            title:{display:true,text:'数字発見にかかった時間履歴'}
+          },
+          scales:{
+            y:{beginAtZero:true,title:{display:true,text:'秒'}},
+            x:{title:{display:true,text:'発見数（回）'}}
+          }
+        }
+      });
+    }
+
+    closeChartBtn.addEventListener('click', ()=> {
+      chartSection.style.display = 'none';
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', ()=> {
+      if (handlingResize) return;
+      handlingResize = true;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(()=> {
+        setupGame();
+        handlingResize = false;
+      }, 300);
+    });
+
+    window.addEventListener('DOMContentLoaded', ()=> {
+      const saved = localStorage.getItem('gameDifficulty');
+      if (saved) {
+        currentDifficulty = parseInt(saved, 10);
+        difficultySelect.value = currentDifficulty;
+      }
+      setTimeout(()=> {
+        isTimeMode = !relaxModeRadio.checked;
+        setupGame();
+      }, 50);
+    });
+  </script>
 </body>
 </html>
