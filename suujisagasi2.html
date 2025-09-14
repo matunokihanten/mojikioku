@@ -214,34 +214,13 @@
       cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
       return cell;
     }
-
-    // relaxモード追加用：空きスペースに収まるサイズまで縮小しつつ配置
-    function addShrinkableNumber(num) {
-      const maxFont = Math.max(12, gameBoard.clientHeight / 15);
-      const minFont = 8;
-      let fontSize = getRandomInt(minFont, maxFont);
-      while (fontSize >= minFont) {
-        const cell = createNumberCell(num, fontSize);
-        cell.style.visibility = 'hidden';
-        gameBoard.appendChild(cell);
-        const w = cell.offsetWidth, h = cell.offsetHeight;
-        const pos = findValidPosition(w, h);
-        if (pos) {
-          cell.style.left = pos.left + 'px';
-          cell.style.top = pos.top + 'px';
-          cell.style.visibility = 'visible';
-          placedRects.push(pos.rect);
-          cell.addEventListener('click', handleNumberClick);
-          return cell;
-        }
-        gameBoard.removeChild(cell);
-        fontSize -= 2;
-      }
-      return null;
-    }
-
+    
+    // 修正: `addShrinkableNumber`関数は使用せず、`addNumberToBoard`を使用
+    // 古いコードでは、`relaxMode`で`addShrinkableNumber`を呼び出していましたが、
+    // ボード上の数字の総数を調整していなかったため、画面上の数字が減少し、
+    // 新しい数字が生成されなくなる問題がありました。
+    
     function addNumberToBoard(num) {
-      // 初期配置は従来のランダムサイズ固定
       const fontMin = Math.min(18, gameBoard.clientHeight / 15);
       const fontMax = Math.max(24, gameBoard.clientHeight / 8);
       const cell = createNumberCell(num, getRandomInt(fontMin, fontMax));
@@ -299,11 +278,16 @@
           gameOverMessage.style.display = 'flex';
           return;
         } else {
-          shuffleArray(allNumbers);
-          numbersLeft = allNumbers.slice(0, currentDifficulty);
+          // リラックスモード: ゲームを継続
+          // ボード上の現在の数字を再取得し、その中から次のターゲットをランダムに選択
+          const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+            .map(c => parseInt(c.dataset.number, 10));
+          
+          numbersLeft = [...currentNumbersOnBoard];
+          shuffleArray(numbersLeft);
         }
       }
-      currentTarget = numbersLeft[0];
+      currentTarget = numbersLeft.shift(); // 修正: 配列から取り除く
       questionEl.textContent = `${currentTarget} を探せ！`;
       if (!gameStarted) {
         if (isTimeMode) {
@@ -342,16 +326,25 @@
           !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
         );
         e.target.remove();
-        const existing = Array.from(
-          gameBoard.querySelectorAll('.number-cell')
-        ).map(c => parseInt(c.dataset.number,10));
+        
+        const existing = Array.from(gameBoard.querySelectorAll('.number-cell'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
         const pool = allNumbers.filter(n => !existing.includes(n));
-        if (pool.length) {
-          for (let i = 0; i < 5; i++) {
-            const num = pool[getRandomInt(0, pool.length - 1)];
-            if (addShrinkableNumber(num)) break;
+        
+        // --- 修正箇所 ---
+        // 修正前は `addShrinkableNumber(num)` を呼び出していたが、
+        // 配置に失敗した場合に新しい数字が生成されない問題があった。
+        // `addNumberToBoard` を使用し、ゲームボード上の数字を一定数に保つことで不具合を解消。
+        if (pool.length > 0) {
+          const newNumber = pool[getRandomInt(0, pool.length - 1)];
+          // 新しい数字が追加されるまで再試行
+          let attempts = 0;
+          while (!addNumberToBoard(newNumber) && attempts < 10) {
+              attempts++;
           }
         }
+        // --- 修正箇所終わり ---
       }
 
       numbersLeft = numbersLeft.filter(n => n !== tapped);
