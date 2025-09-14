@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
   <title>数字探し脳トレゲーム - 多数から1個探し</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -135,279 +135,264 @@
       '#2c3e50','#d35400','#c0392b','#16a085','#34495e',
       '#9b59b6','#3498db','#f1c40f','#e67e22','#7f8c8d'
     ];
-    const MIN_NUMBER=1, MAX_NUMBER=100, MAX_ATTEMPTS=500;
+    const MIN_NUMBER = 1, MAX_NUMBER = 100, MAX_ATTEMPTS = 500;
 
-    const gameBoard=document.getElementById('game-board');
-    const questionEl=document.getElementById('question');
-    const resetButton=document.getElementById('reset-button');
-    const difficultySelect=document.getElementById('difficulty-select');
-    const timerEl=document.getElementById('timer');
-    const gameOverMessage=document.getElementById('game-over-message');
-    const finalTimeEl=document.getElementById('final-time');
-    const timeModeRadio=document.getElementById('timeMode');
-    const relaxModeRadio=document.getElementById('relaxMode');
-    const endlessStopButton=document.getElementById('endless-stop-button');
-    const chartSection=document.getElementById('chart-section');
-    const closeChartBtn=document.getElementById('close-chart');
-    const chartCanvas=document.getElementById('chart-canvas');
+    const gameBoard = document.getElementById('game-board');
+    const questionEl = document.getElementById('question');
+    const resetButton = document.getElementById('reset-button');
+    const difficultySelect = document.getElementById('difficulty-select');
+    const timerEl = document.getElementById('timer');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const finalTimeEl = document.getElementById('final-time');
+    const timeModeRadio = document.getElementById('timeMode');
+    const relaxModeRadio = document.getElementById('relaxMode');
+    const endlessStopButton = document.getElementById('endless-stop-button');
+    const chartSection = document.getElementById('chart-section');
+    const closeChartBtn = document.getElementById('close-chart');
+    const chartCanvas = document.getElementById('chart-canvas');
 
-    let allNumbers=[], numbersPanel=[], numbersLeft=[], currentTarget=null;
-    let gameStarted=false, startTime=0, timerInterval=null;
-    let currentDifficulty=100, isTimeMode=false;
-    let tapTimes=[], lastTapTime=0, chartObj=null, handlingResize=false;
-    let placedRects=[];
+    let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
+    let gameStarted = false, startTime = 0, timerInterval = null;
+    let currentDifficulty = 100, isTimeMode = false;
+    let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
+    let placedRects = [];
 
-    function getRandomInt(min,max){
-      return Math.floor(Math.random()* (max-min+1))+min;
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    function shuffleArray(a){
-      for(let i=a.length-1;i>0;i--){
-        let j=Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
     }
-    function measureCellRect(cell){
+    function measureCellRect(cell) {
       return {
-        left:parseFloat(cell.style.left),
-        top:parseFloat(cell.style.top),
-        width:cell.offsetWidth,
-        height:cell.offsetHeight,
-        get right(){return this.left+this.width;},
-        get bottom(){return this.top+this.height;}
+        left: parseFloat(cell.style.left),
+        top: parseFloat(cell.style.top),
+        width: cell.offsetWidth,
+        height: cell.offsetHeight,
+        get right() { return this.left + this.width; },
+        get bottom() { return this.top + this.height; }
       };
     }
-    function createNumberCell(num){
-      const c=document.createElement('div');
-      c.classList.add('number-cell');
-      c.textContent=num;
-      c.dataset.number=num;
-      const fontMin=Math.min(18,gameBoard.clientHeight/15);
-      const fontMax=Math.max(24,gameBoard.clientHeight/8);
-      const sz=getRandomInt(fontMin,fontMax);
-      c.style.fontSize=sz+'px';
-      c.style.color=COLORS[getRandomInt(0,COLORS.length-1)];
-      c.style.transform=`rotate(${getRandomInt(-35,35)}deg)`;
-      return c;
+    function isOverlapping(newR, rects, pad=5) {
+      for (const r of rects) {
+        if (!(newR.right + pad < r.left - pad ||
+              newR.left - pad > r.right + pad ||
+              newR.bottom + pad < r.top - pad ||
+              newR.top - pad > r.bottom + pad)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    function findValidPosition(w, h) {
+      let attempts = 0, max = MAX_ATTEMPTS * 2;
+      while (attempts < max) {
+        const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
+        const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
+        const rect = { left, top, width: w, height: h,
+          get right() { return this.left + this.width; },
+          get bottom() { return this.top + this.height; }
+        };
+        if (!isOverlapping(rect, placedRects, 8)) {
+          return { left, top, rect };
+        }
+        attempts++;
+      }
+      return null;
     }
 
-    // タイル状に重ならずに全画面に配置
-    function placeBoardNumbers(numbers){
-      gameBoard.innerHTML='';
-      placedRects=[];
-      const count=numbers.length;
-      const W=gameBoard.clientWidth, H=gameBoard.clientHeight;
-      const aspect=W/H;
-      const cols=Math.ceil(Math.sqrt(count*aspect));
-      const rows=Math.ceil(count/cols);
-      const cellW=W/cols, cellH=H/rows;
-      numbers.forEach((num,i)=>{
-        const cell=createNumberCell(num);
-        // 文字がはみ出さないようにフォント調整
-        const fs=Math.min(cellH*0.6,cellW*0.6);
-        cell.style.fontSize=fs+'px';
+    function createNumberCell(num, fontSize) {
+      const cell = document.createElement('div');
+      cell.classList.add('number-cell');
+      cell.textContent = num;
+      cell.dataset.number = num;
+      cell.style.fontSize = fontSize + 'px';
+      cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
+      cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
+      return cell;
+    }
+
+    // relaxモード追加用：空きスペースに収まるサイズまで縮小しつつ配置
+    function addShrinkableNumber(num) {
+      const maxFont = Math.max(12, gameBoard.clientHeight / 15);
+      const minFont = 8;
+      let fontSize = getRandomInt(minFont, maxFont);
+      while (fontSize >= minFont) {
+        const cell = createNumberCell(num, fontSize);
+        cell.style.visibility = 'hidden';
         gameBoard.appendChild(cell);
-        const col=i%cols, row=Math.floor(i/cols);
-        const left=col*cellW + (cellW-cell.offsetWidth)/2;
-        const top=row*cellH + (cellH-cell.offsetHeight)/2;
-        cell.style.left=left+'px';
-        cell.style.top=top+'px';
-        placedRects.push(measureCellRect(cell));
-        cell.addEventListener('click',handleNumberClick);
-        enableDrag(cell);
-      });
-    }
-
-    function setupGame(){
-      if(chartObj){chartObj.destroy();chartObj=null;}
-      chartSection.style.display='none';
-      gameOverMessage.style.display='none';
-      clearInterval(timerInterval);
-      timerEl.textContent='00:00';
-      gameStarted=false;
-      tapTimes=[];
-      placedRects=[];
-      endlessStopButton.style.display=isTimeMode?'none':'inline-block';
-      timerEl.style.display=isTimeMode?'block':'none';
-      allNumbers=[];
-      for(let i=MIN_NUMBER;i<=MAX_NUMBER;i++) allNumbers.push(i);
-      shuffleArray(allNumbers);
-      numbersPanel=allNumbers.slice(0,currentDifficulty);
-      numbersLeft=[...numbersPanel];
-      shuffleArray(numbersLeft);
-      placeBoardNumbers(numbersPanel);
-      askNewQuestion(true);
-    }
-
-    function askNewQuestion(){
-      if(!numbersLeft.length){
-        if(isTimeMode){
-          questionEl.textContent='クリア!🎉';
-          clearInterval(timerInterval);
-          gameStarted=false;
-          finalTimeEl.textContent=`タイム: ${timerEl.textContent}`;
-          gameOverMessage.style.display='flex';
-          return;
-        } else {
-          shuffleArray(allNumbers);
-          numbersLeft=allNumbers.slice(0,currentDifficulty);
+        const w = cell.offsetWidth, h = cell.offsetHeight;
+        const pos = findValidPosition(w, h);
+        if (pos) {
+          cell.style.left = pos.left + 'px';
+          cell.style.top = pos.top + 'px';
+          cell.style.visibility = 'visible';
+          placedRects.push(pos.rect);
+          cell.addEventListener('click', handleNumberClick);
+          return cell;
         }
+        gameBoard.removeChild(cell);
+        fontSize -= 2;
       }
-      currentTarget=numbersLeft[0];
-      questionEl.textContent=`${currentTarget} を探せ！`;
-      if(!gameStarted){
-        if(isTimeMode){
-          startTime=Date.now();
-          timerInterval=setInterval(updateTimer,1000);
-        } else {
-          startTime=Date.now();
-          timerEl.textContent='00:00';
-        }
-        gameStarted=true;
-        lastTapTime=Date.now();
-      }
+      return null;
     }
 
-    function updateTimer(){
-      const t=Date.now()-startTime;
-      const m=Math.floor(t/60000), s=Math.floor((t%60000)/1000);
-      timerEl.textContent=
-        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    }
-
-    function handleNumberClick(e){
-      if(!gameStarted||!numbersLeft.length) return;
-      const tapped=parseInt(e.target.dataset.number,10);
-      if(tapped!==currentTarget) return;
-
-      const interval=(Date.now()-lastTapTime)/1000;
-      lastTapTime=Date.now();
-      if(!isTimeMode) tapTimes.push(interval);
-
-      if(isTimeMode){
-        e.target.classList.add('found');
-      } else {
-        const rect=measureCellRect(e.target);
-        placedRects=placedRects.filter(r=>
-          !(Math.abs(r.left-rect.left)<1&&Math.abs(r.top-rect.top)<1)
-        );
-        e.target.remove();
-
-        // 既存にない数字のプール
-        const exist=Array.from(
-          gameBoard.querySelectorAll('.number-cell')
-        ).map(c=>parseInt(c.dataset.number,10));
-        const pool=allNumbers.filter(n=>!exist.includes(n));
-        if(pool.length){
-          for(let i=0;i<5;i++){
-            const num=pool[getRandomInt(0,pool.length-1)];
-            if(addNumberToBoard(num)) break;
-          }
-        }
-      }
-
-      numbersLeft=numbersLeft.filter(n=>n!==tapped);
-      askNewQuestion();
-    }
-
-    function addNumberToBoard(num){
-      const cell=createNumberCell(num);
-      cell.style.visibility='hidden';
+    function addNumberToBoard(num) {
+      // 初期配置は従来のランダムサイズ固定
+      const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+      const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+      const cell = createNumberCell(num, getRandomInt(fontMin, fontMax));
+      cell.style.visibility = 'hidden';
       gameBoard.appendChild(cell);
-      const w=cell.offsetWidth, h=cell.offsetHeight;
-      const pos=findValidPosition(w,h);
-      if(pos){
-        cell.style.left=pos.left+'px';
-        cell.style.top=pos.top+'px';
-        cell.style.visibility='visible';
+      const w = cell.offsetWidth, h = cell.offsetHeight;
+      const pos = findValidPosition(w, h);
+      if (pos) {
+        cell.style.left = pos.left + 'px';
+        cell.style.top = pos.top + 'px';
+        cell.style.visibility = 'visible';
         placedRects.push(pos.rect);
-        cell.addEventListener('click',handleNumberClick);
-        enableDrag(cell);
+        cell.addEventListener('click', handleNumberClick);
         return cell;
       }
       gameBoard.removeChild(cell);
       return null;
     }
 
-    function isOverlapping(newR, rects, pad=5){
-      for(const r of rects){
-        if(!(newR.right+pad<r.left-pad||
-             newR.left-pad>r.right+pad||
-             newR.bottom+pad<r.top-pad||
-             newR.top-pad>r.bottom+pad)){
-          return true;
-        }
-      }
-      return false;
+    function placeBoardNumbers(nums) {
+      gameBoard.innerHTML = '';
+      placedRects = [];
+      nums.forEach(n => addNumberToBoard(n));
     }
 
-    function findValidPosition(cellW,cellH){
-      let attempt=0, max=MAX_ATTEMPTS*3;
-      while(attempt<max){
-        const top=getRandomInt(5,Math.max(5,gameBoard.clientHeight-cellH-5));
-        const left=getRandomInt(5,Math.max(5,gameBoard.clientWidth-cellW-5));
-        const rect={
-          left,top,width:cellW,height:cellH,
-          get right(){return this.left+this.width;},
-          get bottom(){return this.top+this.height;}
-        };
-        if(!isOverlapping(rect,placedRects,8)){
-          return {left,top,rect};
-        }
-        attempt++;
-      }
-      if(attempt>=max&&placedRects.length){
-        placedRects=[];
-        return findValidPosition(cellW,cellH);
-      }
-      return null;
+    function setupGame() {
+      if (chartObj) { chartObj.destroy(); chartObj = null; }
+      chartSection.style.display = 'none';
+      gameOverMessage.style.display = 'none';
+      clearInterval(timerInterval);
+      timerEl.textContent = '00:00';
+      gameStarted = false;
+      tapTimes = [];
+      placedRects = [];
+      endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
+      timerEl.style.display = isTimeMode ? 'block' : 'none';
+      allNumbers = [];
+      for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
+      shuffleArray(allNumbers);
+      numbersPanel = allNumbers.slice(0, currentDifficulty);
+      numbersLeft = [...numbersPanel];
+      shuffleArray(numbersLeft);
+      placeBoardNumbers(numbersPanel);
+      askNewQuestion(true);
     }
 
-    function enableDrag(cell){
-      let offX,offY,boardR,oldR;
-      cell.addEventListener('mousedown',e=>{
-        if(e.button!==0) return;
-        e.preventDefault();
-        boardR=gameBoard.getBoundingClientRect();
-        oldR=measureCellRect(cell);
-        placedRects=placedRects.filter(r=>
-          !(Math.abs(r.left-oldR.left)<1&&Math.abs(r.top-oldR.top)<1)
+    function askNewQuestion(first = false) {
+      if (!numbersLeft.length) {
+        if (isTimeMode) {
+          questionEl.textContent = 'クリア!🎉';
+          clearInterval(timerInterval);
+          gameStarted = false;
+          gameBoard.innerHTML = '';
+          finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+          gameOverMessage.style.display = 'flex';
+          return;
+        } else {
+          shuffleArray(allNumbers);
+          numbersLeft = allNumbers.slice(0, currentDifficulty);
+        }
+      }
+      currentTarget = numbersLeft[0];
+      questionEl.textContent = `${currentTarget} を探せ！`;
+      if (!gameStarted) {
+        if (isTimeMode) {
+          startTime = Date.now();
+          timerInterval = setInterval(updateTimer, 1000);
+        } else {
+          startTime = Date.now();
+          timerEl.textContent = '00:00';
+        }
+        gameStarted = true;
+        lastTapTime = Date.now();
+      }
+    }
+
+    function updateTimer() {
+      const t = Date.now() - startTime;
+      const m = Math.floor(t/60000), s = Math.floor((t%60000)/1000);
+      timerEl.textContent =
+        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+
+    function handleNumberClick(e) {
+      if (!gameStarted || !numbersLeft.length) return;
+      const tapped = parseInt(e.target.dataset.number, 10);
+      if (tapped !== currentTarget) return;
+
+      const interval = (Date.now() - lastTapTime)/1000;
+      lastTapTime = Date.now();
+      if (!isTimeMode) tapTimes.push(interval);
+
+      if (isTimeMode) {
+        e.target.classList.add('found');
+      } else {
+        const rect = measureCellRect(e.target);
+        placedRects = placedRects.filter(r =>
+          !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
         );
-        offX=e.clientX-cell.getBoundingClientRect().left;
-        offY=e.clientY-cell.getBoundingClientRect().top;
-        const onMove=evt=>{
-          let x=evt.clientX-boardR.left-offX;
-          let y=evt.clientY-boardR.top-offY;
-          x=Math.max(0,Math.min(x,gameBoard.clientWidth-cell.offsetWidth));
-          y=Math.max(0,Math.min(y,gameBoard.clientHeight-cell.offsetHeight));
-          cell.style.left=x+'px';
-          cell.style.top=y+'px';
-        };
-        const onUp=()=>{
-          document.removeEventListener('mousemove',onMove);
-          document.removeEventListener('mouseup',onUp);
-          placedRects.push(measureCellRect(cell));
-        };
-        document.addEventListener('mousemove',onMove);
-        document.addEventListener('mouseup',onUp);
-      });
+        e.target.remove();
+        const existing = Array.from(
+          gameBoard.querySelectorAll('.number-cell')
+        ).map(c => parseInt(c.dataset.number,10));
+        const pool = allNumbers.filter(n => !existing.includes(n));
+        if (pool.length) {
+          for (let i = 0; i < 5; i++) {
+            const num = pool[getRandomInt(0, pool.length - 1)];
+            if (addShrinkableNumber(num)) break;
+          }
+        }
+      }
+
+      numbersLeft = numbersLeft.filter(n => n !== tapped);
+      askNewQuestion();
     }
 
-    function showTapTimesChart(){
-      chartSection.style.display='flex';
-      if(chartObj) chartObj.destroy();
-      chartObj=new Chart(chartCanvas,{
-        type:'line',
-        data:{
-          labels:tapTimes.map((v,i)=>`${i+1}回目`),
+    resetButton.addEventListener('click', setupGame);
+    difficultySelect.addEventListener('change', ev => {
+      currentDifficulty = parseInt(ev.target.value, 10);
+      localStorage.setItem('gameDifficulty', currentDifficulty);
+      setupGame();
+    });
+    timeModeRadio.addEventListener('change', () => {
+      isTimeMode = true;
+      setupGame();
+    });
+    relaxModeRadio.addEventListener('change', () => {
+      isTimeMode = false;
+      setupGame();
+    });
+    endlessStopButton.addEventListener('click', () => {
+      if (!tapTimes.length) return;
+      showTapTimesChart();
+    });
+
+    function showTapTimesChart() {
+      chartSection.style.display = 'flex';
+      if (chartObj) chartObj.destroy();
+      chartObj = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+          labels: tapTimes.map((v,i)=>`${i+1}回目`),
           datasets:[{
             label:'発見にかかった秒',
-            data:tapTimes,
+            data: tapTimes,
             borderColor:'#f1c40f',
-            fill:false,pointBackgroundColor:'#e74c3c'
+            fill:false, pointBackgroundColor:'#e74c3c'
           }]
         },
         options:{
-          responsive:true,maintainAspectRatio:false,
+          responsive:true, maintainAspectRatio:false,
           plugins:{
             legend:{display:false},
             title:{display:true,text:'数字発見にかかった時間履歴'}
@@ -420,44 +405,31 @@
       });
     }
 
-    resetButton.addEventListener('click',setupGame);
-    difficultySelect.addEventListener('change',e=>{
-      currentDifficulty=parseInt(e.target.value,10);
-      localStorage.setItem('gameDifficulty',currentDifficulty);
-      setupGame();
+    closeChartBtn.addEventListener('click', ()=> {
+      chartSection.style.display = 'none';
     });
-    timeModeRadio.addEventListener('change',()=>{
-      isTimeMode=true; setupGame();
-    });
-    relaxModeRadio.addEventListener('change',()=>{
-      isTimeMode=false; setupGame();
-    });
-    endlessStopButton.addEventListener('click',()=>{
-      if(tapTimes.length) showTapTimesChart();
-    });
-    closeChartBtn.addEventListener('click',()=>chartSection.style.display='none');
 
     let resizeTimer;
-    window.addEventListener('resize',()=>{
-      if(handlingResize) return;
-      handlingResize=true;
+    window.addEventListener('resize', ()=> {
+      if (handlingResize) return;
+      handlingResize = true;
       clearTimeout(resizeTimer);
-      resizeTimer=setTimeout(()=>{
+      resizeTimer = setTimeout(()=> {
         setupGame();
-        handlingResize=false;
-      },300);
+        handlingResize = false;
+      }, 300);
     });
 
-    window.addEventListener('DOMContentLoaded',()=>{
-      const saved=localStorage.getItem('gameDifficulty');
-      if(saved){
-        currentDifficulty=parseInt(saved,10);
-        difficultySelect.value=currentDifficulty;
+    window.addEventListener('DOMContentLoaded', ()=> {
+      const saved = localStorage.getItem('gameDifficulty');
+      if (saved) {
+        currentDifficulty = parseInt(saved, 10);
+        difficultySelect.value = currentDifficulty;
       }
-      setTimeout(()=>{
-        isTimeMode=!relaxModeRadio.checked;
+      setTimeout(()=> {
+        isTimeMode = !relaxModeRadio.checked;
         setupGame();
-      },50);
+      }, 50);
     });
   </script>
 </body>
