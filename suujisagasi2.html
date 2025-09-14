@@ -110,6 +110,7 @@
       </div>
       <button id="reset-button" title="リセット">🔄 リセット</button>
       <select id="difficulty-select">
+        <option value="10">超初級 (10)</option>
         <option value="25">初級 (25)</option>
         <option value="50">中級 (50)</option>
         <option value="100" selected>上級 (100)</option>
@@ -215,11 +216,6 @@
       return cell;
     }
     
-    // 修正: `addShrinkableNumber`関数は使用せず、`addNumberToBoard`を使用
-    // 古いコードでは、`relaxMode`で`addShrinkableNumber`を呼び出していましたが、
-    // ボード上の数字の総数を調整していなかったため、画面上の数字が減少し、
-    // 新しい数字が生成されなくなる問題がありました。
-    
     function addNumberToBoard(num) {
       const fontMin = Math.min(18, gameBoard.clientHeight / 15);
       const fontMax = Math.max(24, gameBoard.clientHeight / 8);
@@ -270,16 +266,30 @@
     function askNewQuestion(first = false) {
       if (!numbersLeft.length) {
         if (isTimeMode) {
-          questionEl.textContent = 'クリア!🎉';
-          clearInterval(timerInterval);
-          gameStarted = false;
+          // 修正: タイムモードでも、全数字クリア後に新しい数字セットでゲームを継続
+          allNumbers = [];
+          for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
+          shuffleArray(allNumbers);
+          numbersPanel = allNumbers.slice(0, currentDifficulty);
+          numbersLeft = [...numbersPanel];
+          shuffleArray(numbersLeft);
+          
+          // 古い数字をすべて削除
           gameBoard.innerHTML = '';
-          finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
-          gameOverMessage.style.display = 'flex';
+          placedRects = [];
+          
+          // 新しい数字を配置
+          placeBoardNumbers(numbersPanel);
+          
+          // 新しい質問を表示
+          questionEl.textContent = `${numbersLeft[0]} を探せ！`;
+
+          // 次の数字を抽出
+          currentTarget = numbersLeft.shift();
+
+          // タイム計測を継続
           return;
         } else {
-          // リラックスモード: ゲームを継続
-          // ボード上の現在の数字を再取得し、その中から次のターゲットをランダムに選択
           const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
             .map(c => parseInt(c.dataset.number, 10));
           
@@ -287,7 +297,7 @@
           shuffleArray(numbersLeft);
         }
       }
-      currentTarget = numbersLeft.shift(); // 修正: 配列から取り除く
+      currentTarget = numbersLeft.shift();
       questionEl.textContent = `${currentTarget} を探せ！`;
       if (!gameStarted) {
         if (isTimeMode) {
@@ -310,7 +320,7 @@
     }
 
     function handleNumberClick(e) {
-      if (!gameStarted || !numbersLeft.length) return;
+      if (!gameStarted) return;
       const tapped = parseInt(e.target.dataset.number, 10);
       if (tapped !== currentTarget) return;
 
@@ -320,6 +330,7 @@
 
       if (isTimeMode) {
         e.target.classList.add('found');
+        numbersLeft = numbersLeft.filter(n => n !== tapped);
       } else {
         const rect = measureCellRect(e.target);
         placedRects = placedRects.filter(r =>
@@ -332,22 +343,13 @@
         
         const pool = allNumbers.filter(n => !existing.includes(n));
         
-        // --- 修正箇所 ---
-        // 修正前は `addShrinkableNumber(num)` を呼び出していたが、
-        // 配置に失敗した場合に新しい数字が生成されない問題があった。
-        // `addNumberToBoard` を使用し、ゲームボード上の数字を一定数に保つことで不具合を解消。
         if (pool.length > 0) {
           const newNumber = pool[getRandomInt(0, pool.length - 1)];
-          // 新しい数字が追加されるまで再試行
-          let attempts = 0;
-          while (!addNumberToBoard(newNumber) && attempts < 10) {
-              attempts++;
-          }
+          addNumberToBoard(newNumber);
         }
-        // --- 修正箇所終わり ---
+        numbersLeft = numbersLeft.filter(n => n !== tapped);
       }
-
-      numbersLeft = numbersLeft.filter(n => n !== tapped);
+      
       askNewQuestion();
     }
 
