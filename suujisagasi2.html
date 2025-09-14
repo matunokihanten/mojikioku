@@ -51,10 +51,7 @@
     }
     .header button:active { transform: scale(0.95); }
     #game-board {
-      position: relative; 
-      width: 100%; /* 変更 */
-      height: calc(100% - 100px); /* 変更：ヘッダーの高さ分を引く */
-      flex-grow: 1;
+      position: relative; width: 100%; flex-grow: 1;
       background-color: #ecf0f1; border-radius: 10px; overflow: hidden;
       min-height: 0;
     }
@@ -230,6 +227,7 @@
       return cell;
     }
     
+    // 修正箇所：ランダム配置が失敗した場合、自動的にリセットする
     function placeBoardNumbers(nums) {
       gameBoard.innerHTML = '';
       placedRects = [];
@@ -264,8 +262,44 @@
         console.log('すべての数字をランダムに配置しました。');
       } else {
         console.warn('ランダム配置に失敗しました。自動リセットします。');
+        // 自動リセットして再試行
         setTimeout(setupGame, 100);
       }
+    }
+
+    function placeNumbersInGrid(nums) {
+      gameBoard.innerHTML = '';
+      placedRects = [];
+
+      const boardW = gameBoard.clientWidth;
+      const boardH = gameBoard.clientHeight;
+      const cellMargin = 5;
+
+      const tempCell = createNumberCell(nums[0], 20, false);
+      gameBoard.appendChild(tempCell);
+      const cellW = tempCell.offsetWidth;
+      const cellH = tempCell.offsetHeight;
+      gameBoard.removeChild(tempCell);
+
+      const numCols = Math.floor(boardW / (cellW + cellMargin));
+      const numRows = Math.ceil(nums.length / numCols);
+
+      const totalGridWidth = numCols * (cellW + cellMargin);
+      const totalGridHeight = numRows * (cellH + cellMargin);
+      const startX = (boardW - totalGridWidth) / 2;
+      const startY = (boardH - totalGridHeight) / 2;
+
+      nums.forEach((num, index) => {
+        const cell = createNumberCell(num, 20, false);
+        const col = index % numCols;
+        const row = Math.floor(index / numCols);
+
+        cell.style.left = (startX + col * (cellW + cellMargin)) + 'px';
+        cell.style.top = (startY + row * (cellH + cellMargin)) + 'px';
+
+        gameBoard.appendChild(cell);
+        cell.addEventListener('click', handleNumberClick);
+      });
     }
 
     function setupGame() {
