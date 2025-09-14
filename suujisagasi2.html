@@ -26,7 +26,6 @@
       flex-wrap: wrap; margin-bottom: clamp(10px,2vh,20px); flex-shrink: 0;
     }
     #question {
-      /* 修正箇所：フォントサイズとパディングを小さく調整 */
       font-size: clamp(1em, 3.5vw, 1.8em); font-weight: bold;
       background-color: #fff; color: #2c3e50;
       padding: 0.8vh 1.5vw; border-radius: 10px; flex-grow: 1; margin: 5px;
@@ -120,6 +119,7 @@
       <div id="question"></div>
       <div id="timer">00:00</div>
     </div>
+    
     <div id="game-board"></div>
     <div id="game-over-message">
       <p>ゲームクリア！</p>
@@ -189,16 +189,20 @@
       }
       return false;
     }
-    function findValidPosition(w, h) {
-      let attempts = 0, max = MAX_ATTEMPTS * 2;
-      while (attempts < max) {
+
+    function findValidPosition(w, h, existingRects) {
+      let attempts = 0;
+      const maxAttempts = 500;
+      while (attempts < maxAttempts) {
         const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
         const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
-        const rect = { left, top, width: w, height: h,
+        const rect = {
+          left, top, width: w, height: h,
           get right() { return this.left + this.width; },
           get bottom() { return this.top + this.height; }
         };
-        if (!isOverlapping(rect, placedRects, 8)) {
+        
+        if (!isOverlapping(rect, existingRects, 8)) {
           return { left, top, rect };
         }
         attempts++;
@@ -221,10 +225,13 @@
       const fontMin = Math.min(18, gameBoard.clientHeight / 15);
       const fontMax = Math.max(24, gameBoard.clientHeight / 8);
       const cell = createNumberCell(num, getRandomInt(fontMin, fontMax));
+      
       cell.style.visibility = 'hidden';
       gameBoard.appendChild(cell);
       const w = cell.offsetWidth, h = cell.offsetHeight;
-      const pos = findValidPosition(w, h);
+      
+      const pos = findValidPosition(w, h, placedRects);
+      
       if (pos) {
         cell.style.left = pos.left + 'px';
         cell.style.top = pos.top + 'px';
@@ -232,15 +239,76 @@
         placedRects.push(pos.rect);
         cell.addEventListener('click', handleNumberClick);
         return cell;
+      } else {
+        gameBoard.removeChild(cell);
+        return null;
       }
-      gameBoard.removeChild(cell);
-      return null;
     }
 
     function placeBoardNumbers(nums) {
       gameBoard.innerHTML = '';
       placedRects = [];
-      nums.forEach(n => addNumberToBoard(n));
+      const maxAttempts = nums.length * 10;
+      let attempt = 0;
+      
+      const cellsToPlace = [...nums];
+      
+      while (cellsToPlace.length > 0 && attempt < maxAttempts) {
+          const num = cellsToPlace[0];
+          const cell = addNumberToBoard(num);
+          if (cell) {
+              cellsToPlace.shift();
+          } else {
+              attempt++;
+              if (attempt >= maxAttempts) {
+                  console.warn('ランダム配置に失敗しました。グリッド配置に切り替えます。');
+                  placeNumbersInGrid(nums);
+                  return;
+              }
+          }
+      }
+      if(cellsToPlace.length > 0) {
+        console.warn('ランダム配置に失敗しました。グリッド配置に切り替えます。');
+        placeNumbersInGrid(nums);
+      } else {
+        console.log('すべての数字をランダムに配置しました。');
+      }
+    }
+
+    function placeNumbersInGrid(nums) {
+      gameBoard.innerHTML = '';
+      placedRects = [];
+
+      const boardW = gameBoard.clientWidth;
+      const boardH = gameBoard.clientHeight;
+      const cellMargin = 5;
+
+      const tempCell = createNumberCell(nums[0], 20);
+      gameBoard.appendChild(tempCell);
+      const cellW = tempCell.offsetWidth;
+      const cellH = tempCell.offsetHeight;
+      gameBoard.removeChild(tempCell);
+
+      const numCols = Math.floor(boardW / (cellW + cellMargin));
+      const numRows = Math.ceil(nums.length / numCols);
+
+      const totalGridWidth = numCols * (cellW + cellMargin);
+      const totalGridHeight = numRows * (cellH + cellMargin);
+      const startX = (boardW - totalGridWidth) / 2;
+      const startY = (boardH - totalGridHeight) / 2;
+
+      nums.forEach((num, index) => {
+        const cell = createNumberCell(num, 20);
+        const col = index % numCols;
+        const row = Math.floor(index / numCols);
+
+        cell.style.left = (startX + col * (cellW + cellMargin)) + 'px';
+        cell.style.top = (startY + row * (cellH + cellMargin)) + 'px';
+        cell.style.transform = `rotate(0deg)`;
+
+        gameBoard.appendChild(cell);
+        cell.addEventListener('click', handleNumberClick);
+      });
     }
 
     function setupGame() {
@@ -254,6 +322,7 @@
       placedRects = [];
       endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
       timerEl.style.display = isTimeMode ? 'block' : 'none';
+      
       allNumbers = [];
       for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
       shuffleArray(allNumbers);
@@ -265,27 +334,32 @@
     }
 
     function askNewQuestion(first = false) {
-      if (!numbersLeft.length) {
-        if (isTimeMode) {
-          allNumbers = [];
-          for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
-          shuffleArray(allNumbers);
-          numbersPanel = allNumbers.slice(0, currentDifficulty);
-          numbersLeft = [...numbersPanel];
-          shuffleArray(numbersLeft);
-          
-          gameBoard.innerHTML = '';
-          placedRects = [];
-          
-          placeBoardNumbers(numbersPanel);
-        } else {
-          const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
-            .map(c => parseInt(c.dataset.number, 10));
-          
-          numbersLeft = [...currentNumbersOnBoard];
-          shuffleArray(numbersLeft);
+      if (!isTimeMode && numbersLeft.length === 0) {
+        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
+        const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
+        
+        if (newNumberPool.length > 0) {
+          const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
+          addNumberToBoard(newNumber);
+          numbersLeft.push(newNumber);
         }
       }
+
+      if (isTimeMode && numbersLeft.length === 0) {
+        allNumbers = [];
+        for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
+        shuffleArray(allNumbers);
+        numbersPanel = allNumbers.slice(0, currentDifficulty);
+        numbersLeft = [...numbersPanel];
+        shuffleArray(numbersLeft);
+        
+        gameBoard.innerHTML = '';
+        placedRects = [];
+        placeBoardNumbers(numbersPanel);
+      }
+
       currentTarget = numbersLeft.shift();
       questionEl.textContent = `${currentTarget} を探せ！`;
       if (!gameStarted) {
