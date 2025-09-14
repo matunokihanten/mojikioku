@@ -328,22 +328,9 @@
         }
       } else { // Relax Mode
         if (numbersLeft.length === 0) {
-          const allNums = [...allNumbers];
-          const existingNums = Array.from(gameBoard.querySelectorAll('.number-cell'))
-            .map(c => parseInt(c.dataset.number, 10));
-          
-          const newNumberPool = allNums.filter(n => !existingNums.includes(n));
-          
-          if (newNumberPool.length > 0) {
-            const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
-            numbersLeft.push(newNumber);
-          } else {
-             // 全部の数字が出たら再度リセット
-             setupGame();
-             return;
-          }
+          numbersLeft = [...numbersPanel];
+          shuffleArray(numbersLeft);
         }
-        
         currentTarget = numbersLeft.shift();
         questionEl.textContent = `${currentTarget} を探せ！`;
       }
@@ -363,13 +350,8 @@
       if (!gameStarted) {
         startTime = Date.now();
         lastTapTime = startTime;
-        if (isTimeMode) {
-            timerEl.style.display = 'block';
-            timerInterval = setInterval(updateTimer, 1000);
-        } else {
-            timerEl.style.display = 'block';
-            timerInterval = setInterval(updateTimer, 1000);
-        }
+        timerEl.style.display = 'block';
+        timerInterval = setInterval(updateTimer, 1000);
         gameStarted = true;
       }
       
@@ -381,23 +363,33 @@
         const cell = e.target;
         cell.classList.add('found');
       } else {
-        const currentNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
+
+        const allNumbersPool = [];
+        for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) {
+          if (!existingNumbers.includes(i)) {
+            allNumbersPool.push(i);
+          }
+        }
         
-        const removed = currentNumbers.filter(n => n !== tapped);
-        
-        const allNums = [...allNumbers];
-        const newNumberPool = allNums.filter(n => !removed.includes(n));
-        
-        if (newNumberPool.length > 0) {
-          const newNum = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
-          removed.push(newNum);
-          shuffleArray(removed);
-          numbersPanel = removed;
+        if (allNumbersPool.length > 0) {
+          const newNumber = allNumbersPool[getRandomInt(0, allNumbersPool.length - 1)];
+          const cell = e.target;
+          cell.textContent = newNumber;
+          cell.dataset.number = newNumber;
+          cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
+          
+          numbersPanel = Array.from(gameBoard.querySelectorAll('.number-cell'))
+            .map(c => parseInt(c.dataset.number, 10));
+
           numbersLeft = [...numbersPanel];
           shuffleArray(numbersLeft);
+        } else {
+          // 全ての数字が配置された場合はリセット
+          setupGame();
+          return;
         }
-        placeBoardNumbers(numbersPanel);
       }
       askNewQuestion();
     }
