@@ -111,10 +111,8 @@
       </div>
       <button id="reset-button" title="リセット">🔄 リセット</button>
       <select id="difficulty-select">
-        <option value="10">超初級 (10)</option>
-        <option value="25">初級 (25)</option>
-        <option value="50">中級 (50)</option>
-        <option value="100" selected>上級 (100)</option>
+        <option value="10">やさしい (10)</option>
+        <option value="25">ふつう (25)</option>
       </select>
       <button id="endless-stop-button">終了</button>
       <div id="question"></div>
@@ -227,7 +225,6 @@
       return cell;
     }
     
-    // 修正箇所：ランダム配置が失敗した場合、自動的にリセットする
     function placeBoardNumbers(nums) {
       gameBoard.innerHTML = '';
       placedRects = [];
@@ -262,7 +259,6 @@
         console.log('すべての数字をランダムに配置しました。');
       } else {
         console.warn('ランダム配置に失敗しました。自動リセットします。');
-        // 自動リセットして再試行
         setTimeout(setupGame, 100);
       }
     }
@@ -362,14 +358,12 @@
       }
       
       if (isTimeMode && numbersLeft.length === 0) {
-        allNumbers = [];
-        for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
-        shuffleArray(allNumbers);
-        numbersPanel = allNumbers.slice(0, currentDifficulty);
-        numbersLeft = [...numbersPanel];
-        shuffleArray(numbersLeft);
-        
-        placeBoardNumbers(numbersPanel);
+        endGame();
+        return;
+      }
+      
+      if (numbersLeft.length === 0) {
+        return;
       }
 
       currentTarget = numbersLeft.shift();
@@ -403,9 +397,15 @@
       lastTapTime = Date.now();
       if (!isTimeMode) tapTimes.push(interval);
 
+      e.target.classList.add('found');
+      numbersLeft = numbersLeft.filter(n => n !== tapped);
+
       if (isTimeMode) {
-        e.target.classList.add('found');
-        numbersLeft = numbersLeft.filter(n => n !== tapped);
+        if (numbersLeft.length === 0) {
+          endGame();
+        } else {
+          askNewQuestion();
+        }
       } else {
         const rect = measureCellRect(e.target);
         placedRects = placedRects.filter(r =>
@@ -435,14 +435,22 @@
             cell.style.visibility = 'visible';
             placedRects.push(pos.rect);
             cell.addEventListener('click', handleNumberClick);
+            numbersLeft.push(newNumber);
           } else {
             gameBoard.removeChild(cell);
           }
         }
-        numbersLeft = numbersLeft.filter(n => n !== tapped);
+        
+        askNewQuestion();
       }
-      
-      askNewQuestion();
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      gameStarted = false;
+      const finalTime = (Date.now() - startTime) / 1000;
+      finalTimeEl.textContent = `クリアタイム: ${finalTime.toFixed(2)} 秒`;
+      gameOverMessage.style.display = 'flex';
     }
 
     resetButton.addEventListener('click', setupGame);
@@ -514,7 +522,7 @@
         difficultySelect.value = currentDifficulty;
       }
       setTimeout(()=> {
-        isTimeMode = !relaxModeRadio.checked;
+        isTimeMode = timeModeRadio.checked;
         setupGame();
       }, 50);
     });
