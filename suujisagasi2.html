@@ -291,7 +291,7 @@
       const boardH = gameBoard.clientHeight;
       const cellMargin = 5;
 
-      const tempCell = createNumberCell(nums[0], 20, false);
+      const tempCell = createNumberCell(nums, 20, false);
       gameBoard.appendChild(tempCell);
       const cellW = tempCell.offsetWidth;
       const cellH = tempCell.offsetHeight;
@@ -341,71 +341,73 @@
         numbersPanel = allNumbers.slice(0, currentDifficulty);
       }
       numbersLeft = [...numbersPanel];
-      shuffleArray(numbersLeft);
       
       placeBoardNumbers(numbersPanel);
       
       askNewQuestion(true);
     }
 
+    // --- 修正: askNewQuestion関数のロジックを再構築 ---
     function askNewQuestion(first = false) {
-      if (!isTimeMode && !isChallengeMode && numbersLeft.length === 0) {
-        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+      let candidates = [];
+      
+      if (isChallengeMode) {
+        candidates = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
-        
-        const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
-        
-        if (newNumberPool.length > 0) {
-          const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
-          const fontMin = Math.min(18, gameBoard.clientHeight / 15);
-          const fontMax = Math.max(24, gameBoard.clientHeight / 8);
-          const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+      } else {
+        candidates = [...numbersLeft];
+      }
 
-          cell.style.visibility = 'hidden';
-          gameBoard.appendChild(cell);
-          const w = cell.offsetWidth, h = cell.offsetHeight;
-          const pos = findValidPosition(w, h, placedRects);
-
-          if(pos) {
-            cell.style.left = pos.left + 'px';
-            cell.style.top = pos.top + 'px';
-            cell.style.visibility = 'visible';
-            placedRects.push(pos.rect);
-            cell.addEventListener('click', handleNumberClick);
-            numbersLeft.push(newNumber);
+      if (candidates.length === 0) {
+        if (isTimeMode) {
+          endGame();
+          return;
+        } else if (isChallengeMode || !isTimeMode) {
+          const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+            .map(c => parseInt(c.dataset.number, 10));
+          const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
+          if (newNumberPool.length > 0) {
+            const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
+            const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+            const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+            const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+            cell.style.visibility = 'hidden';
+            gameBoard.appendChild(cell);
+            const w = cell.offsetWidth, h = cell.offsetHeight;
+            const pos = findValidPosition(w, h, placedRects);
+            if(pos) {
+              cell.style.left = pos.left + 'px';
+              cell.style.top = pos.top + 'px';
+              cell.style.visibility = 'visible';
+              placedRects.push(pos.rect);
+              cell.addEventListener('click', handleNumberClick);
+              numbersLeft.push(newNumber);
+              candidates = [newNumber];
+            } else {
+              gameBoard.removeChild(cell);
+              const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+                .map(c => parseInt(c.dataset.number, 10));
+              numbersLeft = [...currentNumbersOnBoard];
+              shuffleArray(numbersLeft);
+              candidates = [...numbersLeft];
+            }
           } else {
-            gameBoard.removeChild(cell);
-            const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
-              .map(c => parseInt(c.dataset.number, 10));
-            numbersLeft = [...currentNumbersOnBoard];
-            shuffleArray(numbersLeft);
+            if (isChallengeMode) endGame();
+            return;
           }
         }
       }
-      
-      if (isTimeMode && numbersLeft.length === 0) {
-        endGame();
+
+      if (candidates.length > 0) {
+        shuffleArray(candidates);
+        currentTarget = isChallengeMode ? candidates[0] : candidates.shift();
+        if (!isChallengeMode) numbersLeft = candidates.slice();
+      } else {
         return;
       }
       
-      if (numbersLeft.length === 0) {
-        if (!isChallengeMode) return;
-        
-        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
-          .map(c => parseInt(c.dataset.number, 10));
-        
-        const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
-        
-        if (newNumberPool.length > 0) {
-            const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
-            numbersLeft.push(newNumber);
-        } else {
-             endGame();
-        }
-      }
-      shuffleArray(numbersLeft);
-      currentTarget = numbersLeft.shift();
       questionEl.textContent = `${currentTarget} を探せ！`;
+
       if (!gameStarted) {
         if (isTimeMode || isChallengeMode) {
           startTime = Date.now();
@@ -418,6 +420,7 @@
         lastTapTime = Date.now();
       }
     }
+    // --- end of 修正部 ---
 
     function updateTimer() {
       const t = Date.now() - startTime;
@@ -436,26 +439,16 @@
       if (!isTimeMode) tapTimes.push(interval);
 
       if (isChallengeMode) {
+        const rect = measureCellRect(e.target);
+        placedRects = placedRects.filter(r =>
+          !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
+        );
         e.target.remove();
-      } else {
-        e.target.classList.add('found');
-      }
-
-      numbersLeft = numbersLeft.filter(n => n !== tapped);
-
-      if (isTimeMode) {
-        if (numbersLeft.length === 0) {
-          endGame();
-        } else {
-          askNewQuestion();
-        }
-      } else if (isChallengeMode) {
-        const existing = Array.from(gameBoard.querySelectorAll('.number-cell:not(.found)'))
+        
+        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
         
-        const currentCount = existing.length;
-
-        const pool = allNumbers.filter(n => !existing.includes(n) && n !== tapped);
+        const pool = allNumbers.filter(n => !existingNumbers.includes(n));
 
         const newNumbers = pool.slice(0, 2);
 
@@ -491,13 +484,11 @@
             cell.style.visibility = 'visible';
             placedRects.push(pos.rect);
             cell.addEventListener('click', handleNumberClick);
-            numbersLeft.push(newNumber);
           } else {
              if (cell) gameBoard.removeChild(cell);
           }
         });
         
-        numbersLeft = numbersLeft.filter(n => n !== tapped);
         askNewQuestion();
       } else {
         const rect = measureCellRect(e.target);
