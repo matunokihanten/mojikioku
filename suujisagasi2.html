@@ -42,6 +42,10 @@
       margin: 5px; white-space: nowrap;
     }
     #reset-button { order: 1; }
+    #change-number-button {
+      order: 2; display: none;
+      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+    }
     #endless-stop-button { order: 4; display: none; }
     #difficulty-select { order: 1; padding-right: 30px; }
     #difficulty-select {
@@ -116,6 +120,7 @@
         <option value="10">やさしい (10)</option>
         <option value="25" selected>ふつう (25)</option>
       </select>
+      <button id="change-number-button" style="display: none;">🔄 次の数字</button>
       <button id="endless-stop-button">終了</button>
       <div id="question"></div>
       <div id="timer">00:00</div>
@@ -152,6 +157,7 @@
     const relaxModeRadio = document.getElementById('relaxMode');
     const challengeModeRadio = document.getElementById('challengeMode');
     const endlessStopButton = document.getElementById('endless-stop-button');
+    const changeNumberButton = document.getElementById('change-number-button');
     const chartSection = document.getElementById('chart-section');
     const closeChartBtn = document.getElementById('close-chart');
     const chartCanvas = document.getElementById('chart-canvas');
@@ -327,9 +333,11 @@
       gameStarted = false;
       tapTimes = [];
       placedRects = [];
+
       endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
       timerEl.style.display = isTimeMode || isChallengeMode ? 'block' : 'none';
       difficultySelect.style.display = isChallengeMode ? 'none' : 'inline-block';
+      changeNumberButton.style.display = isChallengeMode ? 'inline-block' : 'none';
       
       allNumbers = [];
       for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
@@ -347,14 +355,17 @@
       askNewQuestion(true);
     }
 
-    // --- 修正: askNewQuestion関数のロジックを再構築 ---
     function askNewQuestion(first = false) {
+      const existingOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+        .map(c => parseInt(c.dataset.number, 10));
+
       let candidates = [];
       
       if (isChallengeMode) {
-        candidates = Array.from(gameBoard.querySelectorAll('.number-cell'))
-          .map(c => parseInt(c.dataset.number, 10));
+        // 挑戦モードでは、ボード上の数字から直前の数字以外を選ぶ
+        candidates = existingOnBoard.filter(n => n !== currentTarget);
       } else {
+        // 他のモードでは numbersLeft を使用
         candidates = [...numbersLeft];
       }
 
@@ -362,10 +373,13 @@
         if (isTimeMode) {
           endGame();
           return;
-        } else if (isChallengeMode || !isTimeMode) {
-          const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
-            .map(c => parseInt(c.dataset.number, 10));
-          const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
+        } else if (isChallengeMode) {
+          // 挑戦モードでボード上の数字がなくなったら終了
+          endGame();
+          return;
+        } else if (!isChallengeMode && !isTimeMode) {
+          // リラックスモードで数字がなくなったら追加
+          const newNumberPool = allNumbers.filter(n => !existingOnBoard.includes(n));
           if (newNumberPool.length > 0) {
             const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
             const fontMin = Math.min(18, gameBoard.clientHeight / 15);
@@ -391,18 +405,16 @@
               shuffleArray(numbersLeft);
               candidates = [...numbersLeft];
             }
-          } else {
-            if (isChallengeMode) endGame();
-            return;
           }
         }
       }
 
       if (candidates.length > 0) {
         shuffleArray(candidates);
-        currentTarget = isChallengeMode ? candidates[0] : candidates.shift();
-        if (!isChallengeMode) numbersLeft = candidates.slice();
+        currentTarget = candidates[0];
+        if (!isChallengeMode) numbersLeft = candidates.slice(1);
       } else {
+        questionEl.textContent = 'ゲーム終了！';
         return;
       }
       
@@ -420,7 +432,6 @@
         lastTapTime = Date.now();
       }
     }
-    // --- end of 修正部 ---
 
     function updateTimer() {
       const t = Date.now() - startTime;
@@ -543,6 +554,12 @@
     }
 
     resetButton.addEventListener('click', setupGame);
+    changeNumberButton.addEventListener('click', () => {
+        if (isChallengeMode) {
+            askNewQuestion();
+        }
+    });
+
     difficultySelect.addEventListener('change', ev => {
       currentDifficulty = parseInt(ev.target.value, 10);
       localStorage.setItem('gameDifficulty', currentDifficulty);
