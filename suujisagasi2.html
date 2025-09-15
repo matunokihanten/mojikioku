@@ -6,27 +6,33 @@
   <title>数字探し脳トレゲーム - 多数から1個探し</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    html, body { height: 100%; margin: 0; overflow: hidden; }
+    html, body { height: 100%;
+      margin: 0; overflow: hidden; }
     body {
       font-family: 'Arial', sans-serif;
-      display: flex; justify-content: center; align-items: center;
+      display: flex;
+      justify-content: center; align-items: center;
       background-color: #3498db; color: #fff; user-select: none;
       padding: 1vh 1vw; box-sizing: border-box;
+      perspective: 1000px;
     }
     #game-container {
       width: 100%; height: 100%; max-width: 700px; max-height: 900px;
       display: flex; flex-direction: column; text-align: center;
       background-color: #2c3e50;
       padding: clamp(10px, 2vh, 20px); border-radius: 15px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.4); box-sizing: border-box;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      box-sizing: border-box;
       position: relative;
     }
     .header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between;
+      align-items: center;
       flex-wrap: wrap; margin-bottom: clamp(10px,2vh,20px); flex-shrink: 0;
     }
     #question {
-      font-size: clamp(1em, 3.5vw, 1.8em); font-weight: bold;
+      font-size: clamp(1em, 3.5vw, 1.8em);
+      font-weight: bold;
       background-color: #fff; color: #2c3e50;
       padding: 0.8vh 1.5vw; border-radius: 10px; flex-grow: 1; margin: 5px;
       order: 2;
@@ -36,76 +42,97 @@
       min-width: 70px; text-align: right; order: 3; display: none;
     }
     .header button, #difficulty-select {
-      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+      font-size: clamp(0.9em,3vw,1.2em);
+      padding: 1vh 1.5vw;
       border: none; background-color: #f1c40f; color: #2c3e50; border-radius: 8px;
       cursor: pointer; transition: transform 0.1s, background-color 0.2s;
-      margin: 5px; white-space: nowrap;
+      margin: 5px;
+      white-space: nowrap;
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-    #reset-button { order: 1; }
+    #reset-button { order: 1;
+    }
     #change-number-button {
-      order: 2; display: none;
+      order: 2;
       font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
     }
     #endless-stop-button { order: 4; display: none; }
-    #difficulty-select { order: 1; padding-right: 30px; }
+    #difficulty-select { order: 1; padding-right: 30px;
+    }
     #difficulty-select {
       appearance: none;
       background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-      background-repeat: no-repeat; background-position: right 8px center;
+      background-repeat: no-repeat;
+      background-position: right 8px center;
     }
-    .header button:active, #difficulty-select:active { transform: scale(0.95); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .header button:active, #difficulty-select:active { transform: scale(0.95); box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
     #game-board {
       position: relative; width: 100%; flex-grow: 1;
-      background-color: #ecf0f1; border-radius: 10px; overflow: hidden;
+      background-color: #ecf0f1;
+      border-radius: 10px; overflow: hidden;
       min-height: 0;
       box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
     }
     .number-cell {
       position: absolute;
       font-weight: bold; cursor: pointer;
-      display: flex; justify-content: center; align-items: center;
+      display: flex;
+      justify-content: center; align-items: center;
       transition: opacity 0.3s, transform 0.1s;
       line-height: 1; padding: 2px; box-sizing: border-box; white-space: nowrap;
       background: #fff9;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 4px rgba(0,0,0,0.1) inset;
       border-radius: 8px;
-      outline: solid 1px #ddd; z-index: 3; user-select: none;
+      outline: solid 1px #ddd; user-select: none;
+      transform-style: preserve-3d;
+      transform: translateZ(0) rotateX(0) rotateY(0);
     }
     .number-cell.found {
-      opacity: 0.2; pointer-events: none; filter: grayscale(1);
+      opacity: 0.2; pointer-events: none;
+      filter: grayscale(1);
     }
     #game-over-message {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.7); color: #fff; display: none;
       flex-direction: column; justify-content: center; align-items: center;
-      border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
+      border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em);
+      font-weight: bold;
       z-index: 20;
     }
-    #game-over-message p { margin: 10px 0; }
-    #final-time { color: #f1c40f; font-size: 1.2em; }
+    #game-over-message p { margin: 10px 0;
+    }
+    #final-time { color: #f1c40f; font-size: 1.2em;
+    }
     #chart-section {
       display: none; position: absolute; top: 0; left: 0;
       width: 100%; height:100%; background: rgba(10,10,40, 0.95);
       z-index:22; justify-content: center; align-items: center; flex-direction:column;
     }
-    #chart-canvas { max-width: 90vw; max-height: 50vh; background: #fff; border-radius: 16px; }
+    #chart-canvas { max-width: 90vw;
+      max-height: 50vh; background: #fff; border-radius: 16px; }
     #close-chart {
-      margin-top:16px; padding: 1em 2em; font-size: 1.2em; background:#f1c40f; color:#2c3e50;
-      border: none; border-radius: 8px; cursor: pointer;
+      margin-top:16px;
+      padding: 1em 2em; font-size: 1.2em; background:#f1c40f; color:#2c3e50;
+      border: none; border-radius: 8-px; cursor: pointer;
       transition:background 0.2s;
     }
     #close-chart:active { background: #fff24a; }
     @media (max-width: 450px) {
-      .header { flex-direction: row; justify-content: space-around; }
-      #question { width: 100%; margin: 5px 0; text-align: center; }
-      #timer { min-width: auto; }
+      .header { flex-direction: row;
+      justify-content: space-around; }
+      #question { width: 100%; margin: 5px 0; text-align: center;
+      }
+      #timer { min-width: auto;
+      }
     }
     .mode-selection {
       display: flex; align-items: center; flex-wrap:nowrap;
       margin-right: 15px; white-space: nowrap; order: 0;
     }
-    .mode-selection input[type="radio"] { margin-right: 5px; }
+    .mode-selection input[type="radio"] { margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -120,11 +147,14 @@
         <label for="challengeMode">挑戦</label>
       </div>
       <button id="reset-button" title="リセット">🔄 リセット</button>
-      <select id="difficulty-select">
+    
+    <select id="difficulty-select">
         <option value="10">やさしい (10)</option>
         <option value="25" selected>ふつう (25)</option>
+        <option value="50">むずかしい (50)</option>
+        <option value="100">超むずかしい (100)</option>
       </select>
-      <button id="change-number-button" style="display: none;">🔄 次の数字</button>
+      <button id="change-number-button">🔄 次の数字</button>
       <button id="endless-stop-button">終了</button>
       <div id="question"></div>
       <div id="timer">00:00</div>
@@ -132,7 +162,8 @@
     
     <div id="game-board"></div>
     <div id="game-over-message">
-      <p>ゲームクリア！</p>
+   
+       <p>ゲームクリア！</p>
       <p id="final-time"></p>
     </div>
     <div id="chart-section">
@@ -165,12 +196,12 @@
     const chartSection = document.getElementById('chart-section');
     const closeChartBtn = document.getElementById('close-chart');
     const chartCanvas = document.getElementById('chart-canvas');
-
     let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
     let gameStarted = false, startTime = 0, timerInterval = null;
-    let currentDifficulty = 25, isTimeMode = false, isChallengeMode = false;
+    let currentDifficulty = 25, isTimeMode = false, isChallengeMode = false, isRelaxMode = true; // isRelaxModeを追加
     let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
     let placedRects = [];
+    let placedNumbers = [];
 
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -187,16 +218,20 @@
         top: parseFloat(cell.style.top),
         width: cell.offsetWidth,
         height: cell.offsetHeight,
-        get right() { return this.left + this.width; },
-        get bottom() { return this.top + this.height; }
+        get right() { return this.left + this.width;
+        },
+        get bottom() { return this.top + this.height;
+        }
       };
     }
+
     function isOverlapping(newR, rects, pad=5) {
       for (const r of rects) {
         if (!(newR.right + pad < r.left - pad ||
               newR.left - pad > r.right + pad ||
               newR.bottom + pad < r.top - pad ||
-              newR.top - pad > r.bottom + pad)) {
+              newR.top - 
+              pad > r.bottom + pad)) {
           return true;
         }
       }
@@ -210,31 +245,30 @@
         const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
         const rect = {
           left, top, width: w, height: h,
-          get right() { return this.left + this.width; },
-          get bottom() { return this.top + this.height; }
+          get right() { return this.left + this.width;
+          },
+          get bottom() { return this.top + this.height;
+          }
         };
         
         if (!isOverlapping(rect, existingRects, 8)) {
-          return { left, top, rect };
+          return { left, top, rect, zIndex: 3 };
         }
         attempts++;
       }
-      return null;
+      return null; // 配置失敗
     }
 
-    function createNumberCell(num, fontSize, isRandom = true) {
+    function createNumberCell(num, fontSize) {
       const cell = document.createElement('div');
       cell.classList.add('number-cell');
       cell.textContent = num;
       cell.dataset.number = num;
       cell.style.fontSize = fontSize + 'px';
       cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
-      
-      if (isRandom) {
-        cell.style.transform = `rotate(${getRandomInt(-35, 35)}deg)`;
-      } else {
-        cell.style.transform = `rotate(0deg)`;
-      }
+      const rotX = getRandomInt(-20, 20);
+      const rotY = getRandomInt(-20, 20);
+      cell.style.transform = `translateZ(0) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${getRandomInt(-35, 35)}deg)`;
       return cell;
     }
     
@@ -243,13 +277,11 @@
       placedRects = [];
       const cellsToPlace = [...nums];
       let placementSucceeded = true;
-
       for (let i = 0; i < cellsToPlace.length; i++) {
         let attempts = 0;
         let fontMin = Math.min(18, gameBoard.clientHeight / 15);
         let fontMax = Math.max(24, gameBoard.clientHeight / 8);
         const maxFont = fontMax;
-        
         let pos = null;
         let cell = null;
 
@@ -266,7 +298,6 @@
             }
             gameBoard.removeChild(cell);
             
-            // サイズを縮小して再試行
             fontMax = Math.max(8, fontMax * 0.9);
             fontMin = Math.max(8, fontMin * 0.9);
             attempts++;
@@ -275,6 +306,7 @@
         if (pos) {
           cell.style.left = pos.left + 'px';
           cell.style.top = pos.top + 'px';
+          cell.style.zIndex = pos.zIndex;
           cell.style.visibility = 'visible';
           placedRects.push(pos.rect);
           cell.addEventListener('click', handleNumberClick);
@@ -293,43 +325,9 @@
       }
     }
 
-    function placeNumbersInGrid(nums) {
-      gameBoard.innerHTML = '';
-      placedRects = [];
-
-      const boardW = gameBoard.clientWidth;
-      const boardH = gameBoard.clientHeight;
-      const cellMargin = 5;
-
-      const tempCell = createNumberCell(nums, 20, false);
-      gameBoard.appendChild(tempCell);
-      const cellW = tempCell.offsetWidth;
-      const cellH = tempCell.offsetHeight;
-      gameBoard.removeChild(tempCell);
-
-      const numCols = Math.floor(boardW / (cellW + cellMargin));
-      const numRows = Math.ceil(nums.length / numCols);
-
-      const totalGridWidth = numCols * (cellW + cellMargin);
-      const totalGridHeight = numRows * (cellH + cellMargin);
-      const startX = (boardW - totalGridWidth) / 2;
-      const startY = (boardH - totalGridHeight) / 2;
-
-      nums.forEach((num, index) => {
-        const cell = createNumberCell(num, 20, false);
-        const col = index % numCols;
-        const row = Math.floor(index / numCols);
-
-        cell.style.left = (startX + col * (cellW + cellMargin)) + 'px';
-        cell.style.top = (startY + row * (cellH + cellMargin)) + 'px';
-
-        gameBoard.appendChild(cell);
-        cell.addEventListener('click', handleNumberClick);
-      });
-    }
-
     function setupGame() {
-      if (chartObj) { chartObj.destroy(); chartObj = null; }
+      if (chartObj) { chartObj.destroy();
+      chartObj = null; }
       chartSection.style.display = 'none';
       gameOverMessage.style.display = 'none';
       clearInterval(timerInterval);
@@ -339,36 +337,65 @@
       placedRects = [];
 
       endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
-      timerEl.style.display = isTimeMode || isChallengeMode ? 'block' : 'none';
+      timerEl.style.display = isTimeMode ||
+      isChallengeMode ? 'block' : 'none';
       difficultySelect.style.display = isChallengeMode ? 'none' : 'inline-block';
-      changeNumberButton.style.display = isChallengeMode ? 'inline-block' : 'none';
       
       allNumbers = [];
       for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
       shuffleArray(allNumbers);
-      
       if (isChallengeMode) {
         numbersPanel = allNumbers.slice(0, 1);
       } else {
         numbersPanel = allNumbers.slice(0, currentDifficulty);
       }
       numbersLeft = [...numbersPanel];
+      placedNumbers = [...numbersPanel];
       
       placeBoardNumbers(numbersPanel);
       
       askNewQuestion(true);
     }
 
-    function askNewQuestion(first = false) {
-      const existingOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
-        .map(c => parseInt(c.dataset.number, 10));
+    function getVisibleNumbers() {
+      const cells = Array.from(gameBoard.querySelectorAll('.number-cell'));
+      const visibleNumbers = [];
+      cells.forEach(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        let isCovered = false;
 
-      let candidates = [];
-      
+        cells.forEach(otherCell => {
+          if (cell === otherCell) return;
+          const otherRect = otherCell.getBoundingClientRect();
+
+          if (
+            cellRect.left < otherRect.right &&
+            cellRect.right 
+            > otherRect.left &&
+            cellRect.top < otherRect.bottom &&
+            cellRect.bottom > otherRect.top
+          ) {
+            if ((parseInt(otherCell.style.zIndex) || 0) > (parseInt(cell.style.zIndex) || 0)) {
+              isCovered = true;
+            }
+          
+          }
+        });
+
+        if (!isCovered) {
+          visibleNumbers.push(parseInt(cell.dataset.number, 10));
+        }
+      });
+      return visibleNumbers;
+    }
+
+    function askNewQuestion(first = false) {
+      let candidates = getVisibleNumbers();
       if (isChallengeMode) {
-        candidates = existingOnBoard.filter(n => n !== currentTarget);
+        candidates = candidates.filter(n => n !== currentTarget);
       } else {
-        candidates = [...numbersLeft];
+        const existingOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell')).map(c => parseInt(c.dataset.number, 10));
+        numbersLeft = existingOnBoard.filter(n => !getVisibleNumbers().includes(n));
       }
 
       if (candidates.length === 0) {
@@ -379,6 +406,8 @@
           endGame();
           return;
         } else if (!isChallengeMode && !isTimeMode) {
+          const existingOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+            .map(c => parseInt(c.dataset.number, 10));
           const newNumberPool = allNumbers.filter(n => !existingOnBoard.includes(n));
           if (newNumberPool.length > 0) {
             const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
@@ -392,6 +421,7 @@
             if(pos) {
               cell.style.left = pos.left + 'px';
               cell.style.top = pos.top + 'px';
+              cell.style.zIndex = pos.zIndex;
               cell.style.visibility = 'visible';
               placedRects.push(pos.rect);
               cell.addEventListener('click', handleNumberClick);
@@ -419,7 +449,6 @@
       }
       
       questionEl.textContent = `${currentTarget} を探せ！`;
-
       if (!gameStarted) {
         if (isTimeMode || isChallengeMode) {
           startTime = Date.now();
@@ -443,12 +472,13 @@
     function handleNumberClick(e) {
       if (!gameStarted) return;
       const tapped = parseInt(e.target.dataset.number, 10);
-      if (tapped !== currentTarget) return;
+      if (tapped !== currentTarget) {
+          return;
+      }
 
       const interval = (Date.now() - lastTapTime)/1000;
       lastTapTime = Date.now();
       if (!isTimeMode) tapTimes.push(interval);
-
       if (isChallengeMode) {
         const rect = measureCellRect(e.target);
         placedRects = placedRects.filter(r =>
@@ -458,11 +488,9 @@
         
         const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
-        
         const pool = allNumbers.filter(n => !existingNumbers.includes(n));
 
         const newNumbers = pool.slice(0, 2);
-
         newNumbers.forEach(newNumber => {
           let attempts = 0;
           let fontMin = Math.min(18, gameBoard.clientHeight / 15);
@@ -472,18 +500,21 @@
           let cell = null;
 
           while (attempts < 10) {
-              cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+   
+            cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
               cell.style.visibility = 'hidden';
               gameBoard.appendChild(cell);
               const w = cell.offsetWidth;
               const h = cell.offsetHeight;
               
+       
               pos = findValidPosition(w, h, placedRects);
               if (pos) {
                   break;
               }
               gameBoard.removeChild(cell);
               
+             
               fontMax = Math.max(8, fontMax * 0.9);
               fontMin = Math.max(8, fontMin * 0.9);
               attempts++;
@@ -492,6 +523,7 @@
           if (pos) {
             cell.style.left = pos.left + 'px';
             cell.style.top = pos.top + 'px';
+            cell.style.zIndex = pos.zIndex;
             cell.style.visibility = 'visible';
             placedRects.push(pos.rect);
             cell.addEventListener('click', handleNumberClick);
@@ -510,7 +542,6 @@
         
         const existing = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
-        
         const pool = allNumbers.filter(n => !existing.includes(n));
         
         if (pool.length > 0) {
@@ -518,15 +549,14 @@
           const fontMin = Math.min(18, gameBoard.clientHeight / 15);
           const fontMax = Math.max(24, gameBoard.clientHeight / 8);
           const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
-
           cell.style.visibility = 'hidden';
           gameBoard.appendChild(cell);
           const w = cell.offsetWidth, h = cell.offsetHeight;
           const pos = findValidPosition(w, h, placedRects);
-
           if (pos) {
             cell.style.left = pos.left + 'px';
             cell.style.top = pos.top + 'px';
+            cell.style.zIndex = pos.zIndex;
             cell.style.visibility = 'visible';
             placedRects.push(pos.rect);
             cell.addEventListener('click', handleNumberClick);
@@ -547,7 +577,6 @@
       const finalTime = (Date.now() - startTime) / 1000;
       finalTimeEl.textContent = `クリアタイム: ${finalTime.toFixed(2)} 秒`;
       gameOverMessage.style.display = 'flex';
-
       if (isTimeMode) {
         setTimeout(setupGame, 5000);
       }
@@ -555,11 +584,8 @@
 
     resetButton.addEventListener('click', setupGame);
     changeNumberButton.addEventListener('click', () => {
-        if (isChallengeMode) {
-            askNewQuestion();
-        }
+        askNewQuestion();
     });
-
     difficultySelect.addEventListener('change', ev => {
       currentDifficulty = parseInt(ev.target.value, 10);
       localStorage.setItem('gameDifficulty', currentDifficulty);
@@ -587,7 +613,6 @@
       if (!tapTimes.length) return;
       showTapTimesChart();
     });
-
     function showTapTimesChart() {
       chartSection.style.display = 'flex';
       if (chartObj) chartObj.destroy();
@@ -600,7 +625,8 @@
             data: tapTimes,
             borderColor:'#f1c40f',
             fill:false, pointBackgroundColor:'#e74c3c'
-          }]
+       
+           }]
         },
         options:{
           responsive:true, maintainAspectRatio:false,
@@ -610,6 +636,7 @@
           },
           scales:{
             y:{beginAtZero:true,title:{display:true,text:'秒'}},
+    
             x:{title:{display:true,text:'発見数（回）'}}
           }
         }
@@ -619,7 +646,6 @@
     closeChartBtn.addEventListener('click', ()=> {
       chartSection.style.display = 'none';
     });
-
     let resizeTimer;
     window.addEventListener('resize', ()=> {
       if (handlingResize) return;
@@ -630,22 +656,16 @@
         handlingResize = false;
       }, 300);
     });
-
     window.addEventListener('DOMContentLoaded', ()=> {
       const saved = localStorage.getItem('gameDifficulty');
       if (saved) {
         currentDifficulty = parseInt(saved, 10);
         difficultySelect.value = currentDifficulty;
       }
-      if (difficultySelect.value === '100' || difficultySelect.value === '50') {
-          difficultySelect.value = '25';
-      }
-      setTimeout(()=> {
-        isTimeMode = timeModeRadio.checked;
-        isRelaxMode = relaxModeRadio.checked;
-        isChallengeMode = challengeModeRadio.checked;
-        setupGame();
-      }, 50);
+      isTimeMode = timeModeRadio.checked;
+      isRelaxMode = relaxModeRadio.checked;
+      isChallengeMode = challengeModeRadio.checked;
+      setupGame();
     });
   </script>
 </body>
