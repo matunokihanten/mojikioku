@@ -108,11 +108,13 @@
         <label for="timeMode">タイム</label>
         <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
         <label for="relaxMode">リラックス</label>
+        <input type="radio" id="challengeMode" name="gameMode" value="challenge">
+        <label for="challengeMode">挑戦</label>
       </div>
       <button id="reset-button" title="リセット">🔄 リセット</button>
       <select id="difficulty-select">
         <option value="10">やさしい (10)</option>
-        <option value="25">ふつう (25)</option>
+        <option value="25" selected>ふつう (25)</option>
       </select>
       <button id="endless-stop-button">終了</button>
       <div id="question"></div>
@@ -148,6 +150,7 @@
     const finalTimeEl = document.getElementById('final-time');
     const timeModeRadio = document.getElementById('timeMode');
     const relaxModeRadio = document.getElementById('relaxMode');
+    const challengeModeRadio = document.getElementById('challengeMode');
     const endlessStopButton = document.getElementById('endless-stop-button');
     const chartSection = document.getElementById('chart-section');
     const closeChartBtn = document.getElementById('close-chart');
@@ -155,7 +158,7 @@
 
     let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
     let gameStarted = false, startTime = 0, timerInterval = null;
-    let currentDifficulty = 100, isTimeMode = false;
+    let currentDifficulty = 25, isTimeMode = false, isChallengeMode = false;
     let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
     let placedRects = [];
 
@@ -232,16 +235,33 @@
       let placementSucceeded = true;
 
       for (let i = 0; i < cellsToPlace.length; i++) {
-        const fontMin = Math.min(18, gameBoard.clientHeight / 15);
-        const fontMax = Math.max(24, gameBoard.clientHeight / 8);
-        const cell = createNumberCell(cellsToPlace[i], getRandomInt(fontMin, fontMax));
+        let attempts = 0;
+        let fontMin = Math.min(18, gameBoard.clientHeight / 15);
+        let fontMax = Math.max(24, gameBoard.clientHeight / 8);
+        const maxFont = fontMax;
+        
+        let pos = null;
+        let cell = null;
 
-        cell.style.visibility = 'hidden';
-        gameBoard.appendChild(cell);
-        const w = cell.offsetWidth, h = cell.offsetHeight;
-        
-        const pos = findValidPosition(w, h, placedRects);
-        
+        while (attempts < 10) {
+            cell = createNumberCell(cellsToPlace[i], getRandomInt(fontMin, fontMax));
+            cell.style.visibility = 'hidden';
+            gameBoard.appendChild(cell);
+            const w = cell.offsetWidth;
+            const h = cell.offsetHeight;
+            
+            pos = findValidPosition(w, h, placedRects);
+            if (pos) {
+                break;
+            }
+            gameBoard.removeChild(cell);
+            
+            // サイズを縮小して再試行
+            fontMax = Math.max(8, fontMax * 0.9);
+            fontMin = Math.max(8, fontMin * 0.9);
+            attempts++;
+        }
+
         if (pos) {
           cell.style.left = pos.left + 'px';
           cell.style.top = pos.top + 'px';
@@ -249,7 +269,7 @@
           placedRects.push(pos.rect);
           cell.addEventListener('click', handleNumberClick);
         } else {
-          gameBoard.removeChild(cell);
+          if (cell) gameBoard.removeChild(cell);
           placementSucceeded = false;
           break;
         }
@@ -308,12 +328,18 @@
       tapTimes = [];
       placedRects = [];
       endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
-      timerEl.style.display = isTimeMode ? 'block' : 'none';
+      timerEl.style.display = isTimeMode || isChallengeMode ? 'block' : 'none';
+      difficultySelect.style.display = isChallengeMode ? 'none' : 'inline-block';
       
       allNumbers = [];
       for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
       shuffleArray(allNumbers);
-      numbersPanel = allNumbers.slice(0, currentDifficulty);
+      
+      if (isChallengeMode) {
+        numbersPanel = allNumbers.slice(0, 1);
+      } else {
+        numbersPanel = allNumbers.slice(0, currentDifficulty);
+      }
       numbersLeft = [...numbersPanel];
       shuffleArray(numbersLeft);
       
@@ -323,7 +349,7 @@
     }
 
     function askNewQuestion(first = false) {
-      if (!isTimeMode && numbersLeft.length === 0) {
+      if (!isTimeMode && !isChallengeMode && numbersLeft.length === 0) {
         const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
         
@@ -363,13 +389,25 @@
       }
       
       if (numbersLeft.length === 0) {
-        return;
+        if (!isChallengeMode) return;
+        
+        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
+        const newNumberPool = allNumbers.filter(n => !existingNumbers.includes(n));
+        
+        if (newNumberPool.length > 0) {
+            const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
+            numbersLeft.push(newNumber);
+        } else {
+             endGame();
+        }
       }
-
+      shuffleArray(numbersLeft);
       currentTarget = numbersLeft.shift();
       questionEl.textContent = `${currentTarget} を探せ！`;
       if (!gameStarted) {
-        if (isTimeMode) {
+        if (isTimeMode || isChallengeMode) {
           startTime = Date.now();
           timerInterval = setInterval(updateTimer, 1000);
         } else {
@@ -397,7 +435,12 @@
       lastTapTime = Date.now();
       if (!isTimeMode) tapTimes.push(interval);
 
-      e.target.classList.add('found');
+      if (isChallengeMode) {
+        e.target.remove();
+      } else {
+        e.target.classList.add('found');
+      }
+
       numbersLeft = numbersLeft.filter(n => n !== tapped);
 
       if (isTimeMode) {
@@ -406,6 +449,56 @@
         } else {
           askNewQuestion();
         }
+      } else if (isChallengeMode) {
+        const existing = Array.from(gameBoard.querySelectorAll('.number-cell:not(.found)'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
+        const currentCount = existing.length;
+
+        const pool = allNumbers.filter(n => !existing.includes(n) && n !== tapped);
+
+        const newNumbers = pool.slice(0, 2);
+
+        newNumbers.forEach(newNumber => {
+          let attempts = 0;
+          let fontMin = Math.min(18, gameBoard.clientHeight / 15);
+          let fontMax = Math.max(24, gameBoard.clientHeight / 8);
+          
+          let pos = null;
+          let cell = null;
+
+          while (attempts < 10) {
+              cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+              cell.style.visibility = 'hidden';
+              gameBoard.appendChild(cell);
+              const w = cell.offsetWidth;
+              const h = cell.offsetHeight;
+              
+              pos = findValidPosition(w, h, placedRects);
+              if (pos) {
+                  break;
+              }
+              gameBoard.removeChild(cell);
+              
+              fontMax = Math.max(8, fontMax * 0.9);
+              fontMin = Math.max(8, fontMin * 0.9);
+              attempts++;
+          }
+
+          if (pos) {
+            cell.style.left = pos.left + 'px';
+            cell.style.top = pos.top + 'px';
+            cell.style.visibility = 'visible';
+            placedRects.push(pos.rect);
+            cell.addEventListener('click', handleNumberClick);
+            numbersLeft.push(newNumber);
+          } else {
+             if (cell) gameBoard.removeChild(cell);
+          }
+        });
+        
+        numbersLeft = numbersLeft.filter(n => n !== tapped);
+        askNewQuestion();
       } else {
         const rect = measureCellRect(e.target);
         placedRects = placedRects.filter(r =>
@@ -441,6 +534,7 @@
           }
         }
         
+        numbersLeft = numbersLeft.filter(n => n !== tapped);
         askNewQuestion();
       }
     }
@@ -465,10 +559,20 @@
     });
     timeModeRadio.addEventListener('change', () => {
       isTimeMode = true;
+      isRelaxMode = false;
+      isChallengeMode = false;
       setupGame();
     });
     relaxModeRadio.addEventListener('change', () => {
       isTimeMode = false;
+      isRelaxMode = true;
+      isChallengeMode = false;
+      setupGame();
+    });
+    challengeModeRadio.addEventListener('change', () => {
+      isTimeMode = false;
+      isRelaxMode = false;
+      isChallengeMode = true;
       setupGame();
     });
     endlessStopButton.addEventListener('click', () => {
@@ -525,8 +629,13 @@
         currentDifficulty = parseInt(saved, 10);
         difficultySelect.value = currentDifficulty;
       }
+      if (difficultySelect.value === '100' || difficultySelect.value === '50') {
+          difficultySelect.value = '25';
+      }
       setTimeout(()=> {
         isTimeMode = timeModeRadio.checked;
+        isRelaxMode = relaxModeRadio.checked;
+        isChallengeMode = challengeModeRadio.checked;
         setupGame();
       }, 50);
     });
