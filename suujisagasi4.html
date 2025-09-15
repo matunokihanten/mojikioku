@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>数字探し脳トレゲーム - 多数から1個探し</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      font-family: 'Arial', sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #3498db; color: #fff; user-select: none;
+      padding: 1vh 1vw; box-sizing: border-box;
+      perspective: 1000px;
+    }
+    #game-container {
+      width: 100%; height: 100%; max-width: 700px; max-height: 900px;
+      display: flex; flex-direction: column; text-align: center;
+      background-color: #2c3e50;
+      padding: clamp(10px, 2vh, 20px); border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4); box-sizing: border-box;
+      position: relative;
+    }
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; margin-bottom: clamp(10px,2vh,20px); flex-shrink: 0;
+    }
+    #question {
+      font-size: clamp(1em, 3.5vw, 1.8em); font-weight: bold;
+      background-color: #fff; color: #2c3e50;
+      padding: 0.8vh 1.5vw; border-radius: 10px; flex-grow: 1; margin: 5px;
+      order: 2;
+    }
+    #timer {
+      font-size: clamp(1em, 3.5vw, 1.5em); font-weight: bold; color: #f1c40f;
+      min-width: 70px; text-align: right; order: 3; display: none;
+    }
+    .header button, #difficulty-select {
+      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+      border: none; background-color: #f1c40f; color: #2c3e50; border-radius: 8px;
+      cursor: pointer; transition: transform 0.1s, background-color 0.2s;
+      margin: 5px; white-space: nowrap;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    #reset-button { order: 1; }
+    #change-number-button {
+      order: 2;
+      font-size: clamp(0.9em,3vw,1.2em); padding: 1vh 1.5vw;
+    }
+    #endless-stop-button { order: 4; display: none; }
+    #difficulty-select { order: 1; padding-right: 30px; }
+    #difficulty-select {
+      appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%232c3e50" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .header button:active, #difficulty-select:active { transform: scale(0.95); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    #game-board {
+      position: relative; width: 100%; flex-grow: 1;
+      background-color: #ecf0f1; border-radius: 10px; overflow: hidden;
+      min-height: 0;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    }
+    .number-cell {
+      position: absolute;
+      font-weight: bold; cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.3s, transform 0.1s;
+      line-height: 1; padding: 2px; box-sizing: border-box; white-space: nowrap;
+      background: #fff9;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 4px rgba(0,0,0,0.1) inset;
+      border-radius: 8px;
+      outline: solid 1px #ddd; user-select: none;
+      transform-style: preserve-3d;
+      transform: translateZ(0) rotateX(0) rotateY(0);
+    }
+    .number-cell.found {
+      opacity: 0.2; pointer-events: none; filter: grayscale(1);
+    }
+    #game-over-message {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7); color: #fff; display: none;
+      flex-direction: column; justify-content: center; align-items: center;
+      border-radius: 10px; font-size: clamp(1.8em,6vw,2.5em); font-weight: bold;
+      z-index: 20;
+    }
+    #game-over-message p { margin: 10px 0; }
+    #final-time { color: #f1c40f; font-size: 1.2em; }
+    #chart-section {
+      display: none; position: absolute; top: 0; left: 0;
+      width: 100%; height:100%; background: rgba(10,10,40, 0.95);
+      z-index:22; justify-content: center; align-items: center; flex-direction:column;
+    }
+    #chart-canvas { max-width: 90vw; max-height: 50vh; background: #fff; border-radius: 16px; }
+    #close-chart {
+      margin-top:16px; padding: 1em 2em; font-size: 1.2em; background:#f1c40f; color:#2c3e50;
+      border: none; border-radius: 8-px; cursor: pointer;
+      transition:background 0.2s;
+    }
+    #close-chart:active { background: #fff24a; }
+    @media (max-width: 450px) {
+      .header { flex-direction: row; justify-content: space-around; }
+      #question { width: 100%; margin: 5px 0; text-align: center; }
+      #timer { min-width: auto; }
+    }
+    .mode-selection {
+      display: flex; align-items: center; flex-wrap:nowrap;
+      margin-right: 15px; white-space: nowrap; order: 0;
+    }
+    .mode-selection input[type="radio"] { margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="header">
+      <div class="mode-selection">
+        <input type="radio" id="timeMode" name="gameMode" value="time">
+        <label for="timeMode">タイム</label>
+        <input type="radio" id="relaxMode" name="gameMode" value="relax" checked>
+        <label for="relaxMode">リラックス</label>
+        <input type="radio" id="challengeMode" name="gameMode" value="challenge">
+        <label for="challengeMode">挑戦</label>
+      </div>
+      <button id="reset-button" title="リセット">🔄 リセット</button>
+      <select id="difficulty-select">
+        <option value="10">やさしい (10)</option>
+        <option value="25" selected>ふつう (25)</option>
+        <option value="50">むずかしい (50)</option>
+        <option value="100">超むずかしい (100)</option>
+      </select>
+      <button id="change-number-button">🔄 次の数字</button>
+      <button id="endless-stop-button">終了</button>
+      <div id="question"></div>
+      <div id="timer">00:00</div>
+    </div>
+    
+    <div id="game-board"></div>
+    <div id="game-over-message">
+      <p>ゲームクリア！</p>
+      <p id="final-time"></p>
+    </div>
+    <div id="chart-section">
+      <canvas id="chart-canvas"></canvas>
+      <button id="close-chart">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = [
+      '#e74c3c','#f39c12','#1abc9c','#2980b9','#8e44ad',
+      '#2c3e50','#d35400','#c0392b','#16a085','#34495e',
+      '#9b59b6','#3498db','#f1c40f','#e67e22','#7f8c8d'
+    ];
+    const MIN_NUMBER = 1, MAX_NUMBER = 100;
+    const MAX_PLACEMENT_ATTEMPTS = 5000;
+
+    const gameBoard = document.getElementById('game-board');
+    const questionEl = document.getElementById('question');
+    const resetButton = document.getElementById('reset-button');
+    const difficultySelect = document.getElementById('difficulty-select');
+    const timerEl = document.getElementById('timer');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const finalTimeEl = document.getElementById('final-time');
+    const timeModeRadio = document.getElementById('timeMode');
+    const relaxModeRadio = document.getElementById('relaxMode');
+    const challengeModeRadio = document.getElementById('challengeMode');
+    const endlessStopButton = document.getElementById('endless-stop-button');
+    const changeNumberButton = document.getElementById('change-number-button');
+    const chartSection = document.getElementById('chart-section');
+    const closeChartBtn = document.getElementById('close-chart');
+    const chartCanvas = document.getElementById('chart-canvas');
+
+    let allNumbers = [], numbersPanel = [], numbersLeft = [], currentTarget = null;
+    let gameStarted = false, startTime = 0, timerInterval = null;
+    let currentDifficulty = 25, isTimeMode = false, isChallengeMode = false;
+    let tapTimes = [], lastTapTime = 0, chartObj = null, handlingResize = false;
+    let placedRects = [];
+    let placedNumbers = [];
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    function measureCellRect(cell) {
+      return {
+        left: parseFloat(cell.style.left),
+        top: parseFloat(cell.style.top),
+        width: cell.offsetWidth,
+        height: cell.offsetHeight,
+        get right() { return this.left + this.width; },
+        get bottom() { return this.top + this.height; }
+      };
+    }
+
+    function isOverlapping(newR, rects, pad=5) {
+      for (const r of rects) {
+        if (!(newR.right + pad < r.left - pad ||
+              newR.left - pad > r.right + pad ||
+              newR.bottom + pad < r.top - pad ||
+              newR.top - pad > r.bottom + pad)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function findValidPosition(w, h, existingRects) {
+      let attempts = 0;
+      while (attempts < MAX_PLACEMENT_ATTEMPTS) {
+        const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
+        const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
+        const rect = {
+          left, top, width: w, height: h,
+          get right() { return this.left + this.width; },
+          get bottom() { return this.top + this.height; }
+        };
+        
+        if (!isOverlapping(rect, existingRects, 8)) {
+          return { left, top, rect, zIndex: 3 };
+        }
+        attempts++;
+      }
+      const top = getRandomInt(5, gameBoard.clientHeight - h - 5);
+      const left = getRandomInt(5, gameBoard.clientWidth - w - 5);
+      const rect = {
+        left, top, width: w, height: h,
+        get right() { return this.left + this.width; },
+        get bottom() { return this.top + this.height; }
+      };
+      return { left, top, rect, zIndex: 1 };
+    }
+
+    function createNumberCell(num, fontSize) {
+      const cell = document.createElement('div');
+      cell.classList.add('number-cell');
+      cell.textContent = num;
+      cell.dataset.number = num;
+      cell.style.fontSize = fontSize + 'px';
+      cell.style.color = COLORS[getRandomInt(0, COLORS.length - 1)];
+      
+      const rotX = getRandomInt(-20, 20);
+      const rotY = getRandomInt(-20, 20);
+      cell.style.transform = `translateZ(0) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${getRandomInt(-35, 35)}deg)`;
+      return cell;
+    }
+    
+    function placeBoardNumbers(nums) {
+      gameBoard.innerHTML = '';
+      placedRects = [];
+      const cellsToPlace = [...nums];
+      let placementSucceeded = true;
+
+      for (let i = 0; i < cellsToPlace.length; i++) {
+        let attempts = 0;
+        let fontMin = Math.min(18, gameBoard.clientHeight / 15);
+        let fontMax = Math.max(24, gameBoard.clientHeight / 8);
+        const maxFont = fontMax;
+        
+        let pos = null;
+        let cell = null;
+
+        while (attempts < 10) {
+            cell = createNumberCell(cellsToPlace[i], getRandomInt(fontMin, fontMax));
+            cell.style.visibility = 'hidden';
+            gameBoard.appendChild(cell);
+            const w = cell.offsetWidth;
+            const h = cell.offsetHeight;
+            
+            pos = findValidPosition(w, h, placedRects);
+            if (pos) {
+                break;
+            }
+            gameBoard.removeChild(cell);
+            
+            fontMax = Math.max(8, fontMax * 0.9);
+            fontMin = Math.max(8, fontMin * 0.9);
+            attempts++;
+        }
+
+        if (pos) {
+          cell.style.left = pos.left + 'px';
+          cell.style.top = pos.top + 'px';
+          cell.style.zIndex = pos.zIndex;
+          cell.style.visibility = 'visible';
+          placedRects.push(pos.rect);
+          cell.addEventListener('click', handleNumberClick);
+        } else {
+          if (cell) gameBoard.removeChild(cell);
+          placementSucceeded = false;
+          break;
+        }
+      }
+
+      if (placementSucceeded) {
+        console.log('すべての数字をランダムに配置しました。');
+      } else {
+        console.warn('ランダム配置に失敗しました。自動リセットします。');
+        setTimeout(setupGame, 100);
+      }
+    }
+
+    function setupGame() {
+      if (chartObj) { chartObj.destroy(); chartObj = null; }
+      chartSection.style.display = 'none';
+      gameOverMessage.style.display = 'none';
+      clearInterval(timerInterval);
+      timerEl.textContent = '00:00';
+      gameStarted = false;
+      tapTimes = [];
+      placedRects = [];
+
+      endlessStopButton.style.display = isTimeMode ? 'none' : 'inline-block';
+      timerEl.style.display = isTimeMode || isChallengeMode ? 'block' : 'none';
+      difficultySelect.style.display = isChallengeMode ? 'none' : 'inline-block';
+      
+      allNumbers = [];
+      for (let i = MIN_NUMBER; i <= MAX_NUMBER; i++) allNumbers.push(i);
+      shuffleArray(allNumbers);
+      
+      if (isChallengeMode) {
+        numbersPanel = allNumbers.slice(0, 1);
+      } else {
+        numbersPanel = allNumbers.slice(0, currentDifficulty);
+      }
+      numbersLeft = [...numbersPanel];
+      placedNumbers = [...numbersPanel];
+      
+      placeBoardNumbers(numbersPanel);
+      
+      askNewQuestion(true);
+    }
+
+    function getVisibleNumbers() {
+      const cells = Array.from(gameBoard.querySelectorAll('.number-cell'));
+      const visibleNumbers = [];
+
+      cells.forEach(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        let isCovered = false;
+
+        cells.forEach(otherCell => {
+          if (cell === otherCell) return;
+          const otherRect = otherCell.getBoundingClientRect();
+
+          if (
+            cellRect.left < otherRect.right &&
+            cellRect.right > otherRect.left &&
+            cellRect.top < otherRect.bottom &&
+            cellRect.bottom > otherRect.top
+          ) {
+            if ((parseInt(otherCell.style.zIndex) || 0) > (parseInt(cell.style.zIndex) || 0)) {
+              isCovered = true;
+            }
+          }
+        });
+
+        if (!isCovered) {
+          visibleNumbers.push(parseInt(cell.dataset.number, 10));
+        }
+      });
+      return visibleNumbers;
+    }
+
+    function askNewQuestion(first = false) {
+      let candidates = getVisibleNumbers();
+      
+      if (isChallengeMode) {
+        candidates = candidates.filter(n => n !== currentTarget);
+      } else {
+        const existingOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell')).map(c => parseInt(c.dataset.number, 10));
+        numbersLeft = existingOnBoard.filter(n => !getVisibleNumbers().includes(n));
+      }
+
+      if (candidates.length === 0) {
+        if (isTimeMode) {
+          endGame();
+          return;
+        } else if (isChallengeMode) {
+          endGame();
+          return;
+        } else if (!isChallengeMode && !isTimeMode) {
+          const newNumberPool = allNumbers.filter(n => !existingOnBoard.includes(n));
+          if (newNumberPool.length > 0) {
+            const newNumber = newNumberPool[getRandomInt(0, newNumberPool.length - 1)];
+            const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+            const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+            const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+            cell.style.visibility = 'hidden';
+            gameBoard.appendChild(cell);
+            const w = cell.offsetWidth, h = cell.offsetHeight;
+            const pos = findValidPosition(w, h, placedRects);
+            if(pos) {
+              cell.style.left = pos.left + 'px';
+              cell.style.top = pos.top + 'px';
+              cell.style.zIndex = pos.zIndex;
+              cell.style.visibility = 'visible';
+              placedRects.push(pos.rect);
+              cell.addEventListener('click', handleNumberClick);
+              numbersLeft.push(newNumber);
+              candidates = [newNumber];
+            } else {
+              gameBoard.removeChild(cell);
+              const currentNumbersOnBoard = Array.from(gameBoard.querySelectorAll('.number-cell'))
+                .map(c => parseInt(c.dataset.number, 10));
+              numbersLeft = [...currentNumbersOnBoard];
+              shuffleArray(numbersLeft);
+              candidates = [...numbersLeft];
+            }
+          }
+        }
+      }
+
+      if (candidates.length > 0) {
+        shuffleArray(candidates);
+        currentTarget = candidates[0];
+        if (!isChallengeMode) numbersLeft = candidates.slice(1);
+      } else {
+        questionEl.textContent = 'ゲーム終了！';
+        return;
+      }
+      
+      questionEl.textContent = `${currentTarget} を探せ！`;
+
+      if (!gameStarted) {
+        if (isTimeMode || isChallengeMode) {
+          startTime = Date.now();
+          timerInterval = setInterval(updateTimer, 1000);
+        } else {
+          startTime = Date.now();
+          timerEl.textContent = '00:00';
+        }
+        gameStarted = true;
+        lastTapTime = Date.now();
+      }
+    }
+
+    function updateTimer() {
+      const t = Date.now() - startTime;
+      const m = Math.floor(t/60000), s = Math.floor((t%60000)/1000);
+      timerEl.textContent =
+        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+
+    function handleNumberClick(e) {
+      if (!gameStarted) return;
+      const tapped = parseInt(e.target.dataset.number, 10);
+      if (tapped !== currentTarget) {
+          return;
+      }
+
+      const interval = (Date.now() - lastTapTime)/1000;
+      lastTapTime = Date.now();
+      if (!isTimeMode) tapTimes.push(interval);
+
+      if (isChallengeMode) {
+        const rect = measureCellRect(e.target);
+        placedRects = placedRects.filter(r =>
+          !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
+        );
+        e.target.remove();
+        
+        const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
+        const pool = allNumbers.filter(n => !existingNumbers.includes(n));
+
+        const newNumbers = pool.slice(0, 2);
+
+        newNumbers.forEach(newNumber => {
+          let attempts = 0;
+          let fontMin = Math.min(18, gameBoard.clientHeight / 15);
+          let fontMax = Math.max(24, gameBoard.clientHeight / 8);
+          
+          let pos = null;
+          let cell = null;
+
+          while (attempts < 10) {
+              cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+              cell.style.visibility = 'hidden';
+              gameBoard.appendChild(cell);
+              const w = cell.offsetWidth;
+              const h = cell.offsetHeight;
+              
+              pos = findValidPosition(w, h, placedRects);
+              if (pos) {
+                  break;
+              }
+              gameBoard.removeChild(cell);
+              
+              fontMax = Math.max(8, fontMax * 0.9);
+              fontMin = Math.max(8, fontMin * 0.9);
+              attempts++;
+          }
+
+          if (pos) {
+            cell.style.left = pos.left + 'px';
+            cell.style.top = pos.top + 'px';
+            cell.style.zIndex = pos.zIndex;
+            cell.style.visibility = 'visible';
+            placedRects.push(pos.rect);
+            cell.addEventListener('click', handleNumberClick);
+          } else {
+             if (cell) gameBoard.removeChild(cell);
+          }
+        });
+        
+        askNewQuestion();
+      } else {
+        const rect = measureCellRect(e.target);
+        placedRects = placedRects.filter(r =>
+          !(Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1)
+        );
+        e.target.remove();
+        
+        const existing = Array.from(gameBoard.querySelectorAll('.number-cell'))
+          .map(c => parseInt(c.dataset.number, 10));
+        
+        const pool = allNumbers.filter(n => !existing.includes(n));
+        
+        if (pool.length > 0) {
+          const newNumber = pool[getRandomInt(0, pool.length - 1)];
+          const fontMin = Math.min(18, gameBoard.clientHeight / 15);
+          const fontMax = Math.max(24, gameBoard.clientHeight / 8);
+          const cell = createNumberCell(newNumber, g
