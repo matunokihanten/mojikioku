@@ -527,4 +527,132 @@
           const newNumber = pool[getRandomInt(0, pool.length - 1)];
           const fontMin = Math.min(18, gameBoard.clientHeight / 15);
           const fontMax = Math.max(24, gameBoard.clientHeight / 8);
-          const cell = createNumberCell(newNumber, g
+          const cell = createNumberCell(newNumber, getRandomInt(fontMin, fontMax));
+
+          cell.style.visibility = 'hidden';
+          gameBoard.appendChild(cell);
+          const w = cell.offsetWidth, h = cell.offsetHeight;
+          const pos = findValidPosition(w, h, placedRects);
+
+          if (pos) {
+            cell.style.left = pos.left + 'px';
+            cell.style.top = pos.top + 'px';
+            cell.style.zIndex = pos.zIndex;
+            cell.style.visibility = 'visible';
+            placedRects.push(pos.rect);
+            cell.addEventListener('click', handleNumberClick);
+            numbersLeft.push(newNumber);
+          } else {
+            gameBoard.removeChild(cell);
+          }
+        }
+        
+        numbersLeft = numbersLeft.filter(n => n !== tapped);
+        askNewQuestion();
+      }
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      gameStarted = false;
+      const finalTime = (Date.now() - startTime) / 1000;
+      finalTimeEl.textContent = `クリアタイム: ${finalTime.toFixed(2)} 秒`;
+      gameOverMessage.style.display = 'flex';
+
+      if (isTimeMode) {
+        setTimeout(setupGame, 5000);
+      }
+    }
+
+    resetButton.addEventListener('click', setupGame);
+    changeNumberButton.addEventListener('click', () => {
+        askNewQuestion();
+    });
+
+    difficultySelect.addEventListener('change', ev => {
+      currentDifficulty = parseInt(ev.target.value, 10);
+      localStorage.setItem('gameDifficulty', currentDifficulty);
+      setupGame();
+    });
+    timeModeRadio.addEventListener('change', () => {
+      isTimeMode = true;
+      isRelaxMode = false;
+      isChallengeMode = false;
+      setupGame();
+    });
+    relaxModeRadio.addEventListener('change', () => {
+      isTimeMode = false;
+      isRelaxMode = true;
+      isChallengeMode = false;
+      setupGame();
+    });
+    challengeModeRadio.addEventListener('change', () => {
+      isTimeMode = false;
+      isRelaxMode = false;
+      isChallengeMode = true;
+      setupGame();
+    });
+    endlessStopButton.addEventListener('click', () => {
+      if (!tapTimes.length) return;
+      showTapTimesChart();
+    });
+
+    function showTapTimesChart() {
+      chartSection.style.display = 'flex';
+      if (chartObj) chartObj.destroy();
+      chartObj = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+          labels: tapTimes.map((v,i)=>`${i+1}回目`),
+          datasets:[{
+            label:'発見にかかった秒',
+            data: tapTimes,
+            borderColor:'#f1c40f',
+            fill:false, pointBackgroundColor:'#e74c3c'
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{display:false},
+            title:{display:true,text:'数字発見にかかった時間履歴'}
+          },
+          scales:{
+            y:{beginAtZero:true,title:{display:true,text:'秒'}},
+            x:{title:{display:true,text:'発見数（回）'}}
+          }
+        }
+      });
+    }
+
+    closeChartBtn.addEventListener('click', ()=> {
+      chartSection.style.display = 'none';
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', ()=> {
+      if (handlingResize) return;
+      handlingResize = true;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(()=> {
+        setupGame();
+        handlingResize = false;
+      }, 300);
+    });
+
+    window.addEventListener('DOMContentLoaded', ()=> {
+      const saved = localStorage.getItem('gameDifficulty');
+      if (saved) {
+        currentDifficulty = parseInt(saved, 10);
+        difficultySelect.value = currentDifficulty;
+      }
+      setTimeout(()=> {
+        isTimeMode = timeModeRadio.checked;
+        isRelaxMode = relaxModeRadio.checked;
+        isChallengeMode = challengeModeRadio.checked;
+        setupGame();
+      }, 50);
+    });
+  </script>
+</body>
+</html>
