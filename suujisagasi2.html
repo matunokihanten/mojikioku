@@ -451,6 +451,10 @@
       const finalTime = (Date.now() - startTime) / 1000;
       finalTimeEl.textContent = `クリアタイム: ${finalTime.toFixed(2)} 秒`;
       gameOverMessage.style.display = 'flex';
+
+      if (isTimeMode) {
+        setTimeout(setupGame, 5000);
+      }
     }
 
     resetButton.addEventListener('click', setupGame);
