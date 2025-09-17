@@ -355,10 +355,11 @@
         } else {
           gameStarted = false;
           clearInterval(timerInterval);
-          gameOverMessage.style.display = 'flex';
-          finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
-          if (chartObj) chartObj.destroy();
-          chartObj = null;
+          showTapTimesChart();
+          setTimeout(() => {
+            chartSection.style.display = 'none';
+            setupGame();
+          }, 5000); // 5秒後に設定画面に戻る
         }
       } else { // Relax Mode
         if (numbersLeft.length === 0) {
@@ -396,7 +397,18 @@
       if (isTimeMode) {
         const cell = e.target;
         cell.classList.add('found');
-      } else {
+        if (document.querySelectorAll('.number-cell:not(.found)').length === 0) {
+          gameStarted = false;
+          clearInterval(timerInterval);
+          gameOverMessage.style.display = 'flex';
+          finalTimeEl.textContent = `タイム: ${timerEl.textContent}`;
+          showTapTimesChart();
+          setTimeout(() => {
+            chartSection.style.display = 'none';
+            setupGame();
+          }, 5000); // 5秒後に設定画面に戻る
+        }
+      } else { // Relax Mode
         const existingNumbers = Array.from(gameBoard.querySelectorAll('.number-cell'))
           .map(c => parseInt(c.dataset.number, 10));
 
@@ -521,4 +533,3 @@
   </script>
 </body>
 </html>
-
