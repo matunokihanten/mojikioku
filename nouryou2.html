@@ -1,944 +1,586 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>脳梁トレーニングアプリ</title>
-    <style>
-        /* 基本スタイル */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #333;
-            overflow-x: hidden; /* 横スクロール防止 */
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95); /* 少し透明度を追加 */
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15); /* シャドウを強調 */
-            padding: 40px; /* パディングを増加 */
-            max-width: 900px; /* 最大幅を広げる */
-            width: 95%; /* 幅を調整 */
-            text-align: center;
-            position: relative; /* バックボタンの配置用 */
-        }
-
-        h1 {
-            color: #2c5282; /* より深い青色 */
-            margin-bottom: 25px;
-            font-size: 3em; /* フォントサイズを大きく */
-            text-shadow: 2px 2px 6px rgba(0,0,0,0.15); /* テキストシャドウを調整 */
-        }
-
-        .subtitle {
-            color: #718096;
-            margin-bottom: 40px; /* マージンを増加 */
-            font-size: 1.4em; /* フォントサイズを大きく */
-        }
-
-        /* ゲーム選択画面 */
-        .game-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* ボタン幅を調整 */
-            gap: 25px; /* ギャップを調整 */
-            margin-bottom: 40px;
-        }
-
-        .game-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 25px; /* パディングを増加 */
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 1.2em; /* フォントサイズを大きく */
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.25); /* シャドウを強調 */
-            text-align: center; /* テキスト中央揃え */
-        }
-
-        .game-btn:hover {
-            transform: translateY(-5px); /* ホバー時の移動量を増やす */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-        }
-
-        /* ゲーム共通エリア */
-        .game-area {
-            display: none;
-            margin-top: 30px;
-            opacity: 0; /* 初期状態は透明 */
-            transition: opacity 0.5s ease-in-out; /* フェードイン効果 */
-        }
-
-        .game-area.active {
-            display: block;
-            opacity: 1; /* アクティブ時に表示 */
-        }
-
-        .score {
-            font-size: 1.8em; /* フォントサイズを大きく */
-            font-weight: bold;
-            color: #2c5282;
-            margin-bottom: 25px; /* マージンを調整 */
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .timer {
-            font-size: 1.5em; /* フォントサイズを大きく */
-            color: #e53e3e; /* 赤色を維持 */
-            margin-bottom: 25px;
-            font-weight: bold;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .instructions {
-            background: #e6fffa;
-            padding: 25px; /* パディングを増加 */
-            border-radius: 12px; /* 角丸を調整 */
-            margin-bottom: 30px;
-            border-left: 6px solid #38b2ac; /* 枠線を強調 */
-            text-align: left; /* テキスト左揃え */
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.05); /* 内側の影 */
-        }
-
-        .instructions h3 {
-            color: #234e52;
-            margin-bottom: 12px; /* マージンを調整 */
-            font-size: 1.5em; /* フォントサイズを大きく */
-        }
-
-        .instructions p {
-            color: #2d3748;
-            line-height: 1.7; /* 行間を広げる */
-            font-size: 1.1em; /* フォントサイズを大きく */
-        }
-
-        /* 左右同時タップゲーム */
-        .dual-tap {
-            display: flex;
-            justify-content: space-around;
-            align-items: center; /* 中央揃え */
-            margin: 40px 0; /* マージンを調整 */
-            flex-wrap: wrap; /* 必要に応じて折り返し */
-        }
-
-        .tap-area {
-            width: 180px; /* サイズを大きく */
-            height: 180px; /* サイズを大きく */
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8em; /* フォントサイズを大きく */
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease; /* トランジションを速く */
-            user-select: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2); /* シャドウを追加 */
-        }
-
-        .left-tap {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-        }
-
-        .right-tap {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-        }
-
-        .tap-area:active {
-            transform: scale(0.92); /* アクティブ時の縮小率を調整 */
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* アクティブ時のシャドウ */
-        }
-
-        #tap-instruction {
-            width: 100%; /* 幅を100%に */
-            font-size: 1.6em; /* フォントサイズを大きく */
-            margin: 30px 0 10px 0; /* マージンを調整 */
-            font-weight: bold;
-            color: #3a0ca3; /* より目立つ色 */
-            animation: pulse 2s infinite; /* 点滅アニメーション */
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        /* 色と文字の不一致ゲーム */
-        .color-word {
-            font-size: 4em; /* フォントサイズをさらに大きく */
-            font-weight: bold;
-            margin: 30px 0;
-            padding: 30px; /* パディングを増加 */
-            border-radius: 15px;
-            background: #f7fafc;
-            border: 4px solid #e2e8f0; /* 枠線を太く */
-            min-height: 120px; /* 最小高さを確保 */
-            display: flex; /* 中央揃え */
-            align-items: center;
-            justify-content: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .color-options {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 18px; /* ギャップを調整 */
-            margin: 30px 0;
-        }
-
-        .color-btn {
-            padding: 20px; /* パディングを増加 */
-            border: none;
-            border-radius: 12px; /* 角丸を調整 */
-            font-size: 1.3em; /* フォントサイズを大きく */
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); /* シャドウを追加 */
-        }
-
-        .color-btn:hover {
-            transform: scale(1.08); /* ホバー時の拡大率を調整 */
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        /* 左右手同時描画ゲーム */
-        .drawing-area {
-            display: flex;
-            justify-content: space-around;
-            margin: 40px 0;
-            flex-wrap: wrap; /* 折り返し */
-            gap: 30px; /* ギャップを追加 */
-        }
-
-        .canvas-container {
-            text-align: center;
-            background: #f0f9ff; /* 背景色を追加 */
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-        canvas {
-            border: 3px solid #cce0ff; /* 枠線を淡い青に */
-            border-radius: 15px;
-            cursor: crosshair;
-            background: white;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.1); /* 内側の影 */
-        }
-
-        .canvas-label {
-            margin-top: 15px; /* マージンを調整 */
-            font-weight: bold;
-            color: #3182ce; /* 青色 */
-            font-size: 1.1em;
-        }
-
-        .clear-btn { /* クリアボタンのスタイル */
-            background: #90cdf4; /* 淡い青 */
-            color: #2a4365;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1.1em;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        .clear-btn:hover {
-            background: #63b3ed;
-            transform: translateY(-2px);
-        }
-
-        /* 左右脳連携計算ゲーム */
-        .calculation-area {
-            background: #fefcbf; /* 黄色系の背景 */
-            padding: 35px; /* パディングを増加 */
-            border-radius: 18px; /* 角丸を大きく */
-            margin: 30px 0;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .calc-display {
-            font-size: 2.5em; /* フォントサイズを大きく */
-            font-weight: bold;
-            margin: 25px 0;
-            padding: 25px; /* パディングを増加 */
-            background: white;
-            border-radius: 12px; /* 角丸を調整 */
-            border: 3px solid #f6e05e; /* 黄色系の枠線 */
-            color: #a07900; /* 文字色を調整 */
-            min-height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .calc-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px; /* ギャップを調整 */
-            margin: 30px 0;
-        }
-
-        .calc-btn {
-            padding: 22px; /* パディングを増加 */
-            border: none;
-            border-radius: 12px; /* 角丸を調整 */
-            font-size: 1.6em; /* フォントサイズを大きく */
-            font-weight: bold;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2); /* シャドウを追加 */
-        }
-
-        .calc-btn:hover {
-            transform: scale(1.08); /* ホバー時の拡大率を調整 */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        /* 共通の戻るボタン */
-        .back-btn {
-            background: #718096;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1.15em;
-            margin-top: 30px; /* マージンを調整 */
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            display: inline-block; /* インラインブロックに変更 */
-            position: absolute; /* 絶対配置 */
-            top: 20px;
-            left: 20px;
-        }
-
-        .back-btn:hover {
-            background: #4a5568;
-            transform: translateY(-2px);
-        }
-
-        /* ゲーム終了時のメッセージ */
-        .game-over-message {
-            font-size: 2em;
-            font-weight: bold;
-            color: #dd6b20; /* オレンジ色 */
-            margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(255, 245, 230, 0.8); /* 淡いオレンジ */
-            border-radius: 10px;
-            display: none; /* 初期状態は非表示 */
-        }
-
-        .feedback-correct {
-            color: #38a169; /* 緑 */
-            font-weight: bold;
-            animation: bounce 0.5s ease;
-        }
-
-        .feedback-incorrect {
-            color: #e53e3e; /* 赤 */
-            font-weight: bold;
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-15px); }
-            60% { transform: translateY(-8px); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-5px); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>脳梁トレーニングアプリ</title>
+  <style>
+    /* 縦画面スクロール無効化 */
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      height: 100%;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: #2c5282;
+      text-align: center;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 1.2em;
+      color: #718096;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .game-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .game-btn {
+      background: linear-gradient(45deg,#667eea,#764ba2);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 1em;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: transform .1s, box-shadow .1s;
+      touch-action: manipulation;
+    }
+    .game-btn:active {
+      transform: scale(.96);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .game-area {
+      flex: 1;
+      display: none;
+      opacity: 0;
+      transition: opacity .3s;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .game-area.active {
+      display: flex;
+      opacity: 1;
+    }
+    .score, .timer {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 4px 0;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
+    .score { color: #2c5282; }
+    .timer { color: #e53e3e; }
+    .instructions {
+      background: #e6fffa;
+      padding: 12px;
+      border-left: 4px solid #38b2ac;
+      border-radius: 10px;
+      font-size: .9em;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    /* --- Dual Tap --- */
+    .dual-tap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .tap-area {
+      width: 100px;
+      height: 100px;
+      background: #999;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+      transition: transform .1s, box-shadow .1s;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    .tap-area:active {
+      transform: scale(.94);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+    .left-tap { background: linear-gradient(45deg,#ff6b6b,#ee5a24); }
+    .right-tap{ background: linear-gradient(45deg,#4ecdc4,#44a08d); }
+    #tap-instruction {
+      text-align: center;
+      font-size: 1em;
+      font-weight: bold;
+      color: #3a0ca3;
+      margin: 6px 0;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%,100%{opacity:1}50%{opacity:.7}
+    }
+    /* --- Color-Word --- */
+    .color-word {
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      padding: 12px;
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      margin: 12px 0;
+      flex-shrink: 0;
+    }
+    .color-options {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap:8px;
+      margin:8px 0;
+    }
+    .color-btn {
+      padding:8px;
+      border:none;
+      border-radius:8px;
+      font-size:1em;
+      font-weight:bold;
+      color:white;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);
+      transition:transform .1s,box-shadow .1s;
+      touch-action:manipulation;
+    }
+    .color-btn:active {
+      transform:scale(.96);
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    /* --- Dual Draw --- */
+    .drawing-area {
+      flex:1;
+      display:flex;
+      justify-content:space-around;
+      align-items:center;
+      gap:8px;
+    }
+    .canvas-container {
+      flex:1;
+      text-align:center;
+    }
+    canvas {
+      width:100%;
+      max-width:150px;
+      height:auto;
+      border:2px solid #cce0ff;
+      border-radius:10px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+      touch-action:none;
+    }
+    .canvas-label {
+      margin-top:4px;
+      font-size:.9em;
+      color:#3182ce;
+      font-weight:bold;
+    }
+    .clear-btn {
+      padding:8px;
+      border:none;
+      border-radius:8px;
+      background:#90cdf4;
+      color:#2a4365;
+      font-size:1em;
+      font-weight:bold;
+      align-self:center;
+      margin:8px 0;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+      transition:transform .1s,box-shadow .1s;
+      touch-action:manipulation;
+    }
+    .clear-btn:active {
+      transform:scale(.96);
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    }
+    /* --- Calculation --- */
+    .calculation-area {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+    .calc-display {
+      font-size:2em;
+      font-weight:bold;
+      padding:12px;
+      background:white;
+      border:2px solid #f6e05e;
+      color:#a07900;
+      border-radius:10px;
+      text-align:center;
+      width:100%;
+      max-width:250px;
+    }
+    .calc-options {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+      width:100%;
+      max-width:250px;
+    }
+    .calc-btn {
+      padding:8px;
+      border:none;
+      border-radius:8px;
+      font-size:1em;
+      font-weight:bold;
+      background:linear-gradient(45deg,#667eea,#764ba2);
+      color:white;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);
+      transition:transform .1s,box-shadow .1s;
+      touch-action:manipulation;
+    }
+    .calc-btn:active {
+      transform:scale(.96);
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    .back-btn {
+      position:absolute;
+      top:8px; left:8px;
+      padding:8px;
+      border:none;
+      border-radius:8px;
+      background:#718096;
+      color:white;
+      font-size:1em;
+      font-weight:bold;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+      transition:transform .1s,box-shadow .1s;
+      touch-action:manipulation;
+    }
+    .back-btn:active {
+      transform:scale(.96);
+      box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    }
+    .game-over-message {
+      font-size:1.2em;
+      font-weight:bold;
+      color:#dd6b20;
+      background:rgba(255,245,230,0.8);
+      padding:8px;
+      border-radius:8px;
+      text-align:center;
+      margin-top:4px;
+      display:none;
+    }
+    .feedback-correct { color:#38a169; }
+    .feedback-incorrect { color:#e53e3e; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🧠 脳梁トレーニングアプリ</h1>
-        <p class="subtitle">左右の脳を同時に使って、脳梁を活性化させましょう！</p>
+  <div class="container">
+    <h1>🧠 脳梁トレーニングアプリ</h1>
+    <p class="subtitle">左右の脳を同時に使って、脳梁を活性化させましょう！</p>
 
-        <div id="menu" class="game-selector">
-            <button class="game-btn" onclick="startGame('dual-tap')">左右同時タップ</button>
-            <button class="game-btn" onclick="startGame('color-word')">色と文字の不一致</button>
-            <button class="game-btn" onclick="startGame('dual-draw')">左右手同時描画</button>
-            <button class="game-btn" onclick="startGame('calculation')">左右脳連携計算</button>
-        </div>
-
-        <div id="dual-tap" class="game-area">
-            <div class="instructions">
-                <h3>左右同時タップゲーム</h3>
-                <p>表示される指示に従い、左右のエリアを正確なタイミングでタップしてください。左右の脳の連携と反応速度を向上させます。</p>
-            </div>
-            <div class="score">スコア: <span id="tap-score">0</span></div>
-            <div class="timer">残り時間: <span id="tap-timer">30</span>秒</div>
-            <div id="tap-instruction" class="instruction-text"></div>
-            <div class="dual-tap">
-                <div class="tap-area left-tap" onclick="tapArea('left')">左</div>
-                <div class="tap-area right-tap" onclick="tapArea('right')">右</div>
-            </div>
-            <div class="game-over-message" id="tap-game-over"></div>
-        </div>
-
-        <div id="color-word" class="game-area">
-            <div class="instructions">
-                <h3>色と文字の不一致ゲーム</h3>
-                <p>表示される文字の色を答えてください。文字の意味（左脳）と色（右脳）のどちらに注意を向けるかで、脳の切り替え能力を鍛えます。</p>
-            </div>
-            <div class="score">スコア: <span id="color-score">0</span></div>
-            <div class="timer">残り時間: <span id="color-timer">30</span>秒</div>
-            <div class="color-word" id="color-display"></div>
-            <div class="color-options">
-                <button class="color-btn" style="background: #e53e3e;" onclick="selectColor('red')">赤</button>
-                <button class="color-btn" style="background: #38a169;" onclick="selectColor('green')">緑</button>
-                <button class="color-btn" style="background: #3182ce;" onclick="selectColor('blue')">青</button>
-                <button class="color-btn" style="background: #d69e2e;" onclick="selectColor('yellow')">黄</button>
-            </div>
-            <div class="game-over-message" id="color-game-over"></div>
-        </div>
-
-        <div id="dual-draw" class="game-area">
-            <div class="instructions">
-                <h3>左右手同時描画ゲーム</h3>
-                <p>左右のキャンバスに、それぞれ指定された図形（左：円、右：四角）を同時に描いてください。両手の協調性と、空間認識能力を養います。</p>
-            </div>
-            <div class="score">スコア: <span id="draw-score">0</span></div>
-            <div class="timer">残り時間: <span id="draw-timer">60</span>秒</div>
-            <div class="drawing-area">
-                <div class="canvas-container">
-                    <canvas id="leftCanvas" width="200" height="200"></canvas>
-                    <div class="canvas-label">左手: 円を描く</div>
-                </div>
-                <div class="canvas-container">
-                    <canvas id="rightCanvas" width="200" height="200"></canvas>
-                    <div class="canvas-label">右手: 四角を描く</div>
-                </div>
-            </div>
-            <button class="clear-btn" onclick="clearCanvas()">クリア</button>
-            <div class="game-over-message" id="draw-game-over"></div>
-        </div>
-
-        <div id="calculation" class="game-area">
-            <div class="instructions">
-                <h3>左右脳連携計算ゲーム</h3>
-                <p>表示される計算式の答えを、選択肢の中から素早く選んでください。論理的思考（左脳）と、視覚的なパターン認識（右脳）を同時に使います。</p>
-            </div>
-            <div class="score">スコア: <span id="calc-score">0</span></div>
-            <div class="timer">残り時間: <span id="calc-timer">30</span>秒</div>
-            <div class="calculation-area">
-                <div class="calc-display" id="calc-display"></div>
-                <div class="calc-options" id="calc-options">
-                    </div>
-            </div>
-            <div class="game-over-message" id="calc-game-over"></div>
-        </div>
-
-        <button class="back-btn" onclick="showMenu()" id="back-to-menu">メニューに戻る</button>
+    <div id="menu" class="game-selector">
+      <button class="game-btn" onclick="startGame('dual-tap')">左右同時タップ</button>
+      <button class="game-btn" onclick="startGame('color-word')">色と文字の不一致</button>
+      <button class="game-btn" onclick="startGame('dual-draw')">左右手同時描画</button>
+      <button class="game-btn" onclick="startGame('calculation')">左右脳連携計算</button>
     </div>
 
-    <script>
-        let currentGame = null;
-        let gameTimer = null;
-        let scores = {
-            'dual-tap': 0,
-            'color-word': 0,
-            'dual-draw': 0,
-            'calculation': 0
-        };
-        const gameDurations = {
-            'dual-tap': 30,
-            'color-word': 30,
-            'dual-draw': 60,
-            'calculation': 30
-        };
+    <div id="dual-tap" class="game-area">
+      <div class="instructions">表示される指示に従い、左右を同時にタップしましょう。</div>
+      <div class="score">スコア: <span id="tap-score">0</span></div>
+      <div class="timer">残り時間: <span id="tap-timer">30</span>秒</div>
+      <div id="tap-instruction"></div>
+      <div class="dual-tap">
+        <div class="tap-area left-tap" id="leftTap">左</div>
+        <div class="tap-area right-tap" id="rightTap">右</div>
+      </div>
+      <div class="game-over-message" id="tap-game-over"></div>
+    </div>
 
-        // 色と文字の不一致ゲーム用
-        const colors = ['red', 'green', 'blue', 'yellow'];
-        const colorNames = ['赤', '緑', '青', '黄'];
-        const colorValues = ['#e53e3e', '#38a169', '#3182ce', '#d69e2e'];
+    <div id="color-word" class="game-area">
+      <div class="instructions">文字の意味ではなく、文字の色を答えてください。</div>
+      <div class="score">スコア: <span id="color-score">0</span></div>
+      <div class="timer">残り時間: <span id="color-timer">30</span>秒</div>
+      <div class="color-word" id="color-display"></div>
+      <div class="color-options">
+        <button class="color-btn" id="btn-red" style="background:#e53e3e">赤</button>
+        <button class="color-btn" id="btn-green" style="background:#38a169">緑</button>
+        <button class="color-btn" id="btn-blue" style="background:#3182ce">青</button>
+        <button class="color-btn" id="btn-yellow" style="background:#d69e2e">黄</button>
+      </div>
+      <div class="game-over-message" id="color-game-over"></div>
+    </div>
 
-        // 左右手同時描画ゲーム用
-        let leftCtx, rightCtx;
-        let isDrawing = false;
-        let lastLeftPos = { x: 0, y: 0 };
-        let lastRightPos = { x: 0, y: 0 };
-        let leftDrawCount = 0; // 左手描画数
-        let rightDrawCount = 0; // 右手描画数
-        const MAX_DRAWS_PER_GAME = 10; // 描画回数の上限
+    <div id="dual-draw" class="game-area">
+      <div class="instructions">左右のキャンバスに図形を同時に描いてください。</div>
+      <div class="score">スコア: <span id="draw-score">0</span></div>
+      <div class="timer">残り時間: <span id="draw-timer">60</span>秒</div>
+      <div class="drawing-area">
+        <div class="canvas-container">
+          <canvas id="leftCanvas" width="200" height="200"></canvas>
+          <div class="canvas-label">左手: 円</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="rightCanvas" width="200" height="200"></canvas>
+          <div class="canvas-label">右手: 四角</div>
+        </div>
+      </div>
+      <button class="clear-btn" onclick="clearDraw()">クリア</button>
+      <div class="game-over-message" id="draw-game-over"></div>
+    </div>
 
-        // 左右脳連携計算ゲーム用
-        let currentCorrectAnswer = 0;
+    <div id="calculation" class="game-area">
+      <div class="instructions">表示される計算式の答えを選択してください。</div>
+      <div class="score">スコア: <span id="calc-score">0</span></div>
+      <div class="timer">残り時間: <span id="calc-timer">30</span>秒</div>
+      <div class="calculation-area">
+        <div class="calc-display" id="calc-display"></div>
+        <div class="calc-options" id="calc-options"></div>
+      </div>
+      <div class="game-over-message" id="calc-game-over"></div>
+    </div>
 
-        // --- ゲーム共通処理 ---
-        function startGame(gameType) {
-            currentGame = gameType;
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById(gameType).classList.add('active');
-            document.getElementById('back-to-menu').style.display = 'block'; // always show back button
+    <button class="back-btn" id="back-to-menu" onclick="showMenu()" style="display:none">メニューに戻る</button>
+  </div>
 
-            scores[gameType] = 0;
-            updateScore(gameType);
-            resetGameOverMessage(gameType); // ゲーム開始時にメッセージをリセット
+  <script>
+    const gameElements = {
+      'dual-tap':    { score:'tap-score',    timer:'tap-timer',    over:'tap-game-over' },
+      'color-word':  { score:'color-score',  timer:'color-timer',  over:'color-game-over' },
+      'dual-draw':   { score:'draw-score',   timer:'draw-timer',   over:'draw-game-over' },
+      'calculation': { score:'calc-score',   timer:'calc-timer',   over:'calc-game-over'}
+    };
+    let currentGame=null, timerId=null, correctAns=0;
+    const scores={'dual-tap':0,'color-word':0,'dual-draw':0,'calculation':0};
+    const durations={'dual-tap':30,'color-word':30,'dual-draw':60,'calculation':30};
 
-            switch(gameType) {
-                case 'dual-tap':
-                    startDualTapGame();
-                    break;
-                case 'color-word':
-                    startColorWordGame();
-                    break;
-                case 'dual-draw':
-                    startDualDrawGame();
-                    break;
-                case 'calculation':
-                    startCalculationGame();
-                    break;
-            }
+    function startGame(type){
+      currentGame=type;
+      document.getElementById('menu').style.display='none';
+      document.getElementById(type).classList.add('active');
+      document.getElementById('back-to-menu').style.display='block';
+      scores[type]=0; updateScore(type); resetOver(type);
+      clearInterval(timerId);
+      startTimer(type, durations[type]);
+      if(type==='dual-tap') initDualTap();
+      if(type==='color-word') initColor();
+      if(type==='dual-draw') initDraw();
+      if(type==='calculation') genCalc();
+    }
+
+    function showMenu(){
+      currentGame=null;
+      document.getElementById('menu').style.display='grid';
+      document.querySelectorAll('.game-area').forEach(a=>a.classList.remove('active'));
+      document.getElementById('back-to-menu').style.display='none';
+      clearInterval(timerId);
+    }
+
+    function updateScore(t){ document.getElementById(gameElements[t].score).textContent=scores[t]; }
+    function resetOver(t){
+      let el=document.getElementById(gameElements[t].over);
+      el.style.display='none'; el.textContent='';
+    }
+    function showOver(t){
+      let el=document.getElementById(gameElements[t].over);
+      el.textContent=`時間切れ！最終スコア: ${scores[t]}`; el.style.display='block';
+    }
+    function startTimer(t,sec){
+      let left=sec, te=document.getElementById(gameElements[t].timer);
+      timerId=setInterval(()=>{
+        left--; te.textContent=left;
+        if(left<=0){
+          clearInterval(timerId);
+          showOver(t);
+          setTimeout(()=>{ alert(`時間切れ！ ${t} のスコア: ${scores[t]}`); showMenu(); },1000);
         }
+      },1000);
+    }
 
-        function showMenu() {
-            currentGame = null;
-            document.getElementById('menu').style.display = 'grid';
-            document.querySelectorAll('.game-area').forEach(area => {
-                area.classList.remove('active');
-            });
-            document.getElementById('back-to-menu').style.display = 'none';
+    /* --- Dual Tap --- */
+    let tapIdx=0;
+    const tapIns=[
+      {txt:'左右同時にタップ！', tgt:'both'},
+      {txt:'左だけタップ！',    tgt:'left'},
+      {txt:'右だけタップ！',    tgt:'right'},
+      {txt:'同時にタップ！',    tgt:'both'},
+      {txt:'右だけ素早く！',    tgt:'right'},
+      {txt:'正確に両方！',      tgt:'both'}
+    ];
+    function initDualTap(){
+      tapIdx=0; scores['dual-tap']=0; updateScore('dual-tap');
+      showNext();
+      ['leftTap','rightTap'].forEach(id=>{
+        const el=document.getElementById(id);
+        el.ontouchstart=el.onclick=null;
+        el.addEventListener('touchstart',e=>{ e.preventDefault(); handleTap(id==='leftTap'?'left':'right', e.touches); });
+        el.addEventListener('click', ()=>handleTap(id==='leftTap'?'left':'right'));
+      });
+    }
+    function showNext(){
+      if(currentGame!=='dual-tap') return;
+      const ins=tapIns[tapIdx%tapIns.length];
+      const el=document.getElementById('tap-instruction');
+      el.textContent=ins.txt; el.dataset.tgt=ins.tgt;
+      setTimeout(()=>{ tapIdx++; showNext(); }, ins.tgt==='both'?2000:1400);
+    }
+    function handleTap(side,touches){
+      if(currentGame!=='dual-tap') return;
+      const el=document.getElementById('tap-instruction');
+      const tgt=el.dataset.tgt;
+      let pts=0;
+      if(tgt==='both' && touches&&touches.length>=2) pts=20;
+      else if(tgt==='both') pts=-5;
+      else if(tgt===side) pts=10;
+      else pts=-3;
+      scores['dual-tap']=Math.max(0,scores['dual-tap']+pts); updateScore('dual-tap');
+      const btn=document.querySelector(side==='left'?'.left-tap':'.right-tap');
+      btn.classList.add(pts>=0?'feedback-correct':'feedback-incorrect');
+      setTimeout(()=>btn.classList.remove('feedback-correct','feedback-incorrect'),200);
+    }
 
-            if (gameTimer) {
-                clearInterval(gameTimer);
-                gameTimer = null;
-            }
+    /* --- Color-Word --- */
+    const cols=['red','green','blue','yellow'];
+    const names=['赤','緑','青','黄'];
+    const vals=['#e53e3e','#38a169','#3182ce','#d69e2e'];
+    function initColor(){
+      scores['color-word']=0; updateScore('color-word');
+      showColorWord();
+      cols.forEach(c=>{
+        const btn=document.getElementById('btn-'+c);
+        btn.onclick=()=>selectColor(c);
+        btn.ontouchstart=e=>{ e.preventDefault(); selectColor(c); };
+      });
+    }
+    function showColorWord(){
+      const iTxt=Math.floor(Math.random()*4);
+      const iCol=Math.floor(Math.random()*4);
+      const disp=document.getElementById('color-display');
+      disp.textContent=names[iTxt];
+      disp.style.color=vals[iCol];
+      disp.dataset.correctColorName=cols[iCol];
+    }
+    function selectColor(chosen){
+      if(currentGame!=='color-word') return;
+      const disp=document.getElementById('color-display');
+      const ok=disp.dataset.correctColorName;
+      const pts=(chosen===ok?10:-3);
+      scores['color-word']=Math.max(0,scores['color-word']+pts); updateScore('color-word');
+      const feedbackClass = pts >= 0 ? 'feedback-correct' : 'feedback-incorrect';
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        if (btn.id === 'btn-' + chosen) {
+          btn.classList.add(feedbackClass);
         }
+      });
+      setTimeout(()=>{
+        document.querySelectorAll('.color-btn').forEach(btn => {
+          btn.classList.remove('feedback-correct', 'feedback-incorrect');
+        });
+        if(pts>=0) showColorWord();
+      },400);
+    }
 
-        function updateScore(gameType) {
-            const scoreElement = document.getElementById(gameType.replace('-', '-') + '-score');
-            if (scoreElement) {
-                scoreElement.textContent = scores[gameType];
-            }
-        }
+    /* --- Dual Draw --- */
+    let lCtx, rCtx, cntL=0, cntR=0;
+    function initDraw(){
+      scores['dual-draw']=0; updateScore('dual-draw');
+      cntL=cntR=0;
+      const lc=document.getElementById('leftCanvas'), rc=document.getElementById('rightCanvas');
+      lCtx=lc.getContext('2d'); rCtx=rc.getContext('2d');
+      lCtx.clearRect(0,0,lc.width,lc.height); rCtx.clearRect(0,0,rc.width,rc.height);
+      [lc,rc].forEach(cv=>{
+        const isL=cv.id==='leftCanvas';
+        cv.ontouchstart=cv.onmousedown=null;
+        cv.addEventListener('touchstart',e=>{ e.preventDefault(); drawShape(isL,e.touches[0]); });
+        cv.addEventListener('mousedown',e=>drawShape(isL,e));
+      });
+      document.querySelector('.clear-btn').onclick=clearDraw;
+    }
+    function drawShape(isLeft,e){
+      if(isLeft&&cntL>=10) return; if(!isLeft&&cntR>=10) return;
+      const ctx=isLeft?lCtx:rCtx;
+      const rect=e.target.getBoundingClientRect();
+      const x=e.clientX-rect.left, y=e.clientY-rect.top;
+      ctx.beginPath();
+      if(isLeft){ ctx.arc(x,y,20,0,2*Math.PI); ctx.fillStyle='#ff6b6b'; cntL++;
+      } else { ctx.fillStyle='#4ecdc4'; ctx.fillRect(x-20,y-20,40,40); cntR++; }
+      ctx.fill();
+      if(cntL>=10&&cntR>=10){
+        scores['dual-draw']+=50; updateScore('dual-draw');
+        alert('描画完了！ボーナス50点獲得！');
+      }
+    }
+    function clearDraw(){
+      const lc=document.getElementById('leftCanvas'), rc=document.getElementById('rightCanvas');
+      lCtx.clearRect(0,0,lc.width,lc.height); rCtx.clearRect(0,0,rc.width,rc.height);
+      cntL=cntR=0;
+    }
 
-        function resetGameOverMessage(gameType) {
-            const messageElement = document.getElementById(`${gameType}-game-over`);
-            if (messageElement) {
-                messageElement.style.display = 'none';
-                messageElement.textContent = '';
-            }
-        }
-
-        function showGameOver(gameType, finalScore) {
-            const messageElement = document.getElementById(`${gameType}-game-over`);
-            if (messageElement) {
-                messageElement.textContent = `時間切れ！最終スコア: ${finalScore}`;
-                messageElement.style.display = 'block';
-            }
-        }
-
-        function startTimer(gameType, duration) {
-            let timeLeft = duration;
-            const timerElement = document.getElementById(gameType.replace('-', '-') + '-timer');
-
-            if (gameTimer) clearInterval(gameTimer); // 既存のタイマーをクリア
-
-            gameTimer = setInterval(() => {
-                timeLeft--;
-                timerElement.textContent = timeLeft;
-
-                if (timeLeft <= 0) {
-                    clearInterval(gameTimer);
-                    gameTimer = null;
-                    showGameOver(gameType, scores[gameType]); // ゲームオーバーメッセージ表示
-                    setTimeout(() => { // 少し遅延させてメニューに戻る
-                        alert(`時間切れ！ ${gameType.replace('-', ' ')} のスコア: ${scores[gameType]}`);
-                        showMenu();
-                    }, 1500);
-                }
-            }, 1000);
-        }
-
-        // --- 左右同時タップゲーム ---
-        let tapInstructionIndex = 0;
-        const tapInstructions = [
-            { text: '左右同時にタップ！', target: 'both' },
-            { text: '左だけタップ！', target: 'left' },
-            { text: '右だけタップ！', target: 'right' },
-            { text: '左と右を同時に！', target: 'both' },
-            { text: '右だけ、素早く！', target: 'right' },
-            { text: '左と右、正確に！', target: 'both' }
-        ];
-
-        function startDualTapGame() {
-            scores['dual-tap'] = 0;
-            updateScore('dual-tap');
-            startTimer('dual-tap', gameDurations['dual-tap']);
-            showTapInstruction();
-        }
-
-        function showTapInstruction() {
-            const instructionElement = document.getElementById('tap-instruction');
-            if (currentGame !== 'dual-tap' || !instructionElement) return;
-
-            const instruction = tapInstructions[tapInstructionIndex % tapInstructions.length];
-            instructionElement.textContent = instruction.text;
-            instructionElement.dataset.target = instruction.target; // ターゲットをdata属性に保存
-
-            // 次の指示までの時間（指示内容によって変動）
-            let nextInstructionDelay = 2000;
-            if (instruction.target === 'both') nextInstructionDelay = 2500;
-            if (instruction.target === 'left' || instruction.target === 'right') nextInstructionDelay = 1800;
-
-            setTimeout(() => {
-                if (currentGame === 'dual-tap') {
-                    tapInstructionIndex++;
-                    showTapInstruction();
-                }
-            }, nextInstructionDelay);
-        }
-
-        function tapArea(side) {
-            if (currentGame !== 'dual-tap') return;
-
-            const instructionElement = document.getElementById('tap-instruction');
-            const target = instructionElement.dataset.target;
-            let points = 0;
-
-            // 正しいタップか判定
-            if (target === 'both') {
-                // 両手タップの指示の場合、両方タップされたか（ここでは片方タップのみなので、片方タップは不正解）
-                // 実際には両手同時タップを検知する仕組みが必要だが、この実装では簡略化
-                // もし片方だけタップされたら、ペナルティ
-                points = -5; // 両手タップ指示で片方のみは不正解
-                // 実際には、両方のタップイベントを検知し、短時間差で発生した場合のみ成功とする
-            } else if (target === side) {
-                points = 10; // 指示通りの片手タップ
-            } else {
-                points = -3; // 指示と違うタップ
-            }
-
-            scores['dual-tap'] += points;
-            scores['dual-tap'] = Math.max(0, scores['dual-tap']); // スコアは0以下にならない
-            updateScore('dual-tap');
-
-            // タップ時のフィードバック
-            const feedbackClass = points >= 0 ? 'feedback-correct' : 'feedback-incorrect';
-            const tappedElement = side === 'left' ? document.querySelector('.left-tap') : document.querySelector('.right-tap');
-            tappedElement.classList.add(feedbackClass);
-            setTimeout(() => {
-                tappedElement.classList.remove(feedbackClass);
-            }, 500);
-
-            // 両手タップ指示時の追加ロジック（簡易版）
-            if (target === 'both' && side === 'left') { // 左タップ時に両手指示なら、右タップも期待
-                // ここで右タップイベントを待つ、または右タップも同時に実行されたと見なす
-                // 今回は簡略化のため、左タップされたら指示として記録し、右タップも同時に行われたと仮定（実際は無理）
-                // より高度な実装では、左右のタップイベントを別々に管理し、両方が短時間内に発生したかを判定
-                // この実装では、左タップ時に指示がbothなら、成功（簡略化）
-                 scores['dual-tap'] += 10; // 追加ポイント
-                 updateScore('dual-tap');
-                 instructionElement.classList.add('feedback-correct');
-                 setTimeout(() => { instructionElement.classList.remove('feedback-correct'); }, 500);
-            }
-        }
-
-        // --- 色と文字の不一致ゲーム ---
-        function startColorWordGame() {
-            scores['color-word'] = 0;
-            updateScore('color-word');
-            startTimer('color-word', gameDurations['color-word']);
-            showColorWord();
-        }
-
-        function showColorWord() {
-            const display = document.getElementById('color-display');
-            const randomIndex = Math.floor(Math.random() * colors.length);
-            const randomColorNameIndex = Math.floor(Math.random() * colorNames.length);
-
-            display.textContent = colorNames[randomColorNameIndex];
-            display.style.color = colorValues[randomIndex];
-
-            // ボタンの色とテキストをランダムに配置
-            const buttons = document.querySelectorAll('.color-options .color-btn');
-            const shuffledColors = [...colorValues].sort(() => Math.random() - 0.5);
-            buttons.forEach((button, index) => {
-                button.style.backgroundColor = shuffledColors[index];
-                // ボタンのテキストは固定（赤、緑、青、黄）
-            });
-        }
-
-        function selectColor(selectedColorName) {
-            if (currentGame !== 'color-word') return;
-
-            const display = document.getElementById('color-display');
-            const displayedColorValue = display.style.color; // 例: "rgb(229, 62, 62)"
-            const displayedColorName = colorNames[colorValues.indexOf(displayedColorValue)]; // 例: "赤"
-
-            // 選択されたボタンの色に対応する値を取得
-            const selectedButton = Array.from(document.querySelectorAll('.color-options .color-btn')).find(btn => btn.style.backgroundColor === colorValues[colors.indexOf(selectedColorName)]);
-            const selectedColorValue = selectedButton ? selectedButton.style.backgroundColor : '';
-
-            let points = 0;
-            if (selectedColorName === colors[colorValues.indexOf(displayedColorValue)]) {
-                points = 10; // 正解
-            } else {
-                points = -3; // 不正解
-            }
-
-            scores['color-word'] += points;
-            scores['color-word'] = Math.max(0, scores['color-word']);
-            updateScore('color-word');
-
-            // フィードバック
-            const feedbackClass = points >= 0 ? 'feedback-correct' : 'feedback-incorrect';
-            display.classList.add(feedbackClass);
-            setTimeout(() => {
-                display.classList.remove(feedbackClass);
-                if (points >= 0) { // 正解時のみ次の問題へ
-                    showColorWord();
-                }
-            }, 700);
-        }
-
-        // --- 左右手同時描画ゲーム ---
-        function startDualDrawGame() {
-            scores['dual-draw'] = 0;
-            leftDrawCount = 0;
-            rightDrawCount = 0;
-            updateScore('dual-draw');
-            startTimer('dual-draw', gameDurations['dual-draw']);
-            setupDrawingCanvas();
-        }
-
-        function setupDrawingCanvas() {
-            const leftCanvas = document.getElementById('leftCanvas');
-            const rightCanvas = document.getElementById('rightCanvas');
-
-            leftCtx = leftCanvas.getContext('2d');
-            rightCtx = rightCanvas.getContext('2d');
-
-            // 初期状態のリセット
-            leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-            rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-            leftCtx.lineCap = rightCtx.lineCap = 'round'; // 線を滑らかに
-            leftCtx.lineWidth = rightCtx.lineWidth = 5; // 線幅
-
-            const canvases = [leftCanvas, rightCanvas];
-            canvases.forEach((canvas, index) => {
-                const ctx = canvas.getContext('2d');
-                const isLeftCanvas = canvas.id === 'leftCanvas';
-
-                canvas.addEventListener('mousedown', (e) => {
-                    if (isDrawing) return; // 描画中は無視
-                    if (isLeftCanvas && leftDrawCount >= MAX_DRAWS_PER_GAME) return; // 上限に達したら描画不可
-                    if (!isLeftCanvas && rightDrawCount >= MAX_DRAWS_PER_GAME) return;
-
-                    isDrawing = true;
-                    const rect = canvas.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-
-                    if (isLeftCanvas) {
-                        leftCtx.beginPath();
-                        leftCtx.arc(x, y, 20, 0, 2 * Math.PI);
-                        leftCtx.fillStyle = '#ff6b6b';
-                        leftCtx.fill();
-                        lastLeftPos = { x, y };
-                        leftDrawCount++; // 描画数をカウント
-                    } else {
-                        rightCtx.fillStyle = '#4ecdc4';
-                        rightCtx.fillRect(x - 20, y - 20, 40, 40);
-                        lastRightPos = { x, y };
-                        rightDrawCount++; // 描画数をカウント
-                    }
-                });
-
-                canvas.addEventListener('mousemove', (e) => {
-                    if (!isDrawing) return;
-                    const rect = canvas.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-
-                    if (isLeftCanvas) {
-                        leftCtx.beginPath();
-                        leftCtx.arc(x, y, 15, 0, 2 * Math.PI);
-                        leftCtx.fillStyle = '#ff6b6b';
-                        leftCtx.fill();
-                        lastLeftPos = { x, y };
-                    } else {
-                        rightCtx.fillStyle = '#4ecdc4';
-                        rightCtx.fillRect(x - 15, y - 15, 30, 30);
-                        lastRightPos = { x, y };
-                    }
-                });
-
-                canvas.addEventListener('mouseup', () => {
-                    isDrawing = false;
-                });
-                canvas.addEventListener('mouseout', () => { // マウスがキャンバス外に出た場合
-                    isDrawing = false;
-                });
-            });
-        }
-
-        function clearCanvas() {
-            if (leftCtx && rightCtx) {
-                leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-                rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-                leftDrawCount = 0; // カウントリセット
-                rightDrawCount = 0;
-            }
-        }
-
-        // 描画完了判定（簡易版）
-        function checkDrawingCompletion() {
-            if (leftDrawCount >= MAX_DRAWS_PER_GAME && rightDrawCount >= MAX_DRAWS_PER_GAME) {
-                // 描画完了時のスコアリング（ここでは簡易的に、描画数に応じてスコア加算）
-                scores['dual-draw'] += 50; // ボーナススコア
-                updateScore('dual-draw');
-                alert('描画完了！ボーナススコア獲得！');
-                // 必要であればタイマーを停止し、次のゲームへ進む
-            }
-        }
-
-        // --- 左右脳連携計算ゲーム ---
-        function startCalculationGame() {
-            scores['calculation'] = 0;
-            updateScore('calculation');
-            startTimer('calculation', gameDurations['calculation']);
-            generateCalculationProblem();
-        }
-
-        function generateCalculationProblem() {
-            const num1 = Math.floor(Math.random() * 15) + 1; // 範囲を広げる
-            const num2 = Math.floor(Math.random() * 15) + 1;
-            const operations = ['+', '-', '×', '÷']; // 掛け算、割り算も追加
-            const operation = operations[Math.floor(Math.random() * operations.length)];
-
-            let correctAnswer = 0;
-            let displayProblem = `${num1} ${operation} ${num2}`;
-
-            switch (operation) {
-                case '+':
-                    correctAnswer = num1 + num2;
-                    break;
-                case '-':
-                    // 引き算は結果が負にならないように調整
-                    if (num1 < num2) {
-                        [num1, num2] = [num2, num1]; // 入れ替え
-                        displayProblem = `${num1} - ${num2}`;
-                    }
-                    correctAnswer = num1 - num2;
-                    break;
-                case '×':
-                    correctAnswer = num1 * num2;
-                    break;
-                case '÷':
-                    // 割り算は結果が整数になるように調整
-                    let divisor = Math.floor(Math.random() * 10) + 1;
-                    let dividend = divisor * (Math.floor(Math.random() * 10) + 1);
-                    num1 = dividend;
-                    num2 = divisor;
-                    displayProblem = `${num1} ÷ ${num2}`;
-                    correctAnswer = num1 / num2;
-                    break;
-            }
-
-            // 選択肢の生成
-            let wrongAnswers = [];
-            while (wrongAnswers.length < 2) {
-                let potentialWrongAnswer;
-                if (operation === '÷') {
-                    potentialWrongAnswer = correctAnswer + Math.floor(Math.random() * 4) - 2; // 割り算の場合、近い値
-                    if (potentialWrongAnswer === correctAnswer || potentialWrongAnswer <= 0) continue; // 重複や非正の値は除外
-                } else {
-                    potentialWrongAnswer = correctAnswer + Math.floor(Math.random() * 5) - 2; // +1, -1, +2, -2, 0
-                    if (potentialWrongAnswer === correctAnswer || potentialWrongAnswer < 0) continue; // 重複や負の値は除外
-                }
-                if (!wrongAnswers.includes(potentialWrongAnswer)) {
-                    wrongAnswers.push(potentialWrongAnswer);
-                }
-            }
-            const options = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
-
-            document.getElementById('calc-display').textContent = displayProblem;
-
-            // ボタンの値を更新
-            const buttonsContainer = document.getElementById('calc-options');
-            buttonsContainer.innerHTML = ''; // 既存のボタンをクリア
-            options.forEach((option, index) => {
-                const button = document.createElement('button');
-                button.classList.add('calc-btn');
-                button.textContent = option;
-                button.onclick = () => selectAnswer(option);
-                buttonsContainer.appendChild(button);
-            });
-
-            currentCorrectAnswer = correctAnswer; // 現在の正解を保持
-        }
-
-        function selectAnswer(selectedAnswer) {
-            if (currentGame !== 'calculation') return;
-
-            let points = 0;
-            if (selectedAnswer === currentCorrectAnswer) {
-                points = 10; // 正解
-            } else {
-                points = -3; // 不正解
-            }
-
-            scores['calculation'] += points;
-            scores['calculation'] = Math.max(0, scores['calculation']);
-            updateScore('calculation');
-
-            // フィードバック
-            const buttons = document.querySelectorAll('#calculation .calc-btn');
-            buttons.forEach(btn => {
-                if (parseInt(btn.textContent) === currentCorrectAnswer) {
-                    btn.classList.add('feedback-correct');
-                } else if (parseInt(btn.textContent) === selectedAnswer) {
-                    btn.classList.add('feedback-incorrect');
-                }
-            });
-
-            setTimeout(() => {
-                buttons.forEach(btn => {
-                    btn.classList.remove('feedback-correct', 'feedback-incorrect');
-                });
-                if (points >= 0) { // 正解時のみ次の問題へ
-                    generateCalculationProblem();
-                }
-            }, 700);
-        }
-
-        // --- 初期化 ---
-        window.onload = () => {
-            // 必要に応じて初期化処理を追加
-        };
-
-    </script>
+    /* --- Calculation --- */
+    function genCalc(){
+      scores['calculation']=0; updateScore('calculation');
+      let n1=Math.floor(Math.random()*15)+1, n2=Math.floor(Math.random()*15)+1;
+      const ops=['+','-','×','÷'], op=ops[Math.floor(Math.random()*4)];
+      if(op==='-'&&n1<n2) [n1,n2]=[n2,n1];
+      if(op==='÷'){ const d=Math.floor(Math.random()*9)+1; n1=d*(Math.floor(Math.random()*9)+1); n2=d; }
+      document.getElementById('calc-display').textContent=`${n1}${op}${n2}`;
+      switch(op){
+        case '+': correctAns=n1+n2; break;
+        case '-': correctAns=n1-n2; break;
+        case '×': correctAns=n1*n2; break;
+        case '÷': correctAns=n1/n2; break;
+      }
+      const wrong=[];
+      while(wrong.length<2){
+        const c=(op==='÷'? correctAns+Math.floor(Math.random()*4)-2
+                         : correctAns+Math.floor(Math.random()*5)-2);
+        if(c>0&&c!==correctAns&&!wrong.includes(c)) wrong.push(c);
+      }
+      const opts=[correctAns,...wrong].sort(()=>Math.random()-0.5);
+      const cont=document.getElementById('calc-options');
+      cont.innerHTML='';
+      opts.forEach(v=>{
+        const btn=document.createElement('button');
+        btn.className='calc-btn'; btn.textContent=v;
+        btn.onclick=btn.ontouchstart=e=>{ e.preventDefault(); pickCalc(v); };
+        cont.appendChild(btn);
+      });
+    }
+    function pickCalc(sel){
+      if(currentGame!=='calculation') return;
+      const pts=(sel===correctAns?10:-3);
+      scores['calculation']=Math.max(0,scores['calculation']+pts); updateScore('calculation');
+      document.querySelectorAll('#calc-options .calc-btn').forEach(b=>{
+        const v=Number(b.textContent);
+        if(v===correctAns) b.classList.add('feedback-correct');
+        else if(v===sel)   b.classList.add('feedback-incorrect');
+      });
+      setTimeout(()=>{
+        document.querySelectorAll('.calc-btn').forEach(b=>b.classList.remove('feedback-correct','feedback-incorrect'));
+        if(pts>0) genCalc();
+      },400);
+    }
+  </script>
 </body>
 </html>
