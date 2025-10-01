@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ひらがな もじならべかえ 脳トレ DX (4文字以上対応)</title>
+<style>
+  /* 色や基本的なスタイルは維持しつつ、ドラッグ＆ドロップ関連を追加 */
+  :root{
+    --bg:#f3f6fb;
+    --card:#ffffff;
+    --primary:#0b63b6;
+    --accent:#06a88e;
+    --muted:#5a6b78;
+    --btn-bg:#ffffff;
+    --btn-border:#dbeaf8;
+    --char-bg:#fff9e6;
+    --slot-bg:#e9f6ff;
+    --correct:#1f8a4c;
+    --wrong:#c73838;
+    --drag-over-color: #6da2e0; /* DnD時の目印の色 */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family: "Noto Sans JP","ヒラギノ角ゴ ProN","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;background:var(--bg);color:#052033;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:24px auto;padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{font-size:20px;margin:0;color:var(--primary)}
+  .controls{display:flex;gap:8px;align-items:center}
+  .status{font-size:14px;color:var(--muted)}
+  button{appearance:none;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;box-shadow:0 6px 18px rgba(11,99,182,0.12);transition:background 0.2s, opacity 0.2s}
+  button:disabled{opacity:0.6; cursor: not-allowed; box-shadow:none} /* Disabledスタイルを追加 */
+  button.secondary{background:var(--btn-bg);color:var(--primary);border:1px solid var(--btn-border);box-shadow:none}
+  button.ghost{background:transparent;color:var(--primary);border:1px dashed rgba(11,99,182,0.12);padding:8px 12px}
+  main{margin-top:16px}
+  .card{background:var(--card);padding:18px;border-radius:14px;box-shadow:0 12px 34px rgba(6,24,48,0.06)}
+  .row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .panel{flex:1;min-width:260px}
+  .hint{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .answer{min-height:64px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;border-radius:12px;background:linear-gradient(180deg,#fbfeff,#f7fbff);border:1px solid rgba(11,99,182,0.06)}
+  
+  /* SlotのDnD対応スタイル */
+  .slot{
+    min-width:48px;border-radius:10px;padding:10px 12px;font-size:20px;background:var(--slot-bg);
+    border:2px solid rgba(11,99,182,0.10);color:#022b45;cursor:grab;display:flex;align-items:center;
+    justify-content:center; position: relative;
+    /* DnD関連 */
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .slot:active{ cursor: grabbing; box-shadow: 0 4px 10px rgba(11,99,182,0.2); transform: translateY(-2px)}
+  .slot.dragging{ opacity: 0.5; }
+  .slot.drag-over{ border: 2px solid var(--drag-over-color); }
+
+  .scrambled{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;padding:10px;border-radius:12px;background:#ffffff;min-height:120px;align-items:flex-start}
+  .char-btn{background:var(--char-bg);color:#07223a;border-radius:12px;padding:12px 14px;font-size:22px;cursor:pointer;border:2px solid rgba(2,34,53,0.04);min-width:56px;text-align:center;box-shadow:0 6px 18px rgba(4,28,48,0.04)}
+  .char-btn.disabled{opacity:0.36;cursor:default;box-shadow:none}
+  .controls-row{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .feedback{margin-top:12px;font-weight:800;font-size:16px;min-height:24px}
+  .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;margin-top:12px}
+  .correct-badge{color:var(--correct)}
+  .wrong-badge{color:var(--wrong)}
+  footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
+  
+  /* レスポンシブ改善 */
+  @media(max-width:640px){
+    .char-btn{padding:10px 12px;font-size:20px;min-width:46px}
+    .slot{min-width:44px;font-size:18px;padding:8px 10px}
+    header{flex-direction:column;align-items:flex-start;gap:10px}
+    .row{flex-direction: column;} /* スマホでは縦並び */
+    .panel{min-width: 100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" role="main" aria-label="ひらがな 文字並べ替えゲーム">
+  <header>
+    <h1>ひらがな もじならべかえ 脳トレ DX</h1>
+    <div class="controls" aria-hidden="false">
+      <div class="status" id="status">もんだい: 0 / 300</div>
+      <button id="startBtn">スタート</button>
+      <button id="nextBtn" class="secondary">つぎへ</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card" role="region" aria-label="ゲームエリア">
+      <div class="row">
+        <div class="panel" style="flex:2">
+          <div class="hint"><strong>ヒント</strong>：もじすうをみてください (選択文字は**ドラッグで並べ替え**できます)</div>
+          <div><strong>えらんだもじ (答えの順に並べてね)</strong></div>
+          <div id="answerArea" class="answer" aria-live="polite" aria-label="えらんだ文字"></div>
+
+          <div class="controls-row">
+            <button id="confirmBtn" disabled>かくてい</button>
+            <button id="clearBtn" class="secondary">くりあ</button>
+            <button id="shuffleBtn" class="secondary">さいしゃふる</button>
+            <button id="revealBtn" class="ghost" title="せいかいをみせる">こたえ</button>
+            <div style="flex:1"></div>
+            <div class="status" id="timer">じかん: 00:00</div>
+          </div>
+
+          <div id="feedback" class="feedback" aria-live="polite"></div>
+
+          <div class="meta" aria-hidden="false">
+            <div>せいかいすう: <span id="correctCount">0</span></div>
+            <div>のこり: <span id="remaining">300</span></div>
+          </div>
+        </div>
+
+        <div class="panel" style="flex:1;min-width:240px">
+          <div class="hint"><strong>ばらばらのもじ (数字キーで選択可能)</strong></div>
+          <div id="scrambled" class="scrambled" role="list" aria-label="ばらばらのもじ"></div>
+
+          <div style="margin-top:12px;color:var(--muted);font-size:13px">
+            そうさ：もじをタップしてえらび、スロットをタップするともどる。スマホ対応。
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>ヒント：わからないときは「こたえ」をおしてみてください</footer>
+</div>
+
+<script>
+/* ===== ひらがな単語リスト（4文字以上の単語に絞り込み済み） ===== */
+const ORIGINAL_WORDS = [
+"わたし","あなた","かれ","かのじょ","ともだち","いえ","がっこう","せんせい","ほん","つくえ",
+"しゃしん","しんぶん","くるま","えき","みせ","りょうり","あさごはん","ひるごはん","ばんごはん","じかん",
+"きょう","あした","きのう","しごと","かいしゃ","でんしゃ","でんわ","てがみ","へや","まど",
+"いす","ねこ","いぬ","とり","さかな","やま","かわ","うみ","そら","あめ",
+"ゆき","はる","なつ","あき","ふゆ","はな","き","は","みち","はし",
+"てんいん","きゃく","びょういん","くすり","びょうき","げんき","えがお","ゆめ","えいが","おんがく",
+"うた","りょこう","ひこうき","きっぷ","ちず","こうえん","にわ","とけい","さいふ","かぎ",
+"かさ","ぼうし","くつ","くつした","ふく","いろ","しろ","くろ","あか","あお",
+"みどり","きいろ","ちゃいろ","ぎん","きん","かみ","ふうとう","えんぴつ","けしごむ","ぺん",
+"けいたい","がめん","しゃしんしゅう","ざっし","ほんだな","りょうりにん","しょくどう","てんちょう","ゆうじん","かぞく",
+"ちち","はは","あに","あね","おとうと","いもうと","むすこ","むすめ","おっと","つま",
+"けっこん","たんじょうび","きねんび","まつり","かしゅ","はいゆう","えいがかん","げきじょう","えんそう","ぶたい",
+"え","しゃしんか","がか","ふうけい","たてもの","きょうりょう","どうろ","しんごう","こうさてん","こうそく",
+"うんてん","じてんしゃ","ほどう","ちかてつ","くうこう","しゅっぱつ","とうちゃく","まちあいしつ","しゅうごう","かいさん",
+"けいかく","あんない","せつめい","しつもん","こたえ","ほんね","ひみつ","りゆう","いけん","かんがえ",
+"そうぞう","きおく","れきし","みらい","げんざい","かこ","ぶんか","でんとう","ことば","ほうげん",
+"かんじ","かな","あるふぁべっと","すうじ","けいさん","もんだい","こたえ","べんきょう","しけん","ごうかく",
+"そつぎょう","にゅうがく","どうき","なかま","せんせいがた","しどう","もくひょう","ちょうせん","せいこう","しっぱい",
+"かいぜん","せいちょう","へんか","しゅうかん","けんこう","うんどう","さんぽ","たいじゅう","しょくじ","えいよう",
+"すいみん","きゅうけい","しゅうちゅう","ちゅうい","あんぜん","きけん","ひ","みず","でんき","がす",
+"おんど","しつど","てんき","よほう","けいほう","じしん","つなみ","ひなん","じゅんび","たいさく",
+"ほけん","けいやく","りょうきん","わりびき","かかく","しはらい","げんきん","かーど","りょうしゅうしょ","せいきゅう",
+"ぎんこう","こうざ","ちょきん","とうし","りえき","そんしつ","けいやくしょ","しょるい","ていしゅつ","かくにん",
+"そうしん","じゅしん","とうろく","かいじょ","へんしゅう","ほぞん","さくじょ","こぴー","はりつけ","いんさつ",
+"ひょうじ","ひひょうじ","こうしん","どうき","せつぞく","せつだん","きどう","しゅうりょう","さいきどう","せってい",
+"げんご","にほんご","えいご","ちゅうごくご","かんこくご","ほんやく","つうやく","かいわ","あいさつ","しょうかい",
+"なまえ","じゅうしょ","でんわばんごう","めーる","れんらく","あんないじょう","しょうたい","しゅっせき","けっせき","さんか",
+"かいぎ","うちあわせ","ぎだい","ぎじろく","はっぴょう","ほうこく","ていしゅつぶつ","ひょうか","さいよう","たいしょく",
+"きゅうか","ゆうきゅう","むきゅう","きんむ","しゅっきん","ちこく","そうたい","ざんぎょう","きゅうぎょう","しょうしん",
+"たいしょくきん","ねんきん","ぜいきん","しんこく","りょういき","ぶんや","ぎょうむ","たんとう","かだい","かいけつ",
+"しよう","せっけい","かいはつ","じっそう","てすと","でばっぐ","うんよう","ほしゅ","かんし","ろぐ",
+"でーた","ぶんせき","けっか","せいせき","とうけい","けいこう","ぞうか","げんしょう","へいきん","ちゅうおうち",
+"さいだい","さいしょう","わりあい","ひりつ","ぶんるい","けんさく","しゅとく","そうしん","じゅしん","しょり",
+"かんすう","へんすう","はいれつ","おぶじぇくと","くらす","けいしょう","れいがい","どうき","ひどうき","へいれつ",
+"がめん","ぼたん","にゅうりょく","しゅつりょく","せんたく","りすと","めにゅー","たぶ","すくろーる","れすぽんしぶ"
+]; 
+// 4文字未満の単語をフィルタリングして新しいリストを作成
+const WORDS = ORIGINAL_WORDS.filter(word => Array.from(word).length >= 4);
+
+// 許可されたアナグラムペアを定義 (元の単語をキー、許容されるアナグラムを値とする)
+const ANAGRAM_ALLOWANCES = {
+    "たいじゅう": ["じゅうたい"], // 体重 と 渋滞
+    "いけん": ["けんい"],       // 意見 と 権威
+    "せいこう": ["こうせい"],     // 成功 と 公正/構成
+    "ちゅうい": ["いちゅう"]      // 注意 と 意中
+    // 他にもアナグラムがあればここに追加します
+};
+
+// フィルタリング後の最大問題数を更新
+const MAX_PROBLEMS = WORDS.length;
+
+
+/* ===== ゲーム状態 ===== */
+let currentIndex = -1;
+let usedIndices = new Set();
+let correctCount = 0;
+let startTime = null;
+let timerInterval = null;
+const maxProblems = MAX_PROBLEMS; // 最大問題をフィルタリング後の単語数に設定
+let locked = false; // 問題がロック（こたえ表示など）
+let currentWordLength = 0; // 現在の問題の文字数
+
+/* ===== DOM ===== */
+const statusEl = document.getElementById('status');
+const scrambledEl = document.getElementById('scrambled');
+const answerArea = document.getElementById('answerArea');
+const feedback = document.getElementById('feedback');
+const timerEl = document.getElementById('timer');
+const correctCountEl = document.getElementById('correctCount');
+const remainingEl = document.getElementById('remaining');
+const confirmBtn = document.getElementById('confirmBtn');
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('nextBtn').addEventListener('click', nextProblem);
+confirmBtn.addEventListener('click', () => confirmAnswer(false)); // 手動確定
+document.getElementById('clearBtn').addEventListener('click', clearAnswer);
+document.getElementById('shuffleBtn').addEventListener('click', shuffleScrambled);
+document.getElementById('revealBtn').addEventListener('click', revealAnswer);
+
+/* ===== ヘルパー ===== */
+function formatTime(sec){
+  const m = String(Math.floor(sec/60)).padStart(2,'0');
+  const s = String(sec%60).padStart(2,'0');
+  return m + ':' + s;
+}
+function startTimer(){
+  startTime = Date.now();
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    const sec = Math.floor((Date.now() - startTime)/1000);
+    timerEl.textContent = "じかん: " + formatTime(sec);
+  },500);
+}
+function stopTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval = null; } }
+
+/* ===== 配列ユーティリティ ===== */
+function shuffleArray(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+}
+/* 正確な1文字分解（サロゲート対対応） */
+function splitChars(str){ return Array.from(str); }
+
+/* 確定ボタンの有効/無効を切り替える */
+function updateConfirmButtonState(){
+  // 文字数が一致し、ロックされていない場合に有効
+  const selectedCharCount = answerArea.children.length;
+  confirmBtn.disabled = locked || (selectedCharCount !== currentWordLength) || (currentWordLength === 0);
+}
+
+/* 文字選択（ボタンクリック時）のロジック */
+function selectChar(btn, char){
+  if(locked) return;
+  if(btn.classList.contains('disabled')) return;
+  
+  btn.classList.add('disabled');
+  
+  const slot = createSlotElement(char, btn);
+  answerArea.appendChild(slot);
+  
+  // feedbackをクリア（ヒントテキストは維持）
+  if(!feedback.textContent.startsWith('ヒント')){
+     feedback.textContent = "ヒント：もじすう " + currentWordLength + " もじ";
+     feedback.style.color = 'var(--muted)';
+  }
+  
+  updateConfirmButtonState();
+
+  // 自動進行のチェック
+  if (answerArea.children.length === currentWordLength) {
+    confirmAnswer(true); // isAutoConfirm: true を渡して自動進行を可能にする
+  }
+}
+
+/* スロットのDOM要素を生成（DnDイベントを追加） */
+function createSlotElement(char, originalBtn){
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.textContent = char;
+    slot.draggable = true; // ドラッグ可能にする
+    slot.dataset.char = char;
+    
+    // スロットをクリックで戻す処理
+    slot.addEventListener('click', () => {
+        if(locked) return;
+        // 該当する文字のdisabledボタンを一つ有効に戻す
+        const buttons = Array.from(scrambledEl.querySelectorAll('.char-btn'));
+        for(const b of buttons){
+            if(b.textContent === char && b.classList.contains('disabled')){
+                b.classList.remove('disabled');
+                break;
+            }
+        }
+        slot.remove();
+        updateConfirmButtonState();
+    });
+
+    /* --- ドラッグ＆ドロップ イベント --- */
+    slot.addEventListener('dragstart', (e) => {
+        if(locked) { e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', char);
+        e.dataTransfer.effectAllowed = 'move';
+        slot.classList.add('dragging');
+        // ドラッグ中のスロット自体の参照を保持
+        e.dataTransfer.setData('sourceId', 'slot-drag'); // 任意の識別子
+        e.dataTransfer.setData('sourceIndex', Array.from(answerArea.children).indexOf(slot));
+    });
+
+    slot.addEventListener('dragend', () => {
+        slot.classList.remove('dragging');
+    });
+
+    // ドロップターゲット（スロット自体）
+    slot.addEventListener('dragover', (e) => {
+        if(locked) { e.preventDefault(); return; }
+        e.preventDefault(); // ドロップを許可
+        if(e.currentTarget !== slot.parentElement) { // 親要素以外でなければ
+            slot.classList.add('drag-over');
+        }
+    });
+
+    slot.addEventListener('dragleave', (e) => {
+        if(locked) return;
+        slot.classList.remove('drag-over');
+    });
+
+    slot.addEventListener('drop', (e) => {
+        if(locked) return;
+        e.preventDefault();
+        slot.classList.remove('drag-over');
+
+        const draggedIndex = parseInt(e.dataTransfer.getData('sourceIndex'));
+        const droppedElement = answerArea.children[draggedIndex];
+        const targetElement = e.currentTarget;
+
+        if (droppedElement && targetElement && droppedElement !== targetElement) {
+            // ドロップされた要素の位置を取得
+            const targetIndex = Array.from(answerArea.children).indexOf(targetElement);
+
+            // 要素を移動
+            if (draggedIndex < targetIndex) {
+                // 後ろに移動する場合: ターゲット要素の後に挿入
+                answerArea.insertBefore(droppedElement, targetElement.nextSibling);
+            } else {
+                // 前に移動する場合: ターゲット要素の前に挿入
+                answerArea.insertBefore(droppedElement, targetElement);
+            }
+        }
+        
+        // DnD後の自動確定チェック
+        if (answerArea.children.length === currentWordLength) {
+            confirmAnswer(true); // isAutoConfirm: true を渡して自動進行を可能にする
+        }
+    });
+
+    return slot;
+}
+
+
+/* answerArea（親要素）のDnDイベント */
+answerArea.addEventListener('dragover', (e) => {
+    if(locked) { e.preventDefault(); return; }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+});
+
+/* ===== 問題生成 / 表示 ===== */
+function pickRandomUnused(){
+  if(usedIndices.size >= maxProblems) return -1;
+  let idx;
+  do{
+    idx = Math.floor(Math.random() * WORDS.length);
+  }while(usedIndices.has(idx));
+  usedIndices.add(idx);
+  return idx;
+}
+
+function renderProblem(word){
+  // 初期化
+  locked = false;
+  answerArea.innerHTML = '';
+  scrambledEl.innerHTML = '';
+  feedback.textContent = '';
+  confirmBtn.disabled = true;
+
+  // ヒント（文字数）
+  const chars = splitChars(word);
+  currentWordLength = chars.length;
+  document.querySelector('.hint')?.setAttribute('aria-hidden','false');
+  
+  // 表示：未選択のボタン要素を作る
+  const btnElems = chars.slice().map(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'char-btn';
+    btn.type = 'button';
+    btn.textContent = ch;
+    // クリックで選択
+    btn.addEventListener('click', () => selectChar(btn, ch));
+    return btn;
+  });
+
+  // ランダムに並べ替え（要素そのものをランダム順でappendする）
+  shuffleArray(btnElems);
+  btnElems.forEach((b, index) => {
+     // キーボード操作用のインデックスをデータ属性として追加
+     b.dataset.index = index + 1;
+     scrambledEl.appendChild(b);
+  });
+
+  // ヒント表示（文字数）
+  const hintText = "ヒント：もじすう " + chars.length + " もじ";
+  feedback.textContent = hintText;
+  feedback.style.color = 'var(--muted)';
+  updateConfirmButtonState();
+}
+
+/* 現在の選択文字列を取得 */
+function getCurrentAnswer(){
+  // DnDで並べ替えられた後のスロットのtextContentを取得
+  return Array.from(answerArea.children).map(n=>n.textContent).join('');
+}
+
+/* 確定処理 */
+function confirmAnswer(isAutoConfirm = false){
+  if(currentIndex < 0 || locked) return;
+  if(answerArea.children.length !== currentWordLength) return; 
+
+  const correct = WORDS[currentIndex];
+  const user = getCurrentAnswer();
+  
+  let isCorrect = (user === correct); // まずは元の正解をチェック
+
+  // 1. アナグラム許容チェック: 元の正解ではないが、許容リストに含まれているか
+  if (!isCorrect) {
+      const allowances = ANAGRAM_ALLOWANCES[correct];
+      if (allowances && allowances.includes(user)) {
+          isCorrect = true; // 許容アナグラムとして正解
+      }
+  }
+
+  
+  if(isCorrect){
+    feedback.textContent = "せいかい！ 🎉";
+    feedback.style.color = "var(--correct)";
+    correctCount++;
+    
+    // 正解の場合、遅延を入れて次の問題へ自動遷移する
+    if (isAutoConfirm) {
+        locked = true; // ロックをかけて、次の問題へ進むまでの操作を防ぐ
+        setTimeout(() => {
+            nextProblem(); // 1秒後に次の問題へ
+        }, 1000);
+    } else {
+        // 手動確定の場合、次の問題ボタンを強調（元の動作）
+        document.getElementById('nextBtn').classList.remove('secondary');
+        document.getElementById('nextBtn').style.background = 'var(--accent)';
+        document.getElementById('nextBtn').style.color = '#fff';
+        locked = true; // ロックをかける
+    }
+
+  } else {
+    // 2. 不正解の場合のメッセージを調整
+    let feedbackMessage = "ふせいかい！ せいかいは「" + correct + "」でした。";
+    
+    // アナグラム許容リストに載っている単語が元の正解だった場合、許容される別の単語も併記する
+    if(ANAGRAM_ALLOWANCES[correct]){
+        feedbackMessage += " (または「" + ANAGRAM_ALLOWANCES[correct].join("」, 「") + "」)";
+    }
+
+    feedback.textContent = feedbackMessage;
+    feedback.style.color = "var(--wrong)";
+    locked = true; // 不正解の場合はロック
+  }
+  
+  confirmBtn.disabled = true; // 無効化
+  updateStatus();
+}
+
+/* クリア */
+function clearAnswer(){
+  if(locked) return;
+  // answerArea内のスロットを逆順で処理し、対応するボタンを有効化
+  const slots = Array.from(answerArea.children);
+  const buttons = Array.from(scrambledEl.querySelectorAll('.char-btn'));
+
+  slots.forEach(slot => {
+    const char = slot.textContent;
+    // 該当する文字のdisabledボタンを一つ有効に戻す
+    for(const b of buttons){
+      if(b.textContent === char && b.classList.contains('disabled')){
+        b.classList.remove('disabled');
+        break;
+      }
+    }
+  });
+
+  answerArea.innerHTML = '';
+  // feedbackをクリア（ヒントテキストは維持）
+  if(!feedback.textContent.startsWith('ヒント')){
+     feedback.textContent = "ヒント：もじすう " + currentWordLength + " もじ";
+     feedback.style.color = 'var(--muted)';
+  }
+  updateConfirmButtonState();
+}
+
+/* シャッフル（未選択のボタン要素だけ入れ替える） */
+function shuffleScrambled(){
+  if(locked) return;
+  // 選択済みのボタンは disabled になっている。未選択ボタンだけを抽出してシャッフルして再配置する
+  const allBtns = Array.from(scrambledEl.querySelectorAll('.char-btn'));
+  const unselected = allBtns.filter(b => !b.classList.contains('disabled'));
+  if(unselected.length <= 1) return;
+  
+  // シャッフルしてから、元の並び順に戻す処理で再配置
+  shuffleArray(unselected);
+  
+  // 再構築：元の並び（allBtns）を基準にし、各位置に disabled ならそのdisabled要素を、未選択ならシャッフルした配列から順に入れる
+  const newOrder = [];
+  let uIdx = 0;
+  for(const orig of allBtns){
+    if(orig.classList.contains('disabled')){
+      newOrder.push(orig);
+    } else {
+      // インデックスを更新し、新しい要素を挿入
+      unselected[uIdx].dataset.index = newOrder.length + 1; 
+      newOrder.push(unselected[uIdx++]);
+    }
+  }
+  
+  // クリアして再append
+  scrambledEl.innerHTML = '';
+  newOrder.forEach(el => scrambledEl.appendChild(el));
+}
+
+/* 「こたえ」表示（正解をスロットに自動で入れる） */
+function revealAnswer(){
+  if(currentIndex < 0) return;
+  
+  // ロックして既存選択はクリアしてから表示する
+  clearAnswer();
+  const correct = WORDS[currentIndex];
+  const chars = splitChars(correct);
+  
+  // disabledにしてスロットに入れる
+  const buttons = Array.from(scrambledEl.querySelectorAll('.char-btn'));
+  
+  // 正しい順にスロットを作成し、対応するボタンを disabled にする
+  chars.forEach(ch => {
+    for(const b of buttons){
+      if(!b.classList.contains('disabled') && b.textContent === ch){
+        b.classList.add('disabled');
+        // スロットを作成し、answerAreaに追加
+        const slot = createSlotElement(ch, b); 
+        slot.draggable = false; // 答え表示時は並べ替えを禁止
+        answerArea.appendChild(slot);
+        break;
+      }
+    }
+  });
+  
+  // 答え表示メッセージも調整
+  let feedbackMessage = "せいかいをひょうじしました。正解は「" + correct + "」";
+  if(ANAGRAM_ALLOW
