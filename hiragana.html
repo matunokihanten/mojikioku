@@ -548,4 +548,90 @@ function revealAnswer(){
   
   // 答え表示メッセージも調整
   let feedbackMessage = "せいかいをひょうじしました。正解は「" + correct + "」";
-  if(ANAGRAM_ALLOW
+  if(ANAGRAM_ALLOWANCES[correct]){
+      feedbackMessage += " (または「" + ANAGRAM_ALLOWANCES[correct].join("」, 「") + "」)";
+  }
+
+  feedback.textContent = feedbackMessage;
+  feedback.style.color = "var(--muted)";
+  locked = true;
+  confirmBtn.disabled = true; // 無効化
+}
+
+/* 次の問題 */
+function nextProblem(){
+  // 正解後のボタン強調を元に戻す
+  document.getElementById('nextBtn').classList.add('secondary');
+  document.getElementById('nextBtn').style.background = '';
+  document.getElementById('nextBtn').style.color = '';
+
+  if(usedIndices.size >= maxProblems){
+    feedback.textContent = "ぜんぶのもんだいがしゅうりょうしました。おつかれさまでした！";
+    stopTimer();
+    return;
+  }
+  
+  const idx = pickRandomUnused();
+  if(idx === -1){
+    feedback.textContent = "これいじょうしゅつだいできません。";
+    return;
+  }
+  
+  currentIndex = idx;
+  renderProblem(WORDS[idx]);
+  updateStatus();
+}
+
+/* ステータス更新 */
+function updateStatus(){
+  document.getElementById('status').textContent = "もんだい: " + usedIndices.size + " / " + maxProblems;
+  if(remainingEl){
+    remainingEl.textContent = Math.max(0, maxProblems - usedIndices.size);
+  }
+  correctCountEl.textContent = correctCount;
+}
+
+/* スタート */
+function startGame(){
+  usedIndices = new Set();
+  correctCount = 0;
+  correctCountEl.textContent = "0";
+  // feedbackをリセット
+  feedback.textContent = '';
+  startTimer();
+  nextProblem();
+}
+
+/* 初期化 */
+updateStatus();
+timerEl.textContent = "じかん: 00:00";
+
+/* ===== キーボード操作の強化 ===== */
+document.addEventListener('keydown', (e) => {
+  if(locked) return;
+  
+  // Enter: 確定
+  if(e.key === 'Enter'){
+    if(!confirmBtn.disabled) confirmAnswer(false); // isAutoConfirm: false (手動確定)
+  }
+  
+  // Backspace: クリア
+  if(e.key === 'Backspace'){
+    e.preventDefault(); // ブラウザの戻る動作を無効化
+    clearAnswer();
+  }
+  
+  // 数字キー (1, 2, 3...) で文字を選択
+  const number = parseInt(e.key);
+  if(number >= 1 && number <= 9){
+    e.preventDefault();
+    const btnToSelect = scrambledEl.querySelector(`.char-btn[data-index="${number}"]`);
+    if(btnToSelect && !btnToSelect.classList.contains('disabled')){
+      // 対応するインデックスのボタンがあればクリック（選択）
+      btnToSelect.click();
+    }
+  }
+});
+</script>
+</body>
+</html>
