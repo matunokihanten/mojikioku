@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>四字熟語・文字並べかえ脳トレ (自動次へ)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* --- ベースデザインと変数 --- */
+  :root{
+    --bg: #f3f7fb; /* 明るい背景 */
+    --card: #ffffff;
+    --accent: #2563eb; /* 青系をメインに */
+    --accent-light: #eff6ff; /* 薄いアクセント色 */
+    --ok: #16a34a; /* 緑 */
+    --ng: #dc2626; /* 赤 */
+    --muted: #64748b; /* グレー */
+    --border: #e2e8f0;
+    --shadow: 0 4px 15px rgba(15, 23, 42, 0.05);
+    font-family: "Noto Sans JP", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "メイリオ", Meiryo, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .app{
+    width:100%;
+    max-width:960px; /* 少し広く */
+    background:var(--card);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    padding:24px;
+  }
+  
+  /* --- ヘッダー --- */
+  header{
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom:20px;
+    flex-wrap: wrap; /* モバイル対応 */
+  }
+  h1{
+    margin:0;
+    font-size:24px;
+    font-weight:700;
+    color:#1f2937;
+    line-height:1.4;
+  }
+  .subtitle{font-size:14px;color:var(--muted);margin-top:4px;}
+  .meta{
+    display:flex;
+    gap:15px;
+    align-items:center;
+    font-size:14px;
+    color:var(--muted);
+    padding:8px;
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  
+  /* --- ボタン --- */
+  .controls{display:flex;gap:10px;align-items:center;}
+  .btn{
+    background:transparent;
+    border:1px solid var(--border);
+    padding:10px 14px;
+    border-radius:10px;
+    font-weight:600;
+    cursor:pointer;
+    font-size:14px;
+    transition:all .15s;
+    line-height:1;
+    white-space:nowrap;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 2px 5px rgba(0,0,0,0.05);}
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+  }
+  .btn-primary:hover{background:rgb(29, 78, 216);}
+  .btn-ghost{background:var(--accent-light);border:1px solid var(--accent);color:var(--accent);}
+  
+  /* --- メインレイアウト --- */
+  main{display:grid;grid-template-columns:1fr 340px;gap:24px;}
+  @media (max-width:900px){ main{grid-template-columns:1fr;}}
+  .card{
+    background:var(--card);
+    border-radius:12px;
+    padding:18px;
+    border:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  /* --- 問題周り --- */
+  .top-bar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:15px;
+    flex-wrap: wrap;
+  }
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .info{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px solid var(--border);
+    margin-bottom:15px;
+  }
+  .word-area{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    align-items:flex-start;
+    justify-content:center;
+  }
+
+  /* --- 回答エリアの改善 --- */
+  .answer-area{
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    min-height:70px;
+    padding:16px;
+    border-radius:10px;
+    border:3px dashed var(--accent-light); /* 太くする */
+    background:var(--accent-light);
+    width:100%;
+  }
+  .picked-label{font-size:14px;color:#1f2937;font-weight:700;margin-bottom:-4px;}
+
+  /* --- 文字ブロック（チャーム） --- */
+  .char {
+    background:linear-gradient(180deg,#ffffff,#f1f5f9);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:26px; /* 大きく */
+    font-weight:700;
+    cursor:pointer;
+    user-select:none;
+    border:2px solid var(--border);
+    transition:transform .1s, background .15s, border-color .15s;
+    box-shadow:0 2px 4px rgba(0,0,0,0.05);
+    line-height:1;
+  }
+  .char:hover{border-color:var(--accent);}
+  .char:active{transform:scale(.97);}
+  .char.disabled{opacity:.4;cursor:not-allowed;background:#f9fafb;border-color:var(--border);}
+
+  .pool{
+    margin-top:4px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .small-muted{font-size:13px;color:var(--muted);}
+  .hint{font-size:14px;color:#333;font-weight:500;}
+
+  /* --- 結果表示 --- */
+  .result{
+    margin-top:15px;
+    padding:12px;border-radius:10px;
+    font-weight:700;
+    display:flex;align-items:center;gap:10px;
+  }
+  .result.ok{background:rgba(22,163,74,0.1);color:var(--ok);border:1px solid var(--ok)}
+  .result.ng{background:rgba(220,38,38,0.08);color:var(--ng);border:1px solid var(--ng)}
+  .result-icon{font-size:18px;}
+
+  /* --- 右サイドバー --- */
+  .side {
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .stat{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .big{font-size:26px;font-weight:700;color:#1f2937;}
+  .small{font-size:13px;color:var(--muted)}
+  .footer-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .switch{
+    display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#333;
+  }
+  input[type=checkbox]{transform:scale(1.1);}
+  input[type=number]{
+    width:80px;padding:8px;border-radius:8px;border:1px solid var(--border);
+    text-align:right;font-size:14px;
+  }
+  .timer{font-weight:700;color:var(--ng);} /* タイマーを赤く */
+
+  footer{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="四字熟語並べ替え脳トレゲーム">
+    <header>
+      <div>
+        <h1>四字熟語 文字並べかえ — 脳トレ</h1>
+        <div class="subtitle">文字をクリックして正しい**四字熟語**に並べ替えよう！</div>
+      </div>
+      <div class="controls">
+        <div class="meta">
+          <div class="small-muted">問題数: <strong>100</strong></div>
+          <div class="small-muted">難易度: <strong>四字熟語</strong></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <div class="card">
+          <div class="top-bar">
+            <div>
+              <div class="small-muted">出題</div>
+              <div style="font-size:16px;font-weight:700" id="q-index">問題 1 / —</div>
+            </div>
+            <div class="controls-row">
+              <button class="btn btn-ghost" id="shuffleBtn" title="文字をシャッフル">シャッフル</button>
+              <button class="btn" id="showAnswerBtn" title="答えを表示">答えを表示</button>
+              <button class="btn" id="resetBtn" title="今の解答をリセット">リセット</button>
+              <button class="btn btn-primary" id="checkBtn" title="解答を判定">判定</button>
+              <button class="btn" id="nextBtn" title="次の問題">次へ</button>
+            </div>
+          </div>
+
+          <div class="info">
+            <div>
+              <div class="small-muted">ヒント: **四字熟語** (常に4文字)</div>
+              <div id="hint" class="hint"></div>
+            </div>
+            </div>
+
+          <div class="word-area" aria-live="polite">
+            <div class="picked-label">選択済みの文字（クリックで取り消し）</div>
+            <div id="picked" class="picked answer-area" aria-label="選択済みの文字"></div>
+
+            <div style="margin-top:15px">
+              <div class="small-muted">文字プール（クリックして選択）</div>
+              <div id="pool" class="pool" aria-label="文字プール"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;display:flex;gap:8px;align-items:center;justify-content:space-between">
+            <div class="small-muted">スコア：<span id="score">0</span>／正解：<span id="correctCount">0</span></div>
+            <div class="small-muted">正答率：<span id="rate">0%</span></div>
+          </div>
+
+          <div id="result" style="display:none;" class="result"></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card stat">
+          <div>
+            <div class="small-muted">残り時間</div>
+            <div class="big timer" id="timer">--</div>
+          </div>
+          <div>
+            <div class="small-muted">進捗</div>
+            <div class="big" id="progress">0 / 0</div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="small-muted">タイムモード設定</div>
+          <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+             <label class="switch"><input type="checkbox" id="timeToggle"> **タイマーを有効化**</label>
+             <div>
+              <div class="small-muted" style="text-align:right;">制限時間（秒）</div>
+              <input id="timeLimit" type="number" value="30" min="5" max="300">
+             </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="small-muted">操作パネル</div>
+          <div style="margin-top:10px" class="footer-actions">
+            <button class="btn" id="restartBtn">ゲームを最初から</button>
+            <button class="btn" id="randomBtn">ランダムな問題へ</button>
+            <button class="btn" id="downloadBtn">結果をコピー</button>
+          </div>
+          <div style="margin-top:12px" class="small-muted">※ キーボードの **Enter** で判定、**Backspace** で最後の文字を取り消しできます。</div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>四字熟語 文字並べかえ脳トレ (自動次へ機能付き)</footer>
+  </div>
+
+<script>
+/* ========== 四字熟語リスト (約100語) ========== */
+const words = [
+"一石二鳥","一期一会","馬耳東風","画竜点睛","臥薪嘗胆","危機一髪","起承転結","五里霧中","再三再四","三寒四温",
+"自給自足","七転八倒","縦横無尽","十人十色","心機一転","晴耕雨読","千差万別","創意工夫","大器晩成","単刀直入",
+"朝三暮四","徹頭徹尾","電光石火","天変地異","東奔西走","独立独歩","難攻不落","日進月歩","破顔一笑","百戦錬磨",
+"普遍的","不老不死","文句なし","優柔不断","油断大敵","臨機応変","和洋折衷","温故知新","異口同音","以心伝心",
+"因果応報","一意専心","一念発起","円転滑脱","我田引水","花鳥風月","完全無欠","奇想天外","空前絶後","月下氷人",
+"鶏鳴狗盗","牽強付会","光陰矢の如し","千載一遇","泰然自若","多岐亡羊","大言壮語","猪突猛進","粒々辛苦","徒手空拳",
+"独立自尊","朝令暮改","二束三文","博覧強記","百花繚乱","不言実行","本末転倒","無病息災","明鏡止水","有終の美",
+"優柔不断","竜頭蛇尾","悪戦苦闘","意気揚々","一網打尽","我慢強し","驚天動地","巧言令色","孤立無援","自業自得",
+"弱肉強食","順風満帆","先手必勝","絶体絶命","適材適所","当意即妙","難行苦行","破竹の勢い","百聞は一見にしかず","風林火山",
+"面目躍如","八方美人","有言実行","老若男女","和気藹々","無味乾燥","異文化交流","暗中模索","一敗地に塗る","海千山千"
+];
+
+let totalProblems = words.length; // 100
+let order = []; // 問題のインデックス順
+let currentIndex = 0;
+let currentWord = "";
+let poolChars = []; // 文字プール（各要素は {ch, idx, used}）
+let picked = []; // 選択済み（プールの idx 参照）
+let score = 0;
+let correctCount = 0;
+let timerId = null;
+let timeLeft = 0;
+const ANSWER_DELAY_MS = 800; // 正解時の自動遷移までの遅延時間
+
+// --- UI 要素 ---
+const poolEl = document.getElementById('pool');
+const pickedEl = document.getElementById('picked');
+const qIndexEl = document.getElementById('q-index');
+const hintEl = document.getElementById('hint');
+const resultEl = document.getElementById('result');
+const scoreEl = document.getElementById('score');
+const correctEl = document.getElementById('correctCount');
+const rateEl = document.getElementById('rate');
+const timerEl = document.getElementById('timer');
+const progressEl = document.getElementById('progress');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const showAnswerBtn = document.getElementById('showAnswerBtn');
+const resetBtn = document.getElementById('resetBtn');
+const checkBtn = document.getElementById('checkBtn');
+const nextBtn = document.getElementById('nextBtn');
+const restartBtn = document.getElementById('restartBtn');
+const randomBtn = document.getElementById('randomBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const timeToggle = document.getElementById('timeToggle');
+const timeLimitInput = document.getElementById('timeLimit');
+
+// Utility: シャッフル
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// 初期セットアップ：問題順をシャッフル
+function setupOrder(){
+  order = Array.from({length: totalProblems}, (_,i)=>i);
+  shuffleArray(order);
+  currentIndex = 0;
+}
+
+// 問題セット
+function setProblem(indexInOrder){
+  clearResult();
+  picked = [];
+  poolChars = [];
+
+  const idx = order[indexInOrder];
+  currentWord = words[idx];
+  const chars = Array.from(currentWord);
+
+  // 漢字の有無ヒントを具体化
+  hintEl.textContent = `この四字熟語のテーマ: ${generateHint(currentWord)}`;
+  qIndexEl.textContent = `問題 ${indexInOrder+1} / ${totalProblems}`;
+  progressEl.textContent = `${indexInOrder+1} / ${totalProblems}`;
+
+  // プールを作る
+  const charsCopy = chars.slice();
+  shuffleArray(charsCopy);
+  poolChars = charsCopy.map((ch,i)=>({ch, idx:i, used:false}));
+  
+  renderPool();
+  renderPicked();
+  updateStats();
+  resetTimerIfNeeded();
+}
+
+// ヒント生成（今回は四字熟語なのでテーマ的なヒントを出す）
+function generateHint(word){
+    // 最初の1文字と最後の1文字をヒントとして出す
+    const chars = Array.from(word);
+    if (chars.length === 4) {
+        return `「${chars[0]}〇〇${chars[3]}」`;
+    }
+    return `四字熟語 (${chars.length}文字)`;
+}
+
+// プール描画
+function renderPool(){
+  poolEl.innerHTML = "";
+  poolChars.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.className = 'char' + (item.used ? ' disabled' : '');
+    b.textContent = item.ch;
+    b.setAttribute('data-i', i);
+    b.title = item.used ? '選択済み' : 'クリックで選択';
+    if(!item.used){
+      b.addEventListener('click', () => {
+        selectChar(i);
+      });
+    } else {
+      b.addEventListener('click', ()=>{});
+    }
+    poolEl.appendChild(b);
+  });
+}
+
+// 選択済み表示
+function renderPicked(){
+  pickedEl.innerHTML = "";
+  picked.forEach((poolIdx, pos) => {
+    const span = document.createElement('button');
+    span.className = 'char';
+    span.textContent = poolChars[poolIdx].ch;
+    span.title = '取り消す：クリックで戻す';
+    span.addEventListener('click', () => {
+      unselectChar(pos);
+    });
+    pickedEl.appendChild(span);
+  });
+
+  // 自動判定のロジック
+  if(currentWord && picked.length === Array.from(currentWord).length){
+    checkAnswer(true); // 全ての文字が選択されたら自動判定
+  }
+}
+
+// 文字を選ぶ
+function selectChar(poolIdx){
+  if(poolChars[poolIdx].used) return;
+  poolChars[poolIdx].used = true;
+  picked.push(poolIdx);
+  renderPool();
+  renderPicked();
+  clearResult();
+}
+
+// 選択を取り消す（picked の pos を指定）
+function unselectChar(pickedPos){
+  const poolIdx = picked.splice(pickedPos,1)[0];
+  poolChars[poolIdx].used = false;
+  renderPool();
+  renderPicked();
+  clearResult();
+}
+
+// 現在の選択文字列取得
+function currentAnswer(){
+  return picked.map(i => poolChars[i].ch).join('');
+}
+
+// 判定 (autoCheckがtrueの時は自動で次へ)
+function checkAnswer(autoCheck = false){
+  const ans = currentAnswer();
+  if(ans.length === 0){
+    showResult('何も選択されていません', 'ng', '⚠️');
+    return;
+  }
+  if(ans === currentWord){
+    // 正解
+    score += currentWord.length * 2; // 4文字熟語なのでボーナス
+    correctCount++;
+    showResult(`✨正解！「${currentWord}」`, 'ok', '✅');
+    updateStats();
+    stopTimer();
+    
+    // 自動次へ機能
+    if(autoCheck){
+        setTimeout(()=>{ nextProblem(); }, ANSWER_DELAY_MS);
+    }
+  } else {
+    showResult(`❌不正解…（あなたの解答: ${ans}）`, 'ng', '❌');
+  }
+}
+
+// 結果表示
+function showResult(text, kind, icon){
+  resultEl.style.display = 'flex';
+  resultEl.className = 'result ' + (kind === 'ok' ? 'ok' : 'ng');
+  resultEl.innerHTML = `<span class="result-icon">${icon}</span> ${text}`;
+}
+
+// クリア結果
+function clearResult(){
+  resultEl.style.display = 'none';
+  resultEl.innerHTML = '';
+  resultEl.className = 'result';
+}
+
+// 次の問題へ
+function nextProblem(){
+  if(currentIndex < totalProblems - 1){
+    currentIndex++;
+    setProblem(currentIndex);
+  } else {
+    alert('全問終了しました！最初からランダムに再開します。');
+    setupOrder();
+    setProblem(currentIndex = 0);
+  }
+  clearTimer();
+  updateStats();
+}
+
+// リセット（選択解除）
+function resetSelection(){
+  picked.forEach(i => poolChars[i].used = false);
+  picked = [];
+  renderPool();
+  renderPicked();
+  clearResult();
+}
+
+// シャッフルプール
+function shufflePool(){
+  const unused = poolChars.filter(p => !p.used).map(p => p.ch);
+  shuffleArray(unused);
+
+  let uIndex = 0;
+  // インデックスを維持しつつ文字だけシャッフル
+  const newPoolChars = poolChars.map(p => {
+    if(!p.used){
+      p.ch = unused[uIndex++];
+    }
+    return p;
+  });
+  poolChars = newPoolChars;
+  renderPool();
+}
+
+// 答え表示
+function showAnswer(){
+  resetSelection();
+  const chars = Array.from(currentWord);
+  // 正しい並びでプールを再構築し、すべて選択済みにする
+  poolChars = chars.map((ch,i)=>({ch, idx:i, used: true}));
+  picked = poolChars.map((_,i)=>i);
+  renderPool();
+  renderPicked();
+  showResult(`💡答え：${currentWord}`, 'ok', '💡');
+  stopTimer();
+  updateStats();
+}
+
+// スコア等の更新
+function updateStats(){
+  scoreEl.textContent = score;
+  correctEl.textContent = correctCount;
+  const rate = (correctCount === 0) ?
+  0 : Math.round((correctCount / (currentIndex+1)) * 100);
+  rateEl.textContent = rate + '%';
+  progressEl.textContent = `${currentIndex+1} / ${totalProblems}`;
+}
+
+// ランダムに今すぐ次の問題
+function jumpRandomProblem(){
+  currentIndex = Math.floor(Math.random() * totalProblems);
+  setProblem(currentIndex);
+  clearTimer();
+}
+
+// 再スタート
+function restartGame(){
+  score = 0;
+  correctCount = 0;
+  setupOrder();
+  setProblem(0);
+  updateStats();
+  clearTimer();
+}
+
+// 結果をクリップボードにコピー
+function downloadResult(){
+  const text = `四字熟語 並べかえ 結果\n進捗: ${currentIndex+1}/${totalProblems}\nスコア: ${score}\n正解数: ${correctCount}\n正答率: ${rateEl.textContent}\n現在の単語: ${currentWord}\n`;
+  navigator.clipboard?.writeText(text).then(()=>{
+    alert('結果をクリップボードにコピーしました。');
+  }, ()=>{
+    alert('クリップボードへコピーできませんでした。');
+  });
+}
+
+/* ===== タイマー機能 ===== */
+function resetTimerIfNeeded(){
+  stopTimer();
+  if(timeToggle.checked){
+    const limit = Number(timeLimitInput.value) || 30;
+    timeLeft = limit;
+    timerEl.textContent = `${timeLeft}s`;
+    startTimer();
+  } else {
+    timerEl.textContent = '--';
+  }
+}
+function startTimer(){
+  if(!timeToggle.checked) return;
+  stopTimer();
+  timerEl.textContent = `${timeLeft}s`;
+  timerEl.style.color = timeLeft <= 10 ? 'var(--ng)' : '#1f2937';
+  timerId = setInterval(()=>{
+    timeLeft--;
+    timerEl.textContent = `${timeLeft}s`;
+    timerEl.style.color = timeLeft <= 10 ? 'var(--ng)' : '#1f2937';
+    if(timeLeft <= 0){
+      clearInterval(timerId);
+      timerId = null;
+      // 時間切れ：自動で不正解扱いして次へ
+      showResult('⏰時間切れ！次の問題へ進みます', 'ng', '⏳');
+      setTimeout(()=>{ nextProblem(); }, ANSWER_DELAY_MS);
+    }
+  }, 1000);
+}
+function stopTimer(){
+  if(timerId){ clearInterval(timerId); timerId = null; }
+}
+function clearTimer(){
+  stopTimer();
+  timerEl.textContent = '--';
+  timerEl.style.color = '#1f2937';
+}
+
+/* ===== イベント登録 ===== */
+shuffleBtn.addEventListener('click', shufflePool);
+
+showAnswerBtn.addEventListener('click', () => {
+  if(confirm('本当に答えを表示しますか？ 答えを見た場合、この問題のスコアはつきません。')) {
+    showAnswer();
+  }
+});
+resetBtn.addEventListener('click', resetSelection);
+
+// 手動判定ボタンも自動判定を呼ぶ
+checkBtn.addEventListener('click', () => {
+  checkAnswer(true); 
+}); 
+
+nextBtn.addEventListener('click', nextProblem);
+
+restartBtn.addEventListener('click', () => {
+  if(confirm('ゲームを最初から再スタートしますか？ スコアはリセットされます。')) restartGame();
+});
+randomBtn.addEventListener('click', jumpRandomProblem);
+downloadBtn.addEventListener('click', downloadResult);
+timeToggle.addEventListener('change', resetTimerIfNeeded);
+timeLimitInput.addEventListener('change', () => {
+  const limit = Number(timeLimitInput.value);
+  if(limit < 5) timeLimitInput.value = 5;
+  resetTimerIfNeeded();
+});
+
+// キーボード操作：Enterで判定、Backspaceで取り消し
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') {
+    e.preventDefault();
+    checkAnswer(true); // Enterでも自動次へ
+  } else if(e.key === 'Backspace') {
+    e.preventDefault();
+    if(picked.length>0) unselectChar(picked.length - 1);
+  }
+});
+
+/* 初期化 */
+function init(){
+  setupOrder();
+  setProblem(0);
+  updateStats();
+}
+
+init();
+
+</script>
+</body>
+</html>
