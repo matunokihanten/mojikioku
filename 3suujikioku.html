@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>数字記憶ゲーム</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -12,203 +11,451 @@
       padding: 0;
       box-sizing: border-box;
     }
+    
     body {
-      background: linear-gradient(135deg, #141E30, #243B55);
+      background: linear-gradient(135deg, #0f0f23, #1a1a3e, #2d1b69, #4a148c);
+      background-size: 300% 300%;
+      animation: gradientShift 10s ease infinite;
       font-family: 'Roboto', sans-serif;
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px;
+      padding: 20px;
       min-height: 100vh;
+      overflow-x: hidden;
     }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* 浮遊粒子効果 */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      animation: float 20s infinite linear;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+    
     /* ガラスモーフィズム コンテナ */
     .container {
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: 15px;
-      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
       padding: 40px 50px;
       margin-bottom: 30px;
       width: 90%;
-      max-width: 800px;
+      max-width: 900px;
       text-align: center;
+      transform: translateY(0);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
+      background-size: 300% 300%;
+      border-radius: 25px;
+      z-index: -1;
+      animation: borderGlow 3s ease infinite;
+    }
+
+    @keyframes borderGlow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 10px 20px rgba(0, 0, 0, 0.4);
+    }
+    
     /* 設定画面 */
     #settingsContainer h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 2em;
-      margin-bottom: 20px;
+      font-size: 3em;
+      margin-bottom: 30px;
+      background: linear-gradient(45deg, #FFD700, #FF6B6B, #4ECDC4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+      animation: titlePulse 2s ease-in-out infinite alternate;
     }
+
+    @keyframes titlePulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.05); }
+    }
+    
     #settingsContainer select,
     #settingsContainer button {
       border: none;
-      border-radius: 5px;
-      padding: 10px;
-      font-size: 1em;
-      margin: 10px 5px;
+      border-radius: 15px;
+      padding: 15px 25px;
+      font-size: 1.2em;
+      margin: 15px 10px;
       cursor: pointer;
-      background: linear-gradient(135deg, #FFD700, #FFA500);
+      background: linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B);
       color: #333;
-      transition: transform 0.2s, box-shadow 0.2s;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+      position: relative;
+      overflow: hidden;
     }
+
+    #settingsContainer select::before,
+    #settingsContainer button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transition: left 0.5s;
+    }
+
+    #settingsContainer select:hover::before,
+    #settingsContainer button:hover::before {
+      left: 100%;
+    }
+    
     #settingsContainer select {
       width: 80%;
-      max-width: 250px;
+      max-width: 300px;
     }
+    
     #settingsContainer button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transform: scale(1.1) rotate(-2deg);
+      box-shadow: 0 12px 35px rgba(255, 215, 0, 0.5);
     }
+    
     /* ゲーム画面 */
     #gameContainer {
       display: none;
     }
+    
     /* 固定の指示文：上部に「数字を覚えてね」 */
     #instruction {
       font-family: 'Playfair Display', serif;
-      font-size: 2em;
-      margin-bottom: 10px;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      background: linear-gradient(45deg, #4ECDC4, #44A08D);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: instructionGlow 2s ease-in-out infinite alternate;
     }
+
+    @keyframes instructionGlow {
+      0% { text-shadow: 0 0 20px rgba(78, 205, 196, 0.5); }
+      100% { text-shadow: 0 0 30px rgba(78, 205, 196, 0.8); }
+    }
+    
     /* 数字表示エリア：指示文の真下・固定高さ・中央表示 */
     #numberDisplay {
-      font-size: 7.5em; /* 2.5倍に拡大 */
-      font-weight: bold; /* 太字に設定 */
-      margin-bottom: 20px;
-      height: 200px; /* フォントサイズに合わせて調整 */
+      font-size: 8em;
+      font-weight: bold;
+      margin-bottom: 30px;
+      height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
-      line-height: 1; /* フォントサイズに合わせて調整 */
+      line-height: 1;
+      /* 元のグラデーションテキストから単色黒へ */
+      color: #333; 
+      /* グラデーションは削除 */
+      -webkit-text-fill-color: #333; 
+      background-clip: border-box; /* clipをborder-boxに戻す */
+      animation: numberPulse 1s ease-in-out infinite alternate;
+      text-shadow: 0 0 50px rgba(0, 0, 0, 0.3); /* テキストシャドウを黒に合わせて調整 */
     }
+
+    @keyframes numberPulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+    
     /* プロンプト */
     #prompt {
-      font-size: 1.3em;
-      margin-bottom: 15px;
-      min-height: 25px;
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      min-height: 30px;
+      color: #FFD700;
+      font-weight: 500;
+      animation: promptFade 3s ease-in-out infinite;
     }
+
+    @keyframes promptFade {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+    
     /* 入力フィールド */
     #userInput {
-      font-size: 1.8em;
-      padding: 10px;
-      width: 250px;
-      margin-bottom: 25px;
+      font-size: 2em;
+      padding: 15px 20px;
+      width: 300px;
+      margin-bottom: 30px;
       text-align: center;
-      border: 2px solid #ccc;
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.8);
+      border: 3px solid transparent;
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
       color: #333;
+      font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
     }
+
+    #userInput:focus {
+      outline: none;
+      border: 3px solid #4ECDC4;
+      box-shadow: 0 15px 40px rgba(78, 205, 196, 0.4);
+      transform: scale(1.05);
+    }
+    
     /* キーパッド */
     #keypad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-gap: 10px;
-      max-width: 350px;
-      margin: 20px auto;
+      grid-gap: 15px;
+      max-width: 400px;
+      margin: 25px auto;
     }
+    
     #keypad button {
-      background: linear-gradient(135deg, #2196F3, #1E88E5);
+      background: linear-gradient(135deg, #667eea, #764ba2);
       color: #fff;
-      font-size: 1.8em;
-      padding: 20px;
+      font-size: 2em;
+      font-weight: bold;
+      padding: 25px;
       border: none;
-      border-radius: 5px;
+      border-radius: 20px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
     }
+
+    #keypad button.clear-button {
+      background: linear-gradient(135deg, #FFC107, #FF9800); /* オレンジ系の色 */
+      color: #333;
+    }
+
+    #keypad button.clear-button:hover {
+      background: linear-gradient(135deg, #FFD700, #FFB300);
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    #keypad button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    #keypad button:active::before {
+      width: 300px;
+      height: 300px;
+    }
+    
     #keypad button:hover {
-      background: linear-gradient(135deg, #1976D2, #1565C0);
-      transform: scale(1.05);
+      background: linear-gradient(135deg, #5a67d8, #6b46c1);
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
     }
+
+    #keypad button:active {
+      transform: scale(0.95);
+    }
+    
     /* 正誤メッセージ */
     #status {
-      font-size: 1.4em;
-      margin: 15px 0;
-      min-height: 25px;
+      font-size: 1.6em;
+      margin: 20px 0;
+      min-height: 35px;
+      font-weight: 500;
+      animation: statusBounce 0.5s ease-in-out;
     }
+
+    @keyframes statusBounce {
+      0%, 20%, 60%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      80% { transform: translateY(-5px); }
+    }
+    
     /* 入力履歴：10列グリッド */
     #historyContainer {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      grid-gap: 5px;
-      margin-top: 25px;
-      max-width: 350px;
+      grid-gap: 8px;
+      margin-top: 30px;
+      max-width: 500px;
       margin-left: auto;
       margin-right: auto;
     }
+    
     .history-number {
-      font-size: 1em;
-      padding: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.3);
+      font-size: 1.1em;
+      font-weight: bold;
+      padding: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+      transition: all 0.3s ease;
+      animation: historyAppear 0.5s ease-out;
+      color: #fff; /* 履歴の数字のデフォルト色 */
     }
+
+    @keyframes historyAppear {
+      0% { opacity: 0; transform: scale(0) rotate(180deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    .history-number:hover {
+      transform: scale(1.2);
+      background: linear-gradient(135deg, rgba(78, 205, 196, 0.4), rgba(69, 183, 209, 0.4));
+    }
+
+    .history-number.correct {
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(69, 155, 69, 0.4));
+      color: #fff;
+    }
+
+    .history-number.incorrect {
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.4), rgba(198, 40, 40, 0.4));
+      color: #fff;
+    }
+    
     /* 答え／終了ボタン */
     #showAnswerButton,
     #endButton {
-      width: 150px;
-      margin: 8px;
+      width: 160px;
+      margin: 15px;
       border: none;
-      border-radius: 5px;
-      padding: 12px 18px;
-      font-size: 1em;
+      border-radius: 15px;
+      padding: 15px 20px;
+      font-size: 1.1em;
+      font-weight: 500;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
+    
     #showAnswerButton {
-      background: linear-gradient(135deg, #4CAF50, #43A047);
+      background: linear-gradient(135deg, #4CAF50, #45a049, #2e7d32);
       color: #fff;
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
     }
+    
     #endButton {
-      background: linear-gradient(135deg, #f44336, #e53935);
+      background: linear-gradient(135deg, #f44336, #e53935, #c62828);
       color: #fff;
-    }
-    #showAnswerButton:hover, #endButton:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
     }
 
-    /* スマートフォン向け（画面幅600px以下）のスタイル */
-    @media (max-width: 600px) {
-      body {
-        padding: 20px 10px;
-      }
+    #showAnswerButton::before,
+    #endButton::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transition: left 0.5s;
+    }
+
+    #showAnswerButton:hover::before,
+    #endButton:hover::before {
+      left: 100%;
+    }
+    
+    #showAnswerButton:hover,
+    #endButton:hover {
+      transform: scale(1.1) translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
       .container {
-        padding: 20px;
-        margin-bottom: 20px;
+        padding: 30px 25px;
+        width: 95%;
       }
+      
       #numberDisplay {
-        font-size: 5em;
+        font-size: 6em;
         height: 150px;
-        margin-bottom: 10px;
       }
-      #instruction {
-        font-size: 1.5em;
+      
+      #keypad {
+        max-width: 300px;
+        grid-gap: 10px;
       }
-      #userInput {
-        font-size: 1.5em;
-        width: 80%;
-      }
+      
       #keypad button {
-        font-size: 1.5em;
-        padding: 15px;
+        font-size: 1.8em;
+        padding: 20px;
       }
+      
+      #userInput {
+        width: 250px;
+        font-size: 1.8em;
+      }
+      
       #historyContainer {
-        grid-template-columns: repeat(5, 1fr); /* 10列から5列に減らす */
-        grid-gap: 3px;
-        max-width: 100%;
-      }
-      #showAnswerButton,
-      #endButton {
-        width: 100%;
-        max-width: 150px;
+        max-width: 300px;
+        grid-template-columns: repeat(5, 1fr);
       }
     }
   </style>
 </head>
 <body>
+  <div class="particles"></div>
+  
   <div id="settingsContainer" class="container">
     <h1>数字記憶ゲーム</h1>
     <label for="digitSelect">桁数選択:</label>
@@ -235,19 +482,43 @@
   </div>
 
   <script>
+    // 浮遊粒子効果の初期化
+    function createParticles() {
+      const particlesContainer = document.querySelector('.particles');
+      for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
     // ゲーム状態管理用グローバル変数
     let digitCount = 2;
     let score = 0;
     let round = 1;
-    let prevNumber = "";    // 前ラウンドの正解（入力対象）
-    let currentNumber = ""; // 次回の正解候補
+    let prevNumber = "";
+    let currentNumber = "";
     let allowInput = false;
     let answerRevealed = false;
+    let isMemorizingPhase = true; // 記憶フェーズか判定するフラグ
 
     // イベントリスナー設定
     document.getElementById("startButton").addEventListener("click", startGame);
     document.getElementById("endButton").addEventListener("click", endGame);
     document.getElementById("showAnswerButton").addEventListener("click", showAnswer);
+
+    // ページ読み込み時に粒子効果を初期化
+    window.addEventListener('load', createParticles);
+
+    // ヘルパー関数: アニメーションをリスタートする
+    function restartAnimation(element, animationName) {
+      element.style.animation = "none";
+      void element.offsetHeight; // 強制的にリフローさせる
+      element.style.animation = animationName;
+    }
 
     // ゲーム開始：設定画面からゲーム画面へ切り替え
     function startGame() {
@@ -258,6 +529,7 @@
       currentNumber = "";
       allowInput = false;
       answerRevealed = false;
+      isMemorizingPhase = true;
 
       document.getElementById("numberDisplay").innerHTML = "&nbsp;";
       document.getElementById("prompt").textContent = "";
@@ -280,6 +552,7 @@
       currentNumber = "";
       allowInput = false;
       answerRevealed = false;
+      isMemorizingPhase = true;
 
       document.getElementById("numberDisplay").innerHTML = "&nbsp;";
       document.getElementById("prompt").textContent = "";
@@ -293,26 +566,47 @@
 
     // 答えボタン押下：正解(prevNumber)を青色で表示し、入力開始まで保持
     function showAnswer() {
-      if (!allowInput) return;
+      if (!allowInput) return; // 入力可能フェーズでなければ何もしない
       answerRevealed = true;
       const statusElem = document.getElementById("status");
       statusElem.textContent = "答え: " + prevNumber;
-      statusElem.style.color = "blue";
+      statusElem.style.color = "#4ECDC4";
+      statusElem.style.textShadow = "0 0 20px rgba(78, 205, 196, 0.8)";
     }
 
     // キーパッド生成
     function createKeypad() {
       const keypad = document.getElementById("keypad");
       keypad.innerHTML = "";
+      
+      // 1-9のボタン
       for (let num = 1; num <= 9; num++) {
         const btn = document.createElement("button");
         btn.textContent = num;
-        btn.addEventListener("click", () => appendDigit(num));
+        btn.addEventListener("click", () => {
+          appendDigit(num);
+          restartAnimation(btn, "statusBounce 0.3s ease-out");
+        });
         keypad.appendChild(btn);
       }
+      
+      // クリアボタンを追加 (10キーの代わりに配置)
+      const clearBtn = document.createElement("button");
+      clearBtn.textContent = "C";
+      clearBtn.className = "clear-button"; // クリアボタン用のスタイルクラス
+      clearBtn.addEventListener("click", () => {
+        clearInput();
+        restartAnimation(clearBtn, "statusBounce 0.3s ease-out");
+      });
+      keypad.appendChild(clearBtn);
+
+      // 0のボタン
       const btn0 = document.createElement("button");
       btn0.textContent = "0";
-      btn0.addEventListener("click", () => appendDigit(0));
+      btn0.addEventListener("click", () => {
+        appendDigit(0);
+        restartAnimation(btn0, "statusBounce 0.3s ease-out");
+      });
       keypad.appendChild(btn0);
     }
 
@@ -325,79 +619,131 @@
 
     // 記憶フェーズ：数字を表示する（numberDisplay領域） 
     function displayNumber(num) {
-      document.getElementById("numberDisplay").textContent = num;
+      const display = document.getElementById("numberDisplay");
+      display.textContent = num;
+      restartAnimation(display, "numberPulse 1s ease-in-out infinite alternate");
     }
 
     // 各ラウンド開始
     function startRound() {
+      const instructionElem = document.getElementById("instruction");
+      const promptElem = document.getElementById("prompt");
+      const numberDisplayElem = document.getElementById("numberDisplay");
+      const statusElem = document.getElementById("status");
+
+      // ステータスとプロンプトをクリア
+      statusElem.textContent = "";
+      statusElem.style.textShadow = "none";
+      promptElem.textContent = "";
+
       if (round === 1) {
+        instructionElem.textContent = "数字を覚えてね";
         currentNumber = generateRandomNumber(digitCount);
         displayNumber(currentNumber);
         allowInput = false;
+        isMemorizingPhase = true;
         setTimeout(() => {
-          document.getElementById("numberDisplay").innerHTML = "&nbsp;";
-          prevNumber = currentNumber;
+          numberDisplayElem.innerHTML = "&nbsp;"; // 数字を非表示にする
+          prevNumber = currentNumber; // 現在の数字を次のラウンドで覚える数字に設定
           round++;
-          startRound();
-        }, 3000);
+          startRound(); // 次のラウンド（入力フェーズ）へ
+        }, 3000); // 3秒間表示
       } else {
-        document.getElementById("prompt").textContent = "直前の数字を入力してね！";
+        instructionElem.textContent = "直前の数字を入力してね"; // 入力指示を固定
+        promptElem.textContent = ""; // プロンプトは入力時に設定されるため、ここではクリア
+        
+        // 新しい数字を生成して表示（次覚える数字）
         currentNumber = generateRandomNumber(digitCount);
         displayNumber(currentNumber);
-        allowInput = false;
+        
+        allowInput = false; // 数字表示中は入力不可
+        isMemorizingPhase = true;
         setTimeout(() => {
-          document.getElementById("numberDisplay").innerHTML = "&nbsp;";
-          allowInput = true;
-        }, 3000);
+          numberDisplayElem.innerHTML = "&nbsp;"; // 数字を非表示にする
+          allowInput = true; // 入力可能にする
+          isMemorizingPhase = false; // 入力フェーズへ移行
+          promptElem.textContent = "直前の数字を入力してね！";
+          restartAnimation(promptElem, "promptFade 3s ease-in-out infinite");
+        }, 3000); // 3秒間表示
       }
     }
 
     // キーパッド入力処理
     function appendDigit(digit) {
-      if (!allowInput) return;
+      if (!allowInput) return; // 入力可能フェーズでなければ何もしない
       if (answerRevealed) {
         document.getElementById("status").textContent = "";
+        document.getElementById("status").style.textShadow = "none";
         answerRevealed = false;
       }
       const inputField = document.getElementById("userInput");
       inputField.value += digit.toString();
+      
+      // 入力フィールドにアニメーション効果
+      restartAnimation(inputField, "statusBounce 0.3s ease-out");
+      
       if (inputField.value.length === digitCount) {
-        setTimeout(checkAnswer, 200);
+        setTimeout(checkAnswer, 200); // 入力完了後、少し待ってから判定
       }
+    }
+
+    // 入力内容をクリアする
+    function clearInput() {
+      if (!allowInput) return;
+      document.getElementById("userInput").value = "";
+      const statusElem = document.getElementById("status");
+      statusElem.textContent = ""; // ステータスメッセージもクリア
+      statusElem.style.textShadow = "none";
+      answerRevealed = false; // クリアしたら答え表示もリセット
     }
 
     // 入力内容と正解(prevNumber)の判定
     function checkAnswer() {
       const inputField = document.getElementById("userInput");
+      const statusElem = document.getElementById("status");
+      
       if (inputField.value === prevNumber) {
         score++;
-        document.getElementById("status").textContent = "正解！";
-        document.getElementById("status").style.color = "green";
-        addToHistory(prevNumber);
-        prevNumber = currentNumber;
-        round++;
-        inputField.value = "";
-        allowInput = false;
-        setTimeout(() => {
-          document.getElementById("status").textContent = "";
-          startRound();
-        }, 500);
+        statusElem.textContent = "正解！";
+        statusElem.style.color = "#4CAF50";
+        statusElem.style.textShadow = "0 0 20px rgba(76, 175, 80, 0.8)";
+        restartAnimation(statusElem, "statusBounce 0.5s ease-in-out");
+        
+        addToHistory(prevNumber, true); // 正解を履歴に追加
       } else {
-        document.getElementById("status").textContent = "不正解！ 正しい答えは " + prevNumber;
-        document.getElementById("status").style.color = "red";
-        setTimeout(endGame, 2000);
+        statusElem.textContent = "不正解！ 正しい答えは " + prevNumber;
+        statusElem.style.color = "#f44336";
+        statusElem.style.textShadow = "0 0 20px rgba(244, 67, 54, 0.8)";
+        restartAnimation(statusElem, "statusBounce 0.5s ease-in-out");
+        
+        addToHistory(prevNumber, false); // 不正解を履歴に追加
       }
+      
+      // 次のラウンドへ進む処理
+      prevNumber = currentNumber; // 現在表示されていた数字が次のラウンドで覚える数字になる
+      round++;
+      inputField.value = ""; // 入力フィールドをクリア
+      allowInput = false; // 入力を一時的に不可にする
+      setTimeout(() => {
+        statusElem.textContent = ""; // ステータス表示をクリア
+        statusElem.style.textShadow = "none";
+        startRound(); // 次のラウンドを開始
+      }, 1500); // 正誤表示後、少し待ってから次のラウンドへ
     }
 
     // 履歴に正解数字を追加（10列グリッド）
-    function addToHistory(num) {
+    function addToHistory(num, isCorrect) {
       const historyContainer = document.getElementById("historyContainer");
       const span = document.createElement("span");
       span.textContent = num;
       span.className = "history-number";
+      if (isCorrect) {
+        span.classList.add("correct");
+      } else {
+        span.classList.add("incorrect");
+      }
       historyContainer.appendChild(span);
     }
   </script>
 </body>
 </html>
-
