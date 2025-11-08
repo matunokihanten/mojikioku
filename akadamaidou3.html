@@ -1,1 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Moving Balls - Controls Toggle</title>
+  <style>
+    :root{
+      --ui-bg: rgba(255,255,255,0.9);
+      --ui-color: #111;
+      --accent: #ff6b6b;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;overflow:hidden;}
+    #stage{display:block;width:100vw;height:100vh;}
+    #controls{position:fixed;top:12px;left:12px;width:320px;max-width:calc(100vw-24px);background:var(--ui-bg);color:var(--ui-color);border-radius:10px;padding:12px;z-index:30;box-shadow:0 6px 18px rgba(20,20,40,0.12);backdrop-filter:blur(6px);transition:transform 0.28s ease, opacity 0.28s ease;}
+    #controls.hidden{transform:translateY(-16px) scale(0.98);opacity:0;pointer-events:none;}
+    #controls.hiddenside{transform: translateX(-100%) translateY(0); opacity:0; pointer-events:none;}
+    #controls h3{margin:0 0 8px 0;font-size:15px;}
+    .row{display:flex;align-items:center;gap:8px;margin:8px 0;}
+    label{font-size:13px;min-width:78px;}
+    input[type="range"]{flex:1;}
+    .small{font-size:13px;color:#444;min-width:36px;text-align:right;}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;}
+    .muted{background:#ddd;color:#333;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;}
+    #status{position:fixed;top:12px;right:12px;background:var(--ui-bg);border-radius:8px;padding:10px;z-index:30;box-shadow:0 6px 18px rgba(20,20,40,0.12);}
+    #status div{font-size:13px;margin-bottom:6px;}
+    @media (max-width:520px){#controls{left:12px;right:12px;width:auto;bottom:12px;top:auto;}}
+    #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:28;}
+    #overlay .msg{background:rgba(0,0,0,0.55);color:white;padding:14px 18px;border-radius:10px;pointer-events:auto;}
+    /* toggle button */
+    #toggleControls {
+      position:fixed;
+      top:12px;
+      left:12px;
+      transform:translateY(-56px);
+      z-index:40;
+      background:rgba(255,255,255,0.95);
+      border-radius:8px;
+      padding:6px 8px;
+      box-shadow:0 6px 18px rgba(20,20,40,0.06);
+      cursor:pointer;
+      font-size:13px;
+      color:var(--ui-color);
+    }
+    #toggleControls.hidden {
+      transform: translateY(-56px);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
 
+  <div id="toggleControls" title="設定を表示/非表示（H / Esc）">設定表示</div>
+
+  <div id="controls" aria-label="Controls">
+    <h3>Moving Balls - 設定</h3>
+
+    <div class="row">
+      <label for="numBalls">ボール数</label>
+      <input id="numBalls" type="range" min="1" max="300" value="20" />
+      <div class="small" id="numBallsValue">20</div>
+    </div>
+
+    <div class="row">
+      <label for="speed">速度</label>
+      <input id="speed" type="range" min="0" max="200" value="100" />
+      <div class="small" id="speedValue">1.00</div>
+    </div>
+
+    <div class="row">
+      <label for="size">サイズ</label>
+      <input id="size" type="range" min="6" max="120" value="50" />
+      <div class="small" id="sizeValue">50</div>
+    </div>
+
+    <div class="row">
+      <label for="gravity">重力</label>
+      <input id="gravity" type="range" min="-200" max="200" value="0" />
+      <div class="small" id="gravityValue">0.00</div>
+    </div>
+
+    <div class="row">
+      <label for="friction">摩擦</label>
+      <input id="friction" type="range" min="0" max="100" value="1" />
+      <div class="small" id="frictionValue">0.99</div>
+    </div>
+
+    <div class="row">
+      <label>背景</label>
+      <select id="bgSelect" style="flex:1;">
+        <option value="white">白</option>
+        <option value="#0b1220">黒（ダーク）</option>
+        <option value="#001f3f">青</option>
+        <option value="#f6f0e6">暖色</option>
+      </select>
+      <button id="clearBtn" class="muted">リセット</button>
+    </div>
+
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <button id="pauseBtn">一時停止</button>
+        <button id="saveBtn" class="muted">保存</button>
+      </div>
+      <div style="text-align:right;">
+        <div class="hint" style="font-size:12px;color:#666;margin-top:6px;">タップ / クリックで消去（得点）</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status" role="status">
+    <div>残り: <span id="ballsLeft">0</span></div>
+    <div>得点: <span id="score">0</span></div>
+    <div>FPS: <span id="fps">0</span></div>
+  </div>
+
+  <div id="overlay" aria-hidden="true" style="display:none;">
+    <div class="msg" id="overlayMsg">Paused</div>
+  </div>
+
+  <script>
+    // Canvas + controls initialization
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    // Elements
+    const toggleControlsBtn = document.getElementById('toggleControls');
+    const controlsEl = document.getElementById('controls');
+
+    const numBallsInput = document.getElementById('numBalls');
+    const speedInput = document.getElementById('speed');
+    const sizeInput = document.getElementById('size');
+    const gravityInput = document.getElementById('gravity');
+    const frictionInput = document.getElementById('friction');
+    const bgSelect = document.getElementById('bgSelect');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    const numBallsValue = document.getElementById('numBallsValue');
+    const speedValue = document.getElementById('speedValue');
+    const sizeValue = document.getElementById('sizeValue');
+    const gravityValue = document.getElementById('gravityValue');
+    const frictionValue = document.getElementById('frictionValue');
+
+    const ballsLeftEl = document.getElementById('ballsLeft');
+    const scoreEl = document.getElementById('score');
+    const fpsEl = document.getElementById('fps');
+    const overlay = document.getElementById('overlay');
+    const overlayMsg = document.getElementById('overlayMsg');
+
+    // State
+    let WIDTH = 0, HEIGHT = 0;
+    let balls = [];
+    let running = true;
+    let lastTime = performance.now();
+    let score = 0;
+    let fpsCounter = { last: performance.now(), frames: 0 };
+    const MAX_COLLISION_ITER = 2;
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    // Ball class and helpers
+    class Ball {
+      constructor(x, y, vx, vy, r, color, life = null){
+        this.x = x; this.y = y;
+        this.vx = vx; this.vy = vy;
+        this.r = r;
+        this.color = color;
+        this.life = life;
+        this.age = 0;
+        this.fade = 0;
+      }
+      update(dt, gravity, friction){
+        this.vy += gravity * dt;
+        this.vx *= Math.pow(friction, dt * 60);
+        this.vy *= Math.pow(friction, dt * 60);
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        if (this.x - this.r < 0){ this.x = this.r; this.vx = Math.abs(this.vx); }
+        else if (this.x + this.r > WIDTH){ this.x = WIDTH - this.r; this.vx = -Math.abs(this.vx); }
+        if (this.y - this.r < 0){ this.y = this.r; this.vy = Math.abs(this.vy); }
+        else if (this.y + this.r > HEIGHT){ this.y = HEIGHT - this.r; this.vy = -Math.abs(this.vy); }
+        if (this.life !== null){
+          this.age += dt;
+          if (this.age >= this.life) this.fade += dt * 2;
+        }
+      }
+      isDead(){ return this.fade >= 1; }
+      draw(ctx){
+        const g = ctx.createRadialGradient(this.x - this.r*0.4, this.y - this.r*0.4, Math.max(2, this.r*0.2), this.x, this.y, this.r*1.2);
+        g.addColorStop(0, shade(this.color, 0.25));
+        g.addColorStop(0.5, this.color);
+        g.addColorStop(1, shade(this.color, -0.35));
+        ctx.save();
+        ctx.globalAlpha = clamp(1 - this.fade, 0, 1);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(this.x - this.r*0.3, this.y - this.r*0.4, this.r*0.45, this.r*0.28, -0.6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function shade(hex, percent){
+      if (typeof hex !== 'string') return hex;
+      if (hex[0] === '#'){
+        const num = parseInt(hex.slice(1),16);
+        let r = (num >> 16), g = (num >> 8) & 0xFF, b = num & 0xFF;
+        r = clamp(Math.round(r + (percent * 255)), 0, 255);
+        g = clamp(Math.round(g + (percent * 255)), 0, 255);
+        b = clamp(Math.round(b + (percent * 255)), 0, 255);
+        return `rgb(${r},${g},${b})`;
+      }
+      return hex;
+    }
+
+    const palette = ['#ff6b6b','#ffb86b','#ffd76b','#6bffb8','#6bd7ff','#6b8bff','#c56bff','#ff6bb1'];
+    function randomColor(){ return palette[Math.floor(Math.random()*palette.length)]; }
+
+    function createBallSet(count, baseSize, baseSpeed){
+      balls = [];
+      for (let i=0;i<count;i++){
+        const r = baseSize * clamp(0.6 + Math.random()*0.9, 0.4, 1.4);
+        const x = rand(r, WIDTH - r);
+        const y = rand(r, HEIGHT - r);
+        const angle = rand(0, Math.PI*2);
+        const speed = rand(0.4, 1.6) * baseSpeed;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        const color = randomColor();
+        const life = Math.random() < 0.15 ? rand(3, 12) : null;
+        balls.push(new Ball(x,y,vx,vy,r,color,life));
+      }
+      updateUICounts();
+    }
+
+    function resolveCollisions(){
+      const n = balls.length;
+      for (let iter=0; iter<MAX_COLLISION_ITER; iter++){
+        for (let i=0;i<n;i++){
+          const A = balls[i];
+          if (!A) continue;
+          for (let j=i+1;j<n;j++){
+            const B = balls[j];
+            if (!B) continue;
+            const dx = B.x - A.x;
+            const dy = B.y - A.y;
+            const dist = Math.hypot(dx, dy);
+            const minDist = A.r + B.r;
+            if (dist > 0 && dist < minDist){
+              const overlap = (minDist - dist) / 2;
+              const nx = dx / dist;
+              const ny = dy / dist;
+              A.x -= nx * overlap; A.y -= ny * overlap;
+              B.x += nx * overlap; B.y += ny * overlap;
+              const rvx = B.vx - A.vx;
+              const rvy = B.vy - A.vy;
+              const velAlongNorm = rvx * nx + rvy * ny;
+              if (velAlongNorm > -0.0001){
+                const m1 = A.r*A.r;
+                const m2 = B.r*B.r;
+                const e = 0.9;
+                const j = -(1 + e) * velAlongNorm / (1/m1 + 1/m2);
+                const ix = j * nx; const iy = j * ny;
+                A.vx -= ix / m1; A.vy -= iy / m1;
+                B.vx += ix / m2; B.vy += iy / m2;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function resize(){
+      const dpr = window.devicePixelRatio || 1;
+      WIDTH = Math.max(300, Math.floor(window.innerWidth));
+      HEIGHT = Math.max(200, Math.floor(window.innerHeight));
+      canvas.width = Math.floor(WIDTH * dpr);
+      canvas.height = Math.floor(HEIGHT * dpr);
+      canvas.style.width = WIDTH + 'px';
+      canvas.style.height = HEIGHT + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+
+    const pops = [];
+    function spawnPop(x,y,color){ pops.push({x,y,t:0,ttl:0.6,color}); }
+    function drawPops(ctx, dt){
+      for (let i=pops.length-1;i>=0;i--){
+        const p = pops[i];
+        p.t += dt;
+        const f = p.t / p.ttl;
+        if (f >= 1){ pops.splice(i,1); continue; }
+        ctx.save();
+        ctx.globalAlpha = 1 - f;
+        ctx.fillStyle = p.color;
+        const s = 2 + (1-f)*20;
+        for (let k=0;k<6;k++){
+          const a = k*(Math.PI*2/6) + f*6;
+          ctx.beginPath();
+          ctx.arc(p.x + Math.cos(a)*f*30, p.y + Math.sin(a)*f*30, s*(1-f)*0.6,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    function loop(now){
+      if (!running){ lastTime = now; requestAnimationFrame(loop); return; }
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      const gravity = parseFloat(gravityInput.value) / 100;
+      const friction = 1 - parseFloat(frictionInput.value) / 1000;
+
+      for (const b of balls) b.update(dt, gravity, friction);
+
+      resolveCollisions();
+
+      const before = balls.length;
+      balls = balls.filter(b => !b.isDead());
+      if (before !== balls.length) updateUICounts();
+
+      drawFrame(dt);
+
+      fpsCounter.frames++;
+      if (now - fpsCounter.last > 500){
+        fpsEl.textContent = Math.round((fpsCounter.frames / (now - fpsCounter.last)) * 1000);
+        fpsCounter.last = now;
+        fpsCounter.frames = 0;
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    function drawFrame(dt){
+      ctx.fillStyle = bgSelect.value;
+      ctx.fillRect(0,0,WIDTH,HEIGHT);
+      ctx.save();
+      const vg = ctx.createRadialGradient(WIDTH*0.5, HEIGHT*0.45, Math.min(WIDTH,HEIGHT)*0.1, WIDTH*0.5, HEIGHT*0.5, Math.max(WIDTH,HEIGHT)*0.8);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.06)');
+      ctx.fillStyle = vg; ctx.fillRect(0,0,WIDTH,HEIGHT); ctx.restore();
+
+      for (const b of balls) b.draw(ctx);
+      drawPops(ctx, dt);
+    }
+
+    function updateUICounts(){ ballsLeftEl.textContent = balls.length; }
+    function updateSliders(){
+      numBallsValue.textContent = numBallsInput.value;
+      speedValue.textContent = (parseFloat(speedInput.value) / 100).toFixed(2);
+      sizeValue.textContent = sizeInput.value;
+      gravityValue.textContent = (parseFloat(gravityInput.value) / 100).toFixed(2);
+      frictionValue.textContent = (1 - parseFloat(frictionInput.value) / 1000).toFixed(3);
+    }
+
+    function addBallAt(x, y){
+      const baseSize = parseFloat(sizeInput.value);
+      const baseSpeed = parseFloat(speedInput.value) / 100 * 200;
+      const r = baseSize * clamp(0.6 + Math.random()*0.9, 0.6, 1.2);
+      const angle = rand(0,Math.PI*2);
+      const speed = rand(0.6,1.6) * baseSpeed;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const color = randomColor();
+      const life = Math.random() < 0.08 ? rand(2,8) : null;
+      balls.push(new Ball(x,y,vx,vy,r,color,life));
+      updateUICounts();
+    }
+
+    function popBallAt(x,y){
+      let bestIdx = -1; let bestDist = Infinity;
+      for (let i=0;i<balls.length;i++){
+        const b = balls[i];
+        const d = Math.hypot(b.x - x, b.y - y);
+        if (d < bestDist){ bestDist = d; bestIdx = i; }
+      }
+      if (bestIdx !== -1 && bestDist <= balls[bestIdx].r * 1.4){
+        const popped = balls.splice(bestIdx,1)[0];
+        score += Math.round(100 * (1 + popped.r/80));
+        scoreEl.textContent = score;
+        updateUICounts();
+        spawnPop(popped.x, popped.y, popped.color);
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      popBallAt(x,y);
+    });
+
+    function syncFromControls(){
+      updateSliders();
+      const count = parseInt(numBallsInput.value,10);
+      const baseSize = parseFloat(sizeInput.value);
+      const baseSpeed = parseFloat(speedInput.value) / 100 * 200;
+      if (count > balls.length){
+        const add = count - balls.length;
+        for (let i=0;i<add;i++) addBallAt(rand(baseSize, WIDTH-baseSize), rand(baseSize, HEIGHT-baseSize));
+      } else if (count < balls.length){
+        balls.splice(count);
+        updateUICounts();
+      }
+      for (const b of balls){
+        b.r = baseSize * clamp(0.6 + Math.random()*0.9, 0.6, 1.2);
+        const mag = Math.hypot(b.vx, b.vy) || 1;
+        const newMag = rand(0.6,1.6) * baseSpeed;
+        b.vx = (b.vx / mag) * newMag;
+        b.vy = (b.vy / mag) * newMag;
+      }
+    }
+
+    function saveSettings(){
+      const s = {
+        num: numBallsInput.value,
+        speed: speedInput.value,
+        size: sizeInput.value,
+        gravity: gravityInput.value,
+        friction: frictionInput.value,
+        bg: bgSelect.value,
+        score,
+        controlsVisible: !controlsEl.classList.contains('hidden')
+      };
+      try { localStorage.setItem('movingBallsSettings', JSON.stringify(s)); }
+      catch(e){ /* ignore */ }
+    }
+    function loadSettings(){
+      try {
+        const s = JSON.parse(localStorage.getItem('movingBallsSettings') || '{}');
+        if (s && s.num){
+          numBallsInput.value = s.num;
+          speedInput.value = s.speed ?? speedInput.value;
+          sizeInput.value = s.size ?? sizeInput.value;
+          gravityInput.value = s.gravity ?? gravityInput.value;
+          frictionInput.value = s.friction ?? frictionInput.value;
+          bgSelect.value = s.bg ?? bgSelect.value;
+          score = s.score ?? 0;
+          scoreEl.textContent = score;
+          const visible = s.controlsVisible ?? true;
+          setControlsVisible(visible, false);
+        }
+      } catch(e){ setControlsVisible(true, false); }
+    }
+
+    function reset(){
+      score = 0; scoreEl.textContent = '0';
+      createBallSet(parseInt(numBallsInput.value,10), parseFloat(sizeInput.value), parseFloat(speedInput.value) / 100 * 200);
+    }
+
+    function hardReset(){
+      numBallsInput.value = 20;
+      speedInput.value = 100;
+      sizeInput.value = 50;
+      gravityInput.value = 0;
+      frictionInput.value = 1;
+      bgSelect.value = 'white';
+      updateSliders();
+      reset();
+      saveSettings();
+    }
+
+    pauseBtn.addEventListener('click', () => {
+      running = !running;
+      if (!running){ overlay.style.display = 'flex'; overlayMsg.textContent = 'Paused'; pauseBtn.textContent = '再開'; }
+      else { overlay.style.display = 'none'; pauseBtn.textContent = '一時停止'; }
+    });
+
+    clearBtn.addEventListener('click', hardReset);
+    saveBtn.addEventListener('click', () => { saveSettings(); saveBtn.textContent = '保存済み'; setTimeout(()=> saveBtn.textContent = '保存', 900); });
+
+    [numBallsInput, speedInput, sizeInput, gravityInput, frictionInput].forEach(inp => {
+      inp.addEventListener('input', updateSliders);
+      inp.addEventListener('change', () => { syncFromControls(); saveSettings(); });
+    });
+    bgSelect.addEventListener('change', saveSettings);
+
+    window.addEventListener('keydown', (e)=>{ 
+      if (e.code === 'Space'){ e.preventDefault(); pauseBtn.click(); }
+      if (e.key.toLowerCase() === 'c'){ hardReset(); }
+      if (e.key.toLowerCase() === 'h' || e.key === 'Escape'){ toggleControls(); }
+    });
+
+    window.addEventListener('resize', () => { resize(); syncFromControls(); });
+
+    // Controls visibility management
+    function setControlsVisible(visible, save = true){
+      if (visible){
+        controlsEl.classList.remove('hidden');
+        toggleControlsBtn.textContent = '設定非表示';
+      } else {
+        controlsEl.classList.add('hidden');
+        toggleControlsBtn.textContent = '設定表示';
+      }
+      if (save) saveSettings();
+    }
+    function toggleControls(){
+      const currentlyVisible = !controlsEl.classList.contains('hidden');
+      setControlsVisible(!currentlyVisible);
+    }
+    toggleControlsBtn.addEventListener('click', toggleControls);
+
+    // init functions
+    function init(){
+      resize();
+      loadSettings();
+      updateSliders();
+      createBallSet(parseInt(numBallsInput.value,10), parseFloat(sizeInput.value), parseFloat(speedInput.value) / 100 * 200);
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
+      updateUICounts();
+    }
+
+    init();
+
+    window.MovingBalls = { addBallAt, reset, saveSettings, balls };
+
+    document.body.addEventListener('touchstart', (e)=>{ if (e.target === canvas) e.preventDefault(); }, { passive:false });
+
+    updateSliders();
+  </script>
+</body>
+</html>
