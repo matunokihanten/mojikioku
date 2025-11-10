@@ -3,230 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>改良版！電卓型記憶力ゲーム</title>
+    <title>電卓型記憶力ゲーム</title>
     <style>
+        /* Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Electrolize&display=swap');
+
         body {
             font-family: 'Arial', sans-serif;
-            /* ネオンサイバーパンク風の背景 */
             background: linear-gradient(135deg, #1a0a2a 0%, #0a0a1a 100%);
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* パディングを削減 */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            box-sizing: border-box; /* ボックスサイズの計算方法を変更 */
         }
 
         .game-container {
-            background: #0d0d1a; /* ダークな背景 */
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(78, 205, 196, 0.4); /* シアン系のネオンシャドウ */
+            background: #0d0d1a;
+            padding: 15px; /* パディングを削減 */
+            border-radius: 15px; /* 角丸を削減 */
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.4);
             text-align: center;
-            width: 380px;
-            border: 2px solid #4ecdc4; /* シアン系のネオンボーダー */
+            width: 95%; /* 画面幅いっぱいに広げる */
+            max-width: 400px; /* 最大幅を設定 */
+            border: 2px solid #4ecdc4;
+            box-sizing: border-box;
         }
 
-        .calculator {
-            background: #1a0a2a; /* さらにダークな背景 */
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: inset 0 0 15px rgba(255, 0, 255, 0.3); /* マゼンタ系のインナーシャドウ */
-            border: 1px solid #ff00ff; /* マゼンタ系のボーダー */
-        }
-
-        .display {
-            background: #05050f; /* 非常にダークなディスプレイ背景 */
-            color: #00ff00; /* ネオングリーン */
-            font-size: 28px; /* 少し大きく */
-            font-weight: bold;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            border: 2px solid #00ff00; /* ネオングリーンのボーダー */
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Share Tech Mono', monospace; /* サイバー感のあるフォント */
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); /* ネオングリーンのシャドウ */
-        }
-
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            width: 100%;
-            height: 60px;
-            border: none;
-            border-radius: 10px;
-            font-size: 20px; /* 少し大きく */
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            user-select: none;
-            color: white;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7); /* テキストに軽いネオン効果 */
-        }
-
-        .btn:hover {
-            transform: translateY(-3px); /* 少し大きく動く */
-            box-shadow: 0 8px 18px rgba(0,0,0,0.6);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        /* 各ボタンの色をネオンサイバーパンク風に */
-        .btn.number { background: #007bff; /* 青 */ border: 1px solid #00f0ff; /* ネオンシアン */ box-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
-        .btn.operator { background: #ff007f; /* マゼンタ */ border: 1px solid #ff00ff; /* ネオンマゼンタ */ box-shadow: 0 0 8px rgba(255, 0, 255, 0.6); }
-        .btn.equals { background: #00cc66; /* 緑 */ border: 1px solid #00ff00; /* ネオングリーン */ grid-row: span 2; box-shadow: 0 0 8px rgba(0, 255, 0, 0.6); }
-        .btn.clear { background: #ffaa00; /* オレンジ */ border: 1px solid #ffcc00; /* ネオンイエロー */ box-shadow: 0 0 8px rgba(255, 204, 0, 0.6); }
-        .btn.zero { grid-column: span 2; }
-
-        .btn.active {
-            background: #fff !important;
-            color: #000 !important;
-            transform: scale(1.15); /* より大きく */
-            box-shadow: 0 0 30px rgba(255,255,255,0.9); /* 明るい白色のネオン */
-            border-color: #fff !important;
-        }
-
-        .btn.disabled {
-            opacity: 0.3; /* もっと暗く */
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .control-btn {
-            background: #8e2de2; /* 紫 */
-            color: white;
-            border: 2px solid #ff00ff; /* マゼンタ系のネオンボーダー */
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); /* マゼンタ系のネオンシャドウ */
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-        }
-
-        .control-btn:hover {
-            background: #6a1a9e; /* ダークな紫 */
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
-        }
-
-        .control-btn:disabled {
-            background: #333; /* ダークグレー */
-            border-color: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-            color: #999;
-        }
-
-        /* --- ここから追加・変更したスタイル --- */
-        .difficulty-selector {
-            display: flex;
-            gap: 10px;
-            background: #1a0a2a;
-            padding: 5px;
-            border-radius: 8px;
-            border: 1px solid #4ecdc4; /* シアン系のネオンボーダー */
-        }
-
-        .difficulty-selector label {
-            padding: 8px 12px;
-            color: #4ecdc4; /* シアン系の文字色 */
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
-            text-shadow: 0 0 5px rgba(78, 205, 196, 0.5);
-        }
-
-        .difficulty-selector input {
-            display: none;
-        }
-        
-        .difficulty-selector input:checked + label {
-            background-color: #4ecdc4; /* チェック時にシアン系の背景 */
-            color: #000;
-            font-weight: bold;
-            box-shadow: 0 0 10px rgba(78, 205, 196, 0.8);
-            text-shadow: none;
-        }
-
-        .game-info {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            color: #4ecdc4; /* シアン系の文字色 */
-            margin-bottom: 20px;
-            border-bottom: 1px dashed #ff00ff; /* マゼンタ系の点線 */
-            padding-bottom: 10px;
-        }
-        
-        .score-box {
-            text-align: center;
-        }
-        /* --- ここまで追加・変更したスタイル --- */
-
-        .score { font-size: 22px; font-weight: bold; color: #ffeb3b; /* ネオンイエロー */ text-shadow: 0 0 8px rgba(255, 235, 59, 0.8); }
-        .level { font-size: 16px; color: #b2fefd; /* 明るいシアン */ margin-top: 5px; }
-        .status { font-size: 15px; color: #ff00ff; /* ネオンマゼンタ */ margin-top: 10px; text-shadow: 0 0 5px rgba(255, 0, 255, 0.6); }
         .title { 
             color: white; 
-            font-size: 28px; 
-            font-weight: bold; 
-            margin-bottom: 20px; 
-            text-shadow: 0 0 15px #00f0ff, 0 0 25px #ff00ff; /* シアンとマゼンタのネオン */
-            font-family: 'Electrolize', sans-serif; /* タイトルに別のサイバーフォント */
+            font-size: 24px; /* タイトルを縮小 */
+            margin-bottom: 10px; /* マージンを削減 */
+            text-shadow: 0 0 10px #00f0ff, 0 0 20px #ff00ff;
+            font-family: 'Electrolize', sans-serif;
         }
+
         .instructions { 
             color: #b2fefd; 
-            font-size: 14px; 
-            margin-bottom: 20px; 
-            line-height: 1.4; 
+            font-size: 12px; /* 縮小 */
+            margin-bottom: 10px; /* マージンを削減 */
+            line-height: 1.3;
             text-shadow: 0 0 3px rgba(178, 254, 253, 0.5);
         }
 
-        @keyframes flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.1; /* もっと暗く */ }
+        .game-info {
+            color: #4ecdc4;
+            margin-bottom: 15px; /* マージンを削減 */
+            padding-bottom: 8px; /* パディングを削減 */
+            font-size: 14px; /* 情報を縮小 */
+        }
+        
+        .score { font-size: 18px; /* 縮小 */ }
+        .level { font-size: 13px; /* 縮小 */ }
+
+        .status { 
+            font-size: 14px; /* 縮小 */
+            margin-top: 5px; /* マージンを削減 */
+            margin-bottom: 15px;
         }
 
+        .calculator {
+            background: #1a0a2a;
+            border-radius: 10px; /* 角丸を削減 */
+            padding: 15px; /* パディングを削減 */
+            box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.3);
+            border: 1px solid #ff00ff;
+        }
+
+        .display {
+            font-size: 24px; /* 縮小 */
+            padding: 15px; /* パディングを削減 */
+            margin-bottom: 15px; /* マージンを削減 */
+            min-height: 40px; /* 高さを削減 */
+        }
+
+        .buttons {
+            gap: 8px; /* ギャップを削減 */
+            margin-bottom: 15px; /* マージンを削減 */
+        }
+
+        .btn {
+            height: 50px; /* 高さを削減 */
+            border-radius: 8px; /* 角丸を削減 */
+            font-size: 18px; /* 縮小 */
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+
+        .controls {
+            gap: 10px; /* ギャップを削減 */
+            margin-top: 15px; /* マージンを削減 */
+        }
+
+        .control-btn {
+            padding: 10px 20px; /* パディングを削減 */
+            font-size: 14px; /* 縮小 */
+        }
+
+        /* 難易度セレクタのスタイル調整 */
+        .difficulty-selector {
+            gap: 5px; /* ギャップを削減 */
+            padding: 3px; /* パディングを削減 */
+        }
+
+        .difficulty-selector label {
+            padding: 6px 10px; /* パディングを削減 */
+            font-size: 13px; /* 縮小 */
+        }
+
+        /* 以下は、削減・調整した箇所以外の元のサイバーパンク風のスタイル */
+        /* --- スタイル継承 --- */
+        .display {
+            background: #05050f;
+            color: #00ff00;
+            font-weight: bold;
+            border-radius: 10px;
+            border: 2px solid #00ff00;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Share Tech Mono', monospace;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+        }
+        .buttons { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.6); }
+        .btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .btn.number { background: #007bff; border: 1px solid #00f0ff; box-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+        .btn.operator { background: #ff007f; border: 1px solid #ff00ff; box-shadow: 0 0 8px rgba(255, 0, 255, 0.6); }
+        .btn.equals { background: #00cc66; border: 1px solid #00ff00; grid-row: span 2; box-shadow: 0 0 8px rgba(0, 255, 0, 0.6); }
+        .btn.clear { background: #ffaa00; border: 1px solid #ffcc00; box-shadow: 0 0 8px rgba(255, 204, 0, 0.6); }
+        .btn.zero { grid-column: span 2; }
+        .btn.active { background: #fff !important; color: #000 !important; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.9); border-color: #fff !important; }
+        .btn.disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+        .controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .control-btn { background: #8e2de2; color: white; border: 2px solid #ff00ff; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+        .control-btn:hover { background: #6a1a9e; transform: translateY(-1px); box-shadow: 0 0 12px rgba(255, 0, 255, 0.7); }
+        .control-btn:disabled { background: #333; border-color: #555; cursor: not-allowed; transform: none; box-shadow: none; color: #999; }
+        .difficulty-selector { display: flex; background: #1a0a2a; border-radius: 8px; border: 1px solid #4ecdc4; }
+        .difficulty-selector label { color: #4ecdc4; border-radius: 6px; cursor: pointer; transition: background-color 0.2s, color 0.2s, box-shadow 0.2s; text-shadow: 0 0 5px rgba(78, 205, 196, 0.5); }
+        .difficulty-selector input { display: none; }
+        .difficulty-selector input:checked + label { background-color: #4ecdc4; color: #000; font-weight: bold; box-shadow: 0 0 8px rgba(78, 205, 196, 0.8); text-shadow: none; }
+        .game-info { display: flex; justify-content: space-around; align-items: center; border-bottom: 1px dashed #ff00ff; }
+        .score-box { text-align: center; }
+        .score { color: #ffeb3b; text-shadow: 0 0 8px rgba(255, 235, 59, 0.8); }
+        .level { color: #b2fefd; margin-top: 3px; }
+        .status { color: #ff00ff; text-shadow: 0 0 5px rgba(255, 0, 255, 0.6); }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.1; }
+        }
         .btn.flash { 
             animation: flash 0.5s ease-in-out; 
-            box-shadow: 0 0 25px #ff0000; /* 赤いネオンでエラーを強調 */
+            box-shadow: 0 0 20px #ff0000; 
             border-color: #ff0000 !important;
         }
 
-        /* Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Electrolize&display=swap');
+        /* 📱 スマートフォン縦画面向け調整 */
+        @media (max-width: 450px) {
+            body { padding: 5px; }
+            .game-container { padding: 10px; border-radius: 10px; }
+            .calculator { padding: 10px; }
+            .display { font-size: 20px; padding: 10px; min-height: 35px; margin-bottom: 10px; }
+            .title { font-size: 22px; margin-bottom: 8px; }
+            .instructions { font-size: 11px; margin-bottom: 8px; }
+            .buttons { gap: 6px; margin-bottom: 10px; }
+            .btn { height: 45px; font-size: 16px; border-radius: 6px; }
+            .controls { margin-top: 10px; gap: 8px; }
+            .control-btn { padding: 8px 15px; font-size: 13px; }
+            .difficulty-selector label { padding: 5px 8px; font-size: 12px; }
+            .game-info { margin-bottom: 10px; }
+            .score { font-size: 16px; }
+        }
+        /* 📱 高さの調整 (特に短い画面向け) */
+        @media (max-height: 700px) and (max-width: 450px) {
+            .btn { height: 40px; font-size: 15px; }
+            .calculator { padding: 8px; }
+            .buttons { gap: 5px; }
+            .display { padding: 8px; font-size: 18px; min-height: 30px; }
+        }
+
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div class="title">電卓型記憶力ゲーム </div>
+        <div class="title">電卓型記憶力ゲーム</div>
         <div class="instructions">
             光る順番を覚えて、同じ順番でボタンを押してください！
         </div>
@@ -284,11 +248,9 @@
     <script>
         class CalculatorMemoryGame {
             constructor() {
-                // ▼▼▼ プロパティを追加 ▼▼▼
                 this.highScore = 0;
                 this.sequenceSpeed = 600; // デフォルトの速度
-                this.sounds = {}; // サウンドオブジェクトを格納
-                // ▲▲▲ プロパティを追加 ▲▲▲
+                this.sounds = {}; 
 
                 this.sequence = [];
                 this.playerInput = [];
@@ -299,8 +261,8 @@
                 
                 this.initializeGame();
                 this.bindEvents();
-                this.loadHighScore(); // ハイスコアを読み込む
-                this.preloadSounds(); // サウンドを事前に読み込む
+                this.loadHighScore(); 
+                this.preloadSounds(); 
             }
 
             initializeGame() {
@@ -311,11 +273,8 @@
                 this.startBtn = document.getElementById('startBtn');
                 this.resetBtn = document.getElementById('resetBtn');
                 this.gameButtons = document.querySelectorAll('.btn');
-
-                // ▼▼▼ 新しい要素を取得 ▼▼▼
                 this.highScoreElement = document.getElementById('highScore');
                 this.difficultySelector = document.getElementById('difficultySelector');
-                // ▲▲▲ 新しい要素を取得 ▲▲▲
                 
                 this.updateDisplay();
             }
@@ -334,20 +293,14 @@
                         }
                     });
                 });
-
-                // ▼▼▼ キーボード操作のイベントリスナーを追加 ▼▼▼
                 document.addEventListener('keydown', (e) => this.handleKeyPress(e));
-                // ▲▲▲ キーボード操作のイベントリスナーを追加 ▲▲▲
             }
 
-            // ▼▼▼ サウンド読み込み機能を追加 ▼▼▼
             preloadSounds() {
-                // Web Audio APIを使用して、ユーザー操作なしでも再生できるように準備
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.audioCtx = new AudioContext();
 
-                // 効果音のデータ (Base64エンコード)
-                // 実際には外部ファイルから読み込む方が良いですが、ここではシンプルにまとめます
+                // 効果音のデータ (Base64エンコード - 元のコードから変更なし)
                 const soundData = {
                     click: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
                     correct: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhUQAAAP2/AP/9/wIA/f8EABAA/v8IABAD/v8KABAA/v4NABAA//kRABAD//kUABAA/v+BAAUA/v+HADwA//4kAHEAG/8vAHwAO/+BAB4AFv+MAHwAHf+aAIAAJv+oAIQAAP+zAIwAAACDAJAAAgCLAJQAJgCiAJgAGgDIAKEADgEQALoA+gCeAMEA+wClAOMABAClAQIAFgDLAQYAFgDkAQgAEgD5AQkADAD+AQgA',
@@ -361,7 +314,6 @@
 
             playSound(soundName) {
                 if (this.sounds[soundName]) {
-                    // オーディオコンテキストが一時停止状態なら再開 (ブラウザの自動再生ポリシー対策)
                     if (this.audioCtx.state === 'suspended') {
                         this.audioCtx.resume();
                     }
@@ -369,9 +321,7 @@
                     this.sounds[soundName].play();
                 }
             }
-            // ▲▲▲ サウンド読み込み機能を追加 ▲▲▲
 
-            // ▼▼▼ キーボード操作処理を追加 ▼▼▼
             handleKeyPress(e) {
                 if (this.isPlaying && !this.isShowingSequence) {
                     const keyMap = {
@@ -383,20 +333,20 @@
                     let key = e.key;
                     if (keyMap[e.code]) {
                         key = keyMap[e.code];
+                    } else if (e.key >= '0' && e.key <= '9') {
+                        key = e.key;
                     }
 
                     const button = document.querySelector(`.btn[data-key="${key}"]`);
                     if (button) {
-                        e.preventDefault(); // デフォルトの動作をキャンセル
+                        e.preventDefault(); 
                         button.click();
                         
-                        // クリックした見た目を再現
                         button.classList.add('active');
                         setTimeout(() => button.classList.remove('active'), 100);
                     }
                 }
             }
-            // ▲▲▲ キーボード操作処理を追加 ▲▲▲
 
             startGame() {
                 this.isPlaying = true;
@@ -405,11 +355,9 @@
                 this.score = 0;
                 this.level = 1;
 
-                // ▼▼▼ 難易度に応じた速度を設定 ▼▼▼
                 const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
                 this.sequenceSpeed = parseInt(selectedDifficulty, 10);
-                this.difficultySelector.style.pointerEvents = 'none'; // ゲーム中は難易度変更不可
-                // ▲▲▲ 難易度に応じた速度を設定 ▲▲▲
+                this.difficultySelector.style.pointerEvents = 'none'; 
                 
                 this.startBtn.disabled = true;
                 this.updateDisplay();
@@ -429,9 +377,10 @@
                 this.level = 1;
                 
                 this.startBtn.disabled = false;
-                this.difficultySelector.style.pointerEvents = 'auto'; // 難易度変更を再度可能に
+                this.difficultySelector.style.pointerEvents = 'auto';
                 this.gameButtons.forEach(btn => {
-                    btn.classList.remove('disabled', 'active');
+                    btn.classList.remove('disabled', 'active', 'flash');
+                    btn.style.background = ''; // リセット時に背景色を元に戻す
                 });
                 
                 this.updateDisplay();
@@ -446,6 +395,7 @@
             }
 
             addToSequence() {
+                // "="と"."は最後にしか使えない、Cはクリアなので、難易度を考慮して頻度を調整しても良いが、ここでは全てを対象
                 const keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                              '+', '-', '*', '/', '=', 'C', '.'];
                 const randomKey = keys[Math.floor(Math.random() * keys.length)];
@@ -465,13 +415,14 @@
                     const button = document.querySelector(`[data-key="${key}"]`);
                     
                     if (button) {
+                        this.playSound('click'); // シーケンス表示時もクリック音を鳴らす
                         button.classList.add('active');
                         this.display.textContent = key;
-                        await this.wait(this.sequenceSpeed); // 難易度に応じた速度
+                        await this.wait(this.sequenceSpeed);
                         
                         button.classList.remove('active');
                         this.display.textContent = '...';
-                        await this.wait(this.sequenceSpeed / 2); // 間の時間も調整
+                        await this.wait(this.sequenceSpeed / 2);
                     }
                 }
                 
@@ -482,7 +433,7 @@
             }
 
             handlePlayerInput(key) {
-                this.playSound('click'); // クリック音を再生
+                this.playSound('click'); 
                 this.playerInput.push(key);
                 this.display.textContent = this.playerInput.join(' ');
                 
@@ -498,7 +449,7 @@
             }
 
             levelComplete() {
-                this.playSound('correct'); // 正解音を再生
+                this.playSound('correct'); 
                 this.score += this.level * 10;
                 this.level++;
                 this.updateDisplay();
@@ -510,34 +461,30 @@
             }
 
             gameOver() {
-                this.playSound('wrong'); // 不正解音を再生
+                this.playSound('wrong'); 
                 this.isPlaying = false;
                 this.startBtn.disabled = false;
-                this.difficultySelector.style.pointerEvents = 'auto'; // 難易度変更を再度可能に
+                this.difficultySelector.style.pointerEvents = 'auto';
                 this.display.textContent = 'ゲームオーバー';
                 this.updateStatus(`ゲーム終了！最終スコア: ${this.score}`);
                 
-                // ▼▼▼ ハイスコア更新処理を追加 ▼▼▼
                 if (this.score > this.highScore) {
                     this.highScore = this.score;
                     this.saveHighScore();
                     this.updateStatus(`ハイスコア更新！ ${this.highScore}`);
                 }
-                // ▲▲▲ ハイスコア更新処理を追加 ▲▲▲
 
                 const wrongKey = this.playerInput[this.playerInput.length - 1];
                 const wrongButton = document.querySelector(`[data-key="${wrongKey}"]`);
                 if (wrongButton) {
-                    wrongButton.style.background = '#e74c3c';
-                    wrongButton.classList.add('flash');
+                    // 元のネオンスタイルに戻るために、クラスベースで制御
+                    wrongButton.classList.add('flash'); 
                     setTimeout(() => {
-                        wrongButton.style.background = '';
                         wrongButton.classList.remove('flash');
                     }, 1000);
                 }
             }
             
-            // ▼▼▼ ハイスコア関連の関数を追加 ▼▼▼
             loadHighScore() {
                 const storedHighScore = localStorage.getItem('calculatorMemoryHighScore');
                 if (storedHighScore) {
@@ -550,12 +497,11 @@
                 localStorage.setItem('calculatorMemoryHighScore', this.highScore);
                 this.highScoreElement.textContent = this.highScore;
             }
-            // ▲▲▲ ハイスコア関連の関数を追加 ▲▲▲
 
             updateDisplay() {
                 this.scoreElement.textContent = this.score;
                 this.levelElement.textContent = this.level;
-                this.highScoreElement.textContent = this.highScore; // ハイスコアも更新
+                this.highScoreElement.textContent = this.highScore; 
             }
 
             updateStatus(message) {
