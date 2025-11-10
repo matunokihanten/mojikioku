@@ -3,121 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>電卓型記憶力ゲーム</title>
+    <title>改良版！電卓型記憶力ゲーム</title>
     <style>
         /* Google Fonts */
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Electrolize&display=swap');
 
+        /* 🔽 スクロールを禁止するための修正 🔽 */
+        html, body {
+            height: 100%; /* HTMLとBodyの高さをビューポートに合わせる */
+            overflow: hidden; /* スクロールを禁止 */
+        }
+        /* 🔼 スクロールを禁止するための修正 🔼 */
+
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #1a0a2a 0%, #0a0a1a 100%);
             margin: 0;
-            padding: 10px; /* パディングを削減 */
+            padding: 10px; 
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box; /* ボックスサイズの計算方法を変更 */
+            /* height: 100vh; の代わりに height: 100% を使用し、html, body の設定を活かす */
+            min-height: 100%; 
+            box-sizing: border-box; 
         }
 
         .game-container {
             background: #0d0d1a;
-            padding: 15px; /* パディングを削減 */
-            border-radius: 15px; /* 角丸を削減 */
+            padding: 15px; 
+            border-radius: 15px; 
             box-shadow: 0 0 30px rgba(78, 205, 196, 0.4);
             text-align: center;
-            width: 95%; /* 画面幅いっぱいに広げる */
-            max-width: 400px; /* 最大幅を設定 */
+            width: 95%; 
+            max-width: 400px; 
             border: 2px solid #4ecdc4;
             box-sizing: border-box;
+            /* 🔽 画面に収まらない場合に備えて、メインコンテナの最大高さを設定 🔽 */
+            max-height: 100%; 
+            overflow-y: auto; /* コンテナ自体が画面より大きい場合は内部スクロールを許可 (今回は全体のスクロールを禁止しているので、主にAndroid ChromeのUI隠れ対策) */
+            /* 🔼 画面に収まらない場合に備えて、メインコンテナの最大高さを設定 🔼 */
         }
 
         .title { 
             color: white; 
-            font-size: 24px; /* タイトルを縮小 */
-            margin-bottom: 10px; /* マージンを削減 */
+            font-size: 24px; 
+            margin-bottom: 10px; 
             text-shadow: 0 0 10px #00f0ff, 0 0 20px #ff00ff;
             font-family: 'Electrolize', sans-serif;
         }
 
         .instructions { 
             color: #b2fefd; 
-            font-size: 12px; /* 縮小 */
-            margin-bottom: 10px; /* マージンを削減 */
+            font-size: 12px; 
+            margin-bottom: 10px; 
             line-height: 1.3;
             text-shadow: 0 0 3px rgba(178, 254, 253, 0.5);
         }
 
         .game-info {
             color: #4ecdc4;
-            margin-bottom: 15px; /* マージンを削減 */
-            padding-bottom: 8px; /* パディングを削減 */
-            font-size: 14px; /* 情報を縮小 */
+            margin-bottom: 15px; 
+            padding-bottom: 8px; 
+            font-size: 14px; 
         }
         
-        .score { font-size: 18px; /* 縮小 */ }
-        .level { font-size: 13px; /* 縮小 */ }
+        .score { font-size: 18px; }
+        .level { font-size: 13px; }
 
         .status { 
-            font-size: 14px; /* 縮小 */
-            margin-top: 5px; /* マージンを削減 */
+            font-size: 14px; 
+            margin-top: 5px; 
             margin-bottom: 15px;
         }
 
         .calculator {
             background: #1a0a2a;
-            border-radius: 10px; /* 角丸を削減 */
-            padding: 15px; /* パディングを削減 */
+            border-radius: 10px; 
+            padding: 15px; 
             box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.3);
             border: 1px solid #ff00ff;
         }
 
         .display {
-            font-size: 24px; /* 縮小 */
-            padding: 15px; /* パディングを削減 */
-            margin-bottom: 15px; /* マージンを削減 */
-            min-height: 40px; /* 高さを削減 */
-        }
-
-        .buttons {
-            gap: 8px; /* ギャップを削減 */
-            margin-bottom: 15px; /* マージンを削減 */
-        }
-
-        .btn {
-            height: 50px; /* 高さを削減 */
-            border-radius: 8px; /* 角丸を削減 */
-            font-size: 18px; /* 縮小 */
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-        }
-
-        .controls {
-            gap: 10px; /* ギャップを削減 */
-            margin-top: 15px; /* マージンを削減 */
-        }
-
-        .control-btn {
-            padding: 10px 20px; /* パディングを削減 */
-            font-size: 14px; /* 縮小 */
-        }
-
-        /* 難易度セレクタのスタイル調整 */
-        .difficulty-selector {
-            gap: 5px; /* ギャップを削減 */
-            padding: 3px; /* パディングを削減 */
-        }
-
-        .difficulty-selector label {
-            padding: 6px 10px; /* パディングを削減 */
-            font-size: 13px; /* 縮小 */
-        }
-
-        /* 以下は、削減・調整した箇所以外の元のサイバーパンク風のスタイル */
-        /* --- スタイル継承 --- */
-        .display {
             background: #05050f;
             color: #00ff00;
+            font-size: 24px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            min-height: 40px; 
             font-weight: bold;
             border-radius: 10px;
             border: 2px solid #00ff00;
@@ -127,7 +101,28 @@
             font-family: 'Share Tech Mono', monospace;
             box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
         }
-        .buttons { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+        .buttons {
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px; 
+            margin-bottom: 15px; 
+        }
+
+        .btn {
+            width: 100%;
+            height: 50px; 
+            border: none;
+            border-radius: 8px; 
+            font-size: 18px; 
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            user-select: none;
+            color: white;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+        }
 
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.6); }
         .btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
@@ -138,14 +133,37 @@
         .btn.zero { grid-column: span 2; }
         .btn.active { background: #fff !important; color: #000 !important; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.9); border-color: #fff !important; }
         .btn.disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
-        .controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
-        .control-btn { background: #8e2de2; color: white; border: 2px solid #ff00ff; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+        
+        .controls { 
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            align-items: center; 
+            margin-top: 15px; 
+            flex-wrap: wrap; 
+        }
+
+        .control-btn { 
+            background: #8e2de2; 
+            color: white; 
+            border: 2px solid #ff00ff; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: bold; 
+            transition: all 0.2s; 
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); 
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); 
+        }
         .control-btn:hover { background: #6a1a9e; transform: translateY(-1px); box-shadow: 0 0 12px rgba(255, 0, 255, 0.7); }
         .control-btn:disabled { background: #333; border-color: #555; cursor: not-allowed; transform: none; box-shadow: none; color: #999; }
-        .difficulty-selector { display: flex; background: #1a0a2a; border-radius: 8px; border: 1px solid #4ecdc4; }
-        .difficulty-selector label { color: #4ecdc4; border-radius: 6px; cursor: pointer; transition: background-color 0.2s, color 0.2s, box-shadow 0.2s; text-shadow: 0 0 5px rgba(78, 205, 196, 0.5); }
+        
+        .difficulty-selector { display: flex; gap: 5px; background: #1a0a2a; padding: 3px; border-radius: 8px; border: 1px solid #4ecdc4; }
+        .difficulty-selector label { padding: 6px 10px; color: #4ecdc4; border-radius: 6px; cursor: pointer; transition: background-color 0.2s, color 0.2s, box-shadow 0.2s; text-shadow: 0 0 5px rgba(78, 205, 196, 0.5); font-size: 13px; }
         .difficulty-selector input { display: none; }
         .difficulty-selector input:checked + label { background-color: #4ecdc4; color: #000; font-weight: bold; box-shadow: 0 0 8px rgba(78, 205, 196, 0.8); text-shadow: none; }
+        
         .game-info { display: flex; justify-content: space-around; align-items: center; border-bottom: 1px dashed #ff00ff; }
         .score-box { text-align: center; }
         .score { color: #ffeb3b; text-shadow: 0 0 8px rgba(255, 235, 59, 0.8); }
@@ -162,7 +180,7 @@
             border-color: #ff0000 !important;
         }
 
-        /* 📱 スマートフォン縦画面向け調整 */
+        /* 📱 スマートフォン縦画面向け調整 (前回の最適化を維持) */
         @media (max-width: 450px) {
             body { padding: 5px; }
             .game-container { padding: 10px; border-radius: 10px; }
@@ -190,7 +208,7 @@
 </head>
 <body>
     <div class="game-container">
-        <div class="title">電卓型記憶力ゲーム</div>
+        <div class="title">改良版！電卓型記憶力ゲーム 🧠</div>
         <div class="instructions">
             光る順番を覚えて、同じ順番でボタンを押してください！
         </div>
@@ -249,7 +267,7 @@
         class CalculatorMemoryGame {
             constructor() {
                 this.highScore = 0;
-                this.sequenceSpeed = 600; // デフォルトの速度
+                this.sequenceSpeed = 600; 
                 this.sounds = {}; 
 
                 this.sequence = [];
@@ -300,7 +318,6 @@
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.audioCtx = new AudioContext();
 
-                // 効果音のデータ (Base64エンコード - 元のコードから変更なし)
                 const soundData = {
                     click: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
                     correct: 'data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhUQAAAP2/AP/9/wIA/f8EABAA/v8IABAD/v8KABAA/v4NABAA//kRABAD//kUABAA/v+BAAUA/v+HADwA//4kAHEAG/8vAHwAO/+BAB4AFv+MAHwAHf+aAIAAJv+oAIQAAP+zAIwAAACDAJAAAgCLAJQAJgCiAJgAGgDIAKEADgEQALoA+gCeAMEA+wClAOMABAClAQIAFgDLAQYAFgDkAQgAEgD5AQkADAD+AQgA',
@@ -380,7 +397,7 @@
                 this.difficultySelector.style.pointerEvents = 'auto';
                 this.gameButtons.forEach(btn => {
                     btn.classList.remove('disabled', 'active', 'flash');
-                    btn.style.background = ''; // リセット時に背景色を元に戻す
+                    btn.style.background = '';
                 });
                 
                 this.updateDisplay();
@@ -395,7 +412,6 @@
             }
 
             addToSequence() {
-                // "="と"."は最後にしか使えない、Cはクリアなので、難易度を考慮して頻度を調整しても良いが、ここでは全てを対象
                 const keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                              '+', '-', '*', '/', '=', 'C', '.'];
                 const randomKey = keys[Math.floor(Math.random() * keys.length)];
@@ -415,7 +431,7 @@
                     const button = document.querySelector(`[data-key="${key}"]`);
                     
                     if (button) {
-                        this.playSound('click'); // シーケンス表示時もクリック音を鳴らす
+                        this.playSound('click'); 
                         button.classList.add('active');
                         this.display.textContent = key;
                         await this.wait(this.sequenceSpeed);
@@ -477,7 +493,6 @@
                 const wrongKey = this.playerInput[this.playerInput.length - 1];
                 const wrongButton = document.querySelector(`[data-key="${wrongKey}"]`);
                 if (wrongButton) {
-                    // 元のネオンスタイルに戻るために、クラスベースで制御
                     wrongButton.classList.add('flash'); 
                     setTimeout(() => {
                         wrongButton.classList.remove('flash');
