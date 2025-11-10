@@ -5,6 +5,7 @@
     <title>ドッツカード</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
+        /* 共通設定 */
         body {
             display: flex;
             flex-direction: column;
@@ -12,130 +13,212 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            padding: 10px;
+            padding: 5px; /* 全体のパディングを縮小 */
             background-color: black;
             color: white;
             font-family: 'Segoe UI', 'Meiryo', sans-serif;
             box-sizing: border-box;
+            font-size: 14px; /* 基本フォントサイズを縮小 */
         }
+        
+        /* 描画エリア */
         #canvas {
             position: relative;
             width: 90vw;
-            max-width: 400px;
+            max-width: 300px; /* 最大幅を縮小 */
             height: 90vw;
-            max-height: 400px;
+            max-height: 300px; /* 最大高さを縮小 */
             border: 1px solid white;
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* マージンを縮小 */
             overflow: hidden;
             background-color: black;
-            transition: all 0.5s ease-in-out; /* スムーズなサイズ変更 */
+            transition: all 0.5s ease-in-out;
         }
+        
+        /* フルスクリーン表示時の調整 */
         .canvas-fullscreen {
-            width: 95vw !important;
-            height: 95vw !important;
-            max-width: 95vw !important;
-            max-height: 95vh !important;
+            width: 98vw !important; /* 画面いっぱいに */
+            height: 98vw !important;
+            max-width: 98vw !important;
+            max-height: 98vh !important;
         }
+        
+        /* ドット */
         .dot {
             position: absolute;
             background: radial-gradient(circle at 70% 40%, #ff0000, #800000);
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            width: 40px; /* デフォルトのドットサイズを縮小 */
+            height: 40px;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
+        
+        /* 設定エリア */
         .inputs {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 5px; /* マージンを縮小 */
             width: 100%;
             transition: all 0.5s ease-in-out;
+            max-width: 600px;
         }
         .inputs.hidden {
             display: none;
         }
         .input-row {
             display: flex;
-            justify-content: center;
+            justify-content: space-around; /* 均等配置に変更 */
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 5px; /* ギャップを縮小 */
+            margin-bottom: 5px;
             width: 100%;
         }
         .input-row > div {
             margin: 0;
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* 横並びに変更 */
             align-items: center;
             text-align: center;
+            flex: 1; /* 均等幅に */
+            min-width: 120px; /* 最小幅を設定 */
+            justify-content: center;
+            gap: 3px;
         }
+        
+        /* ラベルとインプットのスタイル */
         label {
             white-space: nowrap;
+            font-size: 12px; /* ラベルフォントサイズを縮小 */
         }
+        input[type="number"], select {
+            width: 50px; /* インプット幅を縮小 */
+            padding: 2px;
+            font-size: 12px;
+        }
+        
+        /* ボタンエリア */
         .buttons {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-            gap: 5px;
-            width: 90%;
-            max-width: 600px;
-            margin: 20px auto;
+            grid-template-columns: repeat(auto-fit, minmax(30px, 1fr)); /* ボタンサイズをさらに縮小 */
+            gap: 3px;
+            width: 95%;
+            max-width: 400px;
+            margin: 10px auto; /* マージンを縮小 */
         }
-        .buttons button {
+        
+        /* 回答入力エリア */
+        #answerInputContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 95%;
+            max-width: 400px;
+            margin: 10px auto;
+        }
+        #currentAnswer {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ccc;
+            min-height: 30px;
+            border: 1px solid white;
+            padding: 5px 10px;
+            background-color: #333;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .number-buttons-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 0-9とクリア、エンターを配置しやすいように調整 */
+            gap: 3px;
+            width: 100%;
+        }
+
+        .buttons button, #answerInputContainer button {
             margin: 0;
             width: 100%;
-            height: 40px;
+            height: 40px; /* ボタン高さを少し上げる */
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 16px; /* ボタンフォントサイズを少し上げる */
             background-color: rgba(255, 255, 255, 0.8);
             border: none;
-            border-radius: 5px;
+            border-radius: 3px; /* 角丸を縮小 */
             cursor: pointer;
         }
-        .buttons button:hover {
+        .buttons button:hover, #answerInputContainer button:hover {
             background-color: rgba(255, 255, 255, 1);
         }
+
+        /* 結果表示エリア */
         #practiceResult {
-            font-size: 24px;
-            margin-top: 10px;
+            font-size: 18px; /* フォントサイズを縮小 */
+            margin-top: 5px;
             color: blue;
             font-weight: bold;
-            height: 30px;
+            height: 25px;
         }
         #result {
-            font-size: 20px;
-            margin-top: 10px;
+            font-size: 16px; /* フォントサイズを縮小 */
+            margin-top: 5px;
             font-weight: bold;
-            height: 30px;
+            height: 25px;
         }
+        
+        /* コントロールボタンエリア */
         .controls {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 5px; /* ギャップを縮小 */
+            margin-top: 10px; /* マージンを縮小 */
+            width: 95%;
+            max-width: 400px;
         }
         .controls button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
+            padding: 5px 10px; /* パディングを縮小 */
+            font-size: 14px;
+            border-radius: 3px;
             cursor: pointer;
             background-color: rgba(255, 255, 255, 0.8);
             border: none;
+            flex: 1; /* 均等幅に */
+            min-width: 80px;
         }
+        
+        /* スマートフォン向け（600px以下）の追加最適化 */
         @media (max-width: 600px) {
+            body {
+                padding: 3px;
+            }
+            #canvas {
+                margin-bottom: 5px;
+            }
             .input-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
+                justify-content: space-between;
+                gap: 3px;
             }
             .input-row > div {
-                flex-direction: row;
-                justify-content: space-between;
-                width: 100%;
+                min-width: unset;
+                flex: 1 1 45%; /* 2列で表示しやすいように調整 */
             }
             .buttons {
-                grid-template-columns: repeat(5, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(35px, 1fr));
+                gap: 3px;
+                margin: 5px auto;
+            }
+            #answerInputContainer {
+                margin: 5px auto;
+            }
+            .controls {
+                gap: 3px;
+                margin-top: 5px;
+            }
+            .controls button {
+                padding: 5px;
+                min-width: unset;
+                flex: 1 1 20%; /* 5つのボタンを均等に */
             }
         }
     </style>
@@ -145,7 +228,7 @@
         <div class="input-row">
             <div>
                 <label for="dotSize">玉のサイズ:</label>
-                <input type="number" id="dotSize" value="60" min="10" max="100">
+                <input type="number" id="dotSize" value="40" min="10" max="100">
             </div>
             <div>
                 <label for="backgroundColor">背景色:</label>
@@ -158,17 +241,17 @@
         </div>
         <div class="input-row">
             <div>
-                <label for="minDots">最小の玉の数:</label>
+                <label for="minDots">最小の数:</label>
                 <input type="number" id="minDots" value="1" min="1" max="100">
             </div>
             <div>
-                <label for="maxDots">最大の玉の数:</label>
+                <label for="maxDots">最大の数:</label>
                 <input type="number" id="maxDots" value="10" min="1" max="100">
             </div>
         </div>
         <div class="input-row">
             <div>
-                <label for="practiceInterval">練習の表示時間 (秒):</label>
+                <label for="practiceInterval">練習時間 (秒):</label>
                 <select id="practiceInterval">
                     <option value="0.1" selected>0.1</option>
                     <option value="0.2">0.2</option>
@@ -182,186 +265,295 @@
     <div id="canvas"></div>
     <p id="result"></p>
     <div class="buttons"></div>
+
+    <div id="answerInputContainer" style="display:none;">
+        <div id="currentAnswer"></div>
+        <div class="number-buttons-row">
+            <button onclick="appendDigit(1)">1</button>
+            <button onclick="appendDigit(2)">2</button>
+            <button onclick="appendDigit(3)">3</button>
+            <button onclick="appendDigit(4)">4</button>
+            <button onclick="appendDigit(5)">5</button>
+            <button onclick="appendDigit(6)">6</button>
+            <button onclick="appendDigit(7)">7</button>
+            <button onclick="appendDigit(8)">8</button>
+            <button onclick="appendDigit(9)">9</button>
+            <button onclick="appendDigit(0)">0</button>
+            <button onclick="clearAnswer()">C</button>
+            <button onclick="submitAnswer()" style="background-color: lightgreen;">決定</button>
+        </div>
+    </div>
+
     <div class="controls">
         <button onclick="drawDots()">スタート</button>
-        <button onclick="practice()">練習</button>
+        <button onclick="startPractice()">練習</button>
         <button id="stopPracticeButton" onclick="stopPractice()" style="display:none;">練習終了</button>
         <button onclick="toggleSettings()">設定を隠す</button>
         <button onclick="resetPage()">リセット</button>
     </div>
 
     <script>
-        let practiceTimeout;
-        let correctDotsCount = 0;
+        let practiceTimeoutId;
+        let currentCorrectDotsCount = 0;
+        let isPracticeModeActive = false;
+        let currentAnswerString = "";
 
-        function drawDots() {
-            const canvas = document.getElementById("canvas");
-            const backgroundColor = document.getElementById("backgroundColor").value;
-            canvas.style.backgroundColor = backgroundColor;
-            canvas.innerHTML = "";
+        const canvasElement = document.getElementById("canvas");
+        const backgroundColorSelect = document.getElementById("backgroundColor");
+        const minDotsInput = document.getElementById("minDots");
+        const maxDotsInput = document.getElementById("maxDots");
+        const dotSizeInput = document.getElementById("dotSize");
+        const practiceIntervalSelect = document.getElementById("practiceInterval");
+        const practiceResultParagraph = document.getElementById("practiceResult");
+        const resultParagraph = document.getElementById("result");
+        const answerButtonsContainer = document.querySelector('.buttons');
+        const stopPracticeButton = document.getElementById("stopPracticeButton");
+        const settingsInputsContainer = document.querySelector('.inputs');
 
-            let minDots = parseInt(document.getElementById("minDots").value);
-            let maxDots = parseInt(document.getElementById("maxDots").value);
+        const answerInputContainer = document.getElementById("answerInputContainer");
+        const currentAnswerDisplay = document.getElementById("currentAnswer");
 
-            if (minDots > maxDots) {
-                [minDots, maxDots] = [maxDots, minDots];
-                document.getElementById("minDots").value = minDots;
-                document.getElementById("maxDots").value = maxDots;
+        // 数字ボタン入力モードか判定する関数
+        function isDigitInputMode() {
+            const maxDots = parseInt(maxDotsInput.value);
+            return maxDots > 10;
+        }
+
+        // 回答入力表示を更新
+        function updateAnswerDisplay() {
+            currentAnswerDisplay.textContent = currentAnswerString === "" ? "答えを入力" : currentAnswerString;
+        }
+
+        // 数字を追加
+        function appendDigit(digit) {
+            if (currentAnswerString.length < 2) { // 最大2桁までを想定
+                currentAnswerString += digit.toString();
+                updateAnswerDisplay();
             }
+        }
 
-            const numDots = Math.floor(Math.random() * (maxDots - minDots + 1)) + minDots;
-            correctDotsCount = numDots;
-            const dotSize = parseInt(document.getElementById("dotSize").value);
-            const placedDots = [];
+        // 回答をクリア
+        function clearAnswer() {
+            currentAnswerString = "";
+            updateAnswerDisplay();
+        }
 
-            for (let i = 0; i < numDots; i++) {
-                let x, y, overlap;
-                let attempts = 0;
-                const maxAttempts = 200;
+        // 回答を送信
+        function submitAnswer() {
+            if (currentAnswerString === "") {
+                resultParagraph.textContent = "答えを入力してください。";
+                resultParagraph.style.color = "orange";
+                return;
+            }
+            const selectedAnswer = parseInt(currentAnswerString);
+            checkAnswer(selectedAnswer, currentCorrectDotsCount);
+            currentAnswerString = ""; // 送信後にクリア
+            updateAnswerDisplay();
+        }
 
-                do {
-                    overlap = false;
-                    x = Math.random() * (canvas.clientWidth - dotSize);
-                    y = Math.random() * (canvas.clientHeight - dotSize);
+        function generateRandomPosition(areaWidth, areaHeight, elementSize, existingElements, minDistanceFactor) {
+            let x, y, overlap;
+            let attempts = 0;
+            const maxAttempts = 200; // 配置試行回数の上限
 
-                    for (const dot of placedDots) {
-                        const dx = dot.x - x;
-                        const dy = dot.y - y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance < dotSize * 0.9) {
-                            overlap = true;
-                            break;
-                        }
-                    }
-                    attempts++;
-                    if (attempts > maxAttempts) {
-                        console.warn("Could not place a dot without significant overlap. Skipping this dot.");
+            do {
+                overlap = false;
+                x = Math.random() * (areaWidth - elementSize);
+                y = Math.random() * (areaHeight - elementSize);
+
+                for (const existingPos of existingElements) {
+                    const dx = existingPos.x - x;
+                    const dy = existingPos.y - y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    // 最小距離ファクターを考慮して重なり判定
+                    if (distance < elementSize * minDistanceFactor) {
+                        overlap = true;
                         break;
                     }
-                } while (overlap);
+                }
+                attempts++;
+                if (attempts > maxAttempts) {
+                    console.warn("指定された重なり条件でドットを配置できませんでした。");
+                    return null; // 配置できなかった場合はnullを返す
+                }
+            } while (overlap);
+            return { x, y };
+        }
 
-                if (!overlap) {
-                    placedDots.push({ x, y });
+        function drawDots() {
+            stopPractice(); // 練習モードを停止
+            canvasElement.innerHTML = "";
+            canvasElement.style.backgroundColor = backgroundColorSelect.value;
+            currentAnswerString = "";
+            updateAnswerDisplay(); // 回答表示をリセット
 
+            let minDots = parseInt(minDotsInput.value);
+            let maxDots = parseInt(maxDotsInput.value);
+
+            // 最小と最大が逆転していたら入れ替える
+            if (minDots > maxDots) {
+                [minDots, maxDots] = [maxDots, minDots];
+                minDotsInput.value = minDots;
+                maxDotsInput.value = maxDots;
+            }
+            // 0以下の値は1に修正
+            minDots = Math.max(1, minDots);
+            maxDots = Math.max(1, maxDots);
+            minDotsInput.value = minDots;
+            maxDotsInput.value = maxDots;
+
+
+            const numDots = Math.floor(Math.random() * (maxDots - minDots + 1)) + minDots;
+            currentCorrectDotsCount = numDots;
+            const dotSize = parseInt(dotSizeInput.value);
+            const placedDotPositions = [];
+
+            for (let i = 0; i < numDots; i++) {
+                const position = generateRandomPosition(
+                    canvasElement.clientWidth,
+                    canvasElement.clientHeight,
+                    dotSize,
+                    placedDotPositions,
+                    0.9 // ドット同士が少し重なるのを許容
+                );
+
+                if (position) {
+                    placedDotPositions.push(position);
                     const dotElement = document.createElement("div");
                     dotElement.classList.add("dot");
                     dotElement.style.width = `${dotSize}px`;
                     dotElement.style.height = `${dotSize}px`;
-                    dotElement.style.left = `${x}px`;
-                    dotElement.style.top = `${y}px`;
-                    canvas.appendChild(dotElement);
+                    dotElement.style.left = `${position.x}px`;
+                    dotElement.style.top = `${position.y}px`;
+                    canvasElement.appendChild(dotElement);
                 }
             }
 
-            const buttonsContainer = document.querySelector('.buttons');
-            buttonsContainer.innerHTML = "";
-            for (let i = minDots; i <= maxDots; i++) {
-                const button = document.createElement("button");
-                button.textContent = i;
-                button.onclick = () => checkAnswer(i, correctDotsCount);
-                buttonsContainer.appendChild(button);
-            }
-
-            document.getElementById("result").textContent = "";
-            document.getElementById("practiceResult").textContent = "";
-        }
-
-        function checkAnswer(selected, correct) {
-            const resultDisplay = document.getElementById("result");
-            if (selected === correct) {
-                resultDisplay.textContent = "正解！";
-                resultDisplay.style.color = "green";
-                setTimeout(drawDots, 1000);
+            // 回答ボタン/入力エリアの表示切り替え
+            answerButtonsContainer.innerHTML = "";
+            if (isDigitInputMode()) {
+                answerButtonsContainer.style.display = 'none';
+                answerInputContainer.style.display = 'flex';
             } else {
-                resultDisplay.textContent = `不正解。正しい玉の数は ${correct} です。`;
-                resultDisplay.style.color = "red";
+                answerButtonsContainer.style.display = 'grid';
+                answerInputContainer.style.display = 'none';
+
+                // 回答ボタンの生成（10まで）
+                for (let i = minDots; i <= maxDots; i++) {
+                    const button = document.createElement("button");
+                    button.textContent = i;
+                    button.onclick = () => checkAnswer(i, currentCorrectDotsCount);
+                    answerButtonsContainer.appendChild(button);
+                }
+            }
+
+            resultParagraph.textContent = "";
+            practiceResultParagraph.textContent = "";
+        }
+
+        function checkAnswer(selectedAnswer, correctCount) {
+            // 入力された答えが最大値を超えていないかチェック
+            if (selectedAnswer > parseInt(maxDotsInput.value) || selectedAnswer < parseInt(minDotsInput.value)) {
+                resultParagraph.textContent = "設定された範囲外の数値です。";
+                resultParagraph.style.color = "orange";
+                return;
+            }
+            
+            if (selectedAnswer === correctCount) {
+                resultParagraph.textContent = "正解！";
+                resultParagraph.style.color = "lightgreen";
+                // 正解後、1秒後に次の問題を表示
+                setTimeout(drawDots, 1000); 
+            } else {
+                resultParagraph.textContent = `不正解。正解は ${correctCount} です。`;
+                resultParagraph.style.color = "red";
             }
         }
 
-        function practice() {
-            stopPractice();
-            const canvas = document.getElementById("canvas");
-            const dotSize = 20;
-            let currentDotCount = 1;
-            const practiceInterval = parseFloat(document.getElementById("practiceInterval").value) * 1000;
-            document.getElementById("stopPracticeButton").style.display = "block";
-            document.getElementById("result").textContent = "";
+        function startPractice() {
+            if (isPracticeModeActive) return; // すでに練習モードなら何もしない
 
-            function showDot(count) {
-                canvas.innerHTML = "";
-                const placedDotsInPractice = [];
+            isPracticeModeActive = true;
+            stopPractice(); // 念のため既存のタイマーをクリア
+
+            const practiceDotSize = 20; // 練習モードの玉のサイズは固定で小さめ
+            let currentPracticeDotCount = parseInt(minDotsInput.value);
+            const practiceInterval = parseFloat(practiceIntervalSelect.value) * 1000;
+            stopPracticeButton.style.display = "block";
+            resultParagraph.textContent = "";
+            answerButtonsContainer.style.display = 'none'; // 練習中は回答ボタンを非表示に
+            answerInputContainer.style.display = 'none'; // 練習中は回答入力を非表示に
+
+            function showPracticeDot(count) {
+                canvasElement.innerHTML = "";
+                const placedDotPositions = [];
+                const maxPracticeDots = parseInt(maxDotsInput.value);
+
+                if (count > maxPracticeDots) {
+                    stopPractice();
+                    return;
+                }
 
                 for (let i = 0; i < count; i++) {
-                    const dotElement = document.createElement("div");
-                    dotElement.classList.add("dot");
-                    dotElement.style.background = 'radial-gradient(circle at 70% 40%, #ff0000, #800000)';
-                    dotElement.style.width = `${dotSize}px`;
-                    dotElement.style.height = `${dotSize}px`;
+                    const position = generateRandomPosition(
+                        canvasElement.clientWidth,
+                        canvasElement.clientHeight,
+                        practiceDotSize,
+                        placedDotPositions,
+                        1.2 // 練習モードではドット同士の間隔を広げる
+                    );
 
-                    let x, y, overlap;
-                    let attempts = 0;
-                    const maxAttempts = 200;
-
-                    do {
-                        overlap = false;
-                        x = Math.random() * (canvas.clientWidth - dotSize);
-                        y = Math.random() * (canvas.clientHeight - dotSize);
-
-                        for (const existingDotPos of placedDotsInPractice) {
-                            const dx = existingDotPos.x - x;
-                            const dy = existingDotPos.y - y;
-                            const distance = Math.sqrt(dx * dx + dy * dy);
-                            if (distance < dotSize * 1.2) {
-                                overlap = true;
-                                break;
-                            }
-                        }
-                        attempts++;
-                        if (attempts > maxAttempts) {
-                            console.warn("Could not place a dot in practice mode without significant overlap. Skipping.");
-                            break;
-                        }
-                    } while (overlap);
-
-                    if (!overlap) {
-                        placedDotsInPractice.push({ x, y });
-                        dotElement.style.left = `${x}px`;
-                        dotElement.style.top = `${y}px`;
-                        canvas.appendChild(dotElement);
+                    if (position) {
+                        placedDotPositions.push(position);
+                        const dotElement = document.createElement("div");
+                        dotElement.classList.add("dot");
+                        dotElement.style.background = 'radial-gradient(circle at 70% 40%, #ff0000, #800000)';
+                        dotElement.style.width = `${practiceDotSize}px`;
+                        dotElement.style.height = `${practiceDotSize}px`;
+                        dotElement.style.left = `${position.x}px`;
+                        dotElement.style.top = `${position.y}px`;
+                        canvasElement.appendChild(dotElement);
                     }
                 }
-                document.getElementById("practiceResult").textContent = `玉の数: ${count}`;
+                practiceResultParagraph.textContent = `玉の数: ${count}`;
             }
 
-            function nextDotInPractice() {
-                const maxPracticeDots = parseInt(document.getElementById("maxDots").value);
-                if (currentDotCount <= maxPracticeDots) {
-                    showDot(currentDotCount++);
-                    practiceTimeout = setTimeout(nextDotInPractice, practiceInterval);
+            function nextPracticeStep() {
+                const maxPracticeDots = parseInt(maxDotsInput.value);
+                if (currentPracticeDotCount <= maxPracticeDots) {
+                    showPracticeDot(currentPracticeDotCount++);
+                    practiceTimeoutId = setTimeout(nextPracticeStep, practiceInterval);
                 } else {
                     stopPractice();
                 }
             }
 
-            nextDotInPractice();
+            nextPracticeStep();
         }
 
         function stopPractice() {
-            clearTimeout(practiceTimeout);
-            document.getElementById("canvas").innerHTML = "";
-            document.getElementById("practiceResult").textContent = "";
-            document.getElementById("stopPracticeButton").style.display = "none";
+            clearTimeout(practiceTimeoutId);
+            isPracticeModeActive = false;
+            canvasElement.innerHTML = "";
+            practiceResultParagraph.textContent = "";
+            stopPracticeButton.style.display = "none";
+            // 練習終了後、回答ボタン/入力エリアを再表示（設定に基づいて）
+            if (isDigitInputMode()) {
+                answerInputContainer.style.display = 'flex';
+                answerButtonsContainer.style.display = 'none';
+            } else {
+                answerButtonsContainer.style.display = 'grid';
+                answerInputContainer.style.display = 'none';
+            }
         }
 
         function toggleSettings() {
-            const inputs = document.querySelector('.inputs');
-            const canvas = document.getElementById('canvas');
             const toggleButton = document.querySelector('button[onclick="toggleSettings()"]');
 
-            inputs.classList.toggle('hidden');
-            canvas.classList.toggle('canvas-fullscreen');
+            settingsInputsContainer.classList.toggle('hidden');
+            canvasElement.classList.toggle('canvas-fullscreen');
 
-            if (inputs.classList.contains('hidden')) {
+            if (settingsInputsContainer.classList.contains('hidden')) {
                 toggleButton.textContent = '設定を表示';
             } else {
                 toggleButton.textContent = '設定を隠す';
@@ -371,6 +563,20 @@
         function resetPage() {
             location.reload();
         }
+
+        // ページロード時に一度設定に応じてボタン/入力を表示
+        document.addEventListener('DOMContentLoaded', () => {
+            if (isDigitInputMode()) {
+                answerInputContainer.style.display = 'flex';
+                answerButtonsContainer.style.display = 'none';
+            } else {
+                answerButtonsContainer.style.display = 'grid';
+                answerInputContainer.style.display = 'none';
+                // 10個以下の場合は、初期表示用にボタンを生成
+                drawDots(); 
+            }
+            updateAnswerDisplay(); // 初期表示を更新
+        });
     </script>
 </body>
 </html>
