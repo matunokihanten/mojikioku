@@ -24,7 +24,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* height: 100vh; の代わりに height: 100% を使用し、html, body の設定を活かす */
             min-height: 100%; 
             box-sizing: border-box; 
         }
@@ -39,10 +38,8 @@
             max-width: 400px; 
             border: 2px solid #4ecdc4;
             box-sizing: border-box;
-            /* 🔽 画面に収まらない場合に備えて、メインコンテナの最大高さを設定 🔽 */
             max-height: 100%; 
-            overflow-y: auto; /* コンテナ自体が画面より大きい場合は内部スクロールを許可 (今回は全体のスクロールを禁止しているので、主にAndroid ChromeのUI隠れ対策) */
-            /* 🔼 画面に収まらない場合に備えて、メインコンテナの最大高さを設定 🔼 */
+            overflow-y: auto; 
         }
 
         .title { 
@@ -131,7 +128,26 @@
         .btn.equals { background: #00cc66; border: 1px solid #00ff00; grid-row: span 2; box-shadow: 0 0 8px rgba(0, 255, 0, 0.6); }
         .btn.clear { background: #ffaa00; border: 1px solid #ffcc00; box-shadow: 0 0 8px rgba(255, 204, 0, 0.6); }
         .btn.zero { grid-column: span 2; }
-        .btn.active { background: #fff !important; color: #000 !important; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.9); border-color: #fff !important; }
+
+        /* 🔽 光るボタンの強調 (シーケンス表示時) 🔽 */
+        .btn.active { 
+            background: #ffffff !important; /* 背景色を強制的に明るい白に */
+            color: #000000 !important; 
+            transform: scale(1.15); /* より大きく */
+            /* 強力な白とシアンの多層シャドウ */
+            box-shadow: 0 0 30px #ffffff, 0 0 50px #4ecdc4, 0 0 70px #4ecdc4 !important; 
+            border-color: #ffffff !important; 
+        }
+        .btn.active.operator {
+             /* 演算子はマゼンタ系の光も追加して差別化 */
+            box-shadow: 0 0 30px #ffffff, 0 0 50px #ff00ff, 0 0 70px #ff00ff !important;
+        }
+        .btn.active.equals {
+             /* イコールは緑系の光も追加して差別化 */
+            box-shadow: 0 0 30px #ffffff, 0 0 50px #00ff00, 0 0 70px #00ff00 !important;
+        }
+        /* 🔼 光るボタンの強調 (シーケンス表示時) 🔼 */
+        
         .btn.disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
         
         .controls { 
@@ -174,11 +190,17 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.1; }
         }
+
+        /* 🔽 ゲームオーバー時の強調 (誤答時) 🔽 */
         .btn.flash { 
+            background: #ff0000 !important; /* 背景色を鮮やかな赤に */
+            color: #ffffff !important;
             animation: flash 0.5s ease-in-out; 
-            box-shadow: 0 0 20px #ff0000; 
+            /* 強力な赤とオレンジの警告ネオン */
+            box-shadow: 0 0 30px #ff0000, 0 0 50px #ff4500 !important; 
             border-color: #ff0000 !important;
         }
+        /* 🔼 ゲームオーバー時の強調 (誤答時) 🔼 */
 
         /* 📱 スマートフォン縦画面向け調整 (前回の最適化を維持) */
         @media (max-width: 450px) {
@@ -208,7 +230,7 @@
 </head>
 <body>
     <div class="game-container">
-        <div class="title">改良版！電卓型記憶力ゲーム 🧠</div>
+        <div class="title">電卓型記憶力ゲーム</div>
         <div class="instructions">
             光る順番を覚えて、同じ順番でボタンを押してください！
         </div>
@@ -433,10 +455,17 @@
                     if (button) {
                         this.playSound('click'); 
                         button.classList.add('active');
+                        // ボタンのカテゴリに応じて特別なクラスも追加
+                        if (button.classList.contains('operator')) {
+                             button.classList.add('active', 'operator');
+                        } else if (button.classList.contains('equals')) {
+                             button.classList.add('active', 'equals');
+                        }
+                        
                         this.display.textContent = key;
                         await this.wait(this.sequenceSpeed);
                         
-                        button.classList.remove('active');
+                        button.classList.remove('active', 'operator', 'equals');
                         this.display.textContent = '...';
                         await this.wait(this.sequenceSpeed / 2);
                     }
