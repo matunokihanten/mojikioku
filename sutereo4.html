@@ -2,635 +2,352 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>色付き＆黒のみ数字ステレオグラムゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>超視認性ステレオグラム・真</title>
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --bg-color: #020617;
+      --card-bg: #1e293b;
+      --highlight: #f43f5e;
+      --text-color: #f1f5f9;
+      --correct: #10b981;
     }
     
+    * { box-sizing: border-box; touch-action: manipulation; }
+    
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-      text-align: center;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
     }
     
     .container {
+      width: 100%;
       max-width: 800px;
-      margin: 0 auto;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    }
-    
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 30px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .controls {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 25px;
-      backdrop-filter: blur(5px);
-    }
-    
-    label {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-right: 10px;
-    }
-    
-    select {
-      font-size: 1rem;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 25px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #333;
-      outline: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    select:hover {
-      background: rgba(255, 255, 255, 1);
-      transform: translateY(-2px);
-    }
-    
-    #instructions {
-      font-size: 1.1rem;
-      line-height: 1.6;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 15px;
-      margin: 20px 0;
-      border-left: 4px solid #4ecdc4;
-    }
-    
-    .canvas-container {
-      position: relative;
-      display: inline-block;
-      margin: 20px 0;
-    }
-    
-    canvas {
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 15px;
-      background: #f0f0f0;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s ease;
-    }
-    
-    canvas:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-    }
-    
-    .input-section {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 15px;
-      padding: 25px;
-      margin: 20px 0;
-      backdrop-filter: blur(5px);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    input[type="text"] {
-      font-size: 1.5rem;
-      padding: 15px 25px;
-      border: none;
-      border-radius: 30px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #333;
-      outline: none;
       text-align: center;
-      transition: all 0.3s ease;
-      min-width: 150px;
-      font-weight: 600;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    input[type="text"]:focus {
-      background: rgba(255, 255, 255, 1);
-      transform: scale(1.05);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    }
-    
-    button {
-      font-size: 1.1rem;
-      padding: 15px 30px;
-      border: none;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      min-width: 140px;
-    }
-    
-    #submitGuess {
-      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-      color: white;
-    }
-    
-    #submitGuess:hover:not(:disabled) {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(238, 90, 36, 0.4);
-    }
-    
-    #submitGuess:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    #changeNumber {
-      background: linear-gradient(45deg, #4ecdc4, #44a08d);
-      color: white;
-    }
-    
-    #changeNumber:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(68, 160, 141, 0.4);
-    }
-    
-    #hintButton {
-      background: linear-gradient(45deg, #feca57, #ff9ff3);
-      color: white;
-    }
-    
-    #hintButton:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(254, 202, 87, 0.4);
-    }
-    
-    #result {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-top: 15px;
-      padding: 15px;
-      border-radius: 10px;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-    }
-    
-    .correct {
-      background: linear-gradient(45deg, #00b894, #00cec9);
-      color: white;
-      animation: pulse 1s ease-in-out;
-    }
-    
-    .incorrect {
-      background: linear-gradient(45deg, #e17055, #d63031);
-      color: white;
-      animation: shake 0.5s ease-in-out;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    
-    .tips {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 15px;
-      margin-top: 20px;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    
-    .tips h3 {
-      margin-top: 0;
-      color: #4ecdc4;
     }
 
-    .number-buttons {
+    h1 { font-size: 1.2rem; color: var(--highlight); margin: 5px 0; }
+
+    /* メインキャンバス */
+    .canvas-wrapper {
+      position: relative;
+      margin: 10px 0;
+      background: #000;
+      border-radius: 8px;
+      line-height: 0;
+      box-shadow: 0 0 30px rgba(0,0,0,1);
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      image-rendering: pixelated; /* 砂嵐をはっきりさせる */
+    }
+
+    /* 設定エリア */
+    .controls {
       display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3列 */
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 20px;
-      max-width: 350px; /* ボタンの幅を調整 */
-      margin-left: auto;
-      margin-right: auto;
+      margin-bottom: 10px;
     }
-
-    .number-buttons button {
-      font-size: 1.8rem; /* ボタンの数字を大きく */
-      padding: 15px 0;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #333;
+    select, button {
+      padding: 15px 5px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1rem;
       font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    #changeNumber { background: #3b82f6; color: white; }
+    #recoveryMode { background: #8b5cf6; color: white; }
+    .mode-active { box-shadow: 0 0 15px white; }
+
+    /* 巨大入力欄 */
+    .input-display {
+      background: #000;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 2.5rem;
+      font-weight: bold;
+      min-height: 60px;
+      color: #fff;
+      border: 2px solid #334155;
     }
 
-    .number-buttons button:hover {
-      background: #e0e0e0;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    /* 巨大テンキー */
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 500px;
+      margin: 0 auto;
     }
-
-    .number-buttons button:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    .number-buttons .delete-button {
-      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    .num-btn {
+      background: #334155;
       color: white;
-      grid-column: span 2; /* Deleteボタンを2列に広げる */
+      padding: 25px 0;
+      font-size: 2rem;
+      border-radius: 15px;
     }
-    .number-buttons .delete-button:hover {
-      background: linear-gradient(45deg, #ff8c8c, #f0744d);
+    .num-btn:active { background: #475569; }
+    .num-btn.submit { background: var(--highlight); grid-column: span 2; }
+    .num-btn.del { background: #64748b; }
+
+    /* 結果ポップアップ */
+    #resultOverlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-size: 2rem;
     }
-    .number-buttons .zero-button {
-      grid-column: span 1; /* 0ボタンを1列に */
-    }
+    .ans-val { font-size: 5rem; color: white; margin: 20px; }
+
+    .option-row { margin: 10px 0; font-size: 0.9rem; display: flex; justify-content: center; gap: 20px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>✨ 数字ステレオグラムゲーム ✨</h1>
-    
-    <div class="controls">
-      <label for="levelSelect">🎯 モード選択: </label>
-      <select id="levelSelect">
-        <option value="digit1_color">🌈 色付き数字 レベル1 (1桁: 0～9)</option>
-        <option value="digit2_color">🌈 色付き数字 レベル2 (2桁: 10～99)</option>
-        <option value="digit3_color">🌈 色付き数字 レベル3 (3桁: 100～999)</option>
-        <option value="digit1_bw">⚫ 黒のみ数字 レベル1 (1桁: 0～9)</option>
-        <option value="digit2_bw">⚫ 黒のみ数字 レベル2 (2桁: 10～99)</option>
-        <option value="digit3_bw">⚫ 黒のみ数字 レベル3 (3桁: 100～999)</option>
-      </select>
-    </div>
 
-
-
-    <div class="canvas-container">
-      <canvas id="stereoCanvas" width="500" height="350"></canvas>
-    </div>
-
-    <div class="input-section">
-      <input type="text" id="guess" placeholder="0～9 の数字を入力" maxlength="1" autocomplete="off" readonly>
-      <button id="submitGuess">🎯 回答</button>
-      <button id="changeNumber">🔄 新しい問題</button>
-      <button id="hintButton">💡 ヒント</button>
-    </div>
-
-    <div class="number-buttons">
-      <button class="num-button" data-value="1">1</button>
-      <button class="num-button" data-value="2">2</button>
-      <button class="num-button" data-value="3">3</button>
-      <button class="num-button" data-value="4">4</button>
-      <button class="num-button" data-value="5">5</button>
-      <button class="num-button" data-value="6">6</button>
-      <button class="num-button" data-value="7">7</button>
-      <button class="num-button" data-value="8">8</button>
-      <button class="num-button" data-value="9">9</button>
-      <button class="num-button zero-button" data-value="0">0</button>
-      <button class="delete-button" data-value="delete">DEL</button>
-    </div>
-
-    <div id="result"></div>
-
-
+<div class="container">
+  <h1>👁️ 超視認性ステレオグラム・真</h1>
+  
+  <div class="controls">
+    <select id="levelSelect">
+      <option value="1">1桁</option>
+      <option value="2">2桁</option>
+      <option value="3">3桁</option>
+    </select>
+    <button id="changeNumber">🔄 次の問題</button>
   </div>
 
-  <script>
-    // 各要素の取得
-    const canvas = document.getElementById('stereoCanvas');
-    const ctx = canvas.getContext('2d');
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    const resultEl = document.getElementById('result');
-    const guessInput = document.getElementById('guess');
-    const levelSelect = document.getElementById('levelSelect');
-    const submitButton = document.getElementById('submitGuess');
-    const hintButton = document.getElementById('hintButton');
-    const numberButtons = document.querySelectorAll('.num-button, .delete-button');
+  <div class="option-row">
+    <label><input type="checkbox" id="bwMode" checked> 白黒モード</label>
+    <button id="recoveryMode" style="padding: 5px 10px; font-size: 0.8rem;">🧘 視力回復 OFF</button>
+  </div>
 
-    let hiddenAnswer; // 出題される隠し数字（文字列）
-    let hintUsed = false; // ヒント使用フラグ
-    let gameActive = true; // ゲーム状態フラグ
+  <div class="canvas-wrapper">
+    <!-- ステレオグラム本体 -->
+    <canvas id="stereoCanvas" width="800" height="450"></canvas>
+  </div>
 
-    // ランダムなカラーを返す（色付き用）- より鮮やかで見やすい色に調整
-    function randomColor() {
-      const colors = [
-        { r: 255, g: 100, b: 100 },  // 赤系
-        { r: 100, g: 255, b: 100 },  // 緑系
-        { r: 100, g: 100, b: 255 },  // 青系
-        { r: 255, g: 255, b: 100 },  // 黄系
-        { r: 255, g: 100, b: 255 },  // マゼンタ系
-        { r: 100, g: 255, b: 255 },  // シアン系
-      ];
-      const baseColor = colors[Math.floor(Math.random() * colors.length)];
-      return {
-        r: Math.max(50, Math.min(255, baseColor.r + (Math.random() - 0.5) * 100)),
-        g: Math.max(50, Math.min(255, baseColor.g + (Math.random() - 0.5) * 100)),
-        b: Math.max(50, Math.min(255, baseColor.b + (Math.random() - 0.5) * 100))
-      };
+  <div class="input-display" id="guessDisplay"></div>
+
+  <div class="numpad">
+    <button class="num-btn" data-val="7">7</button>
+    <button class="num-btn" data-val="8">8</button>
+    <button class="num-btn" data-val="9">9</button>
+    <button class="num-btn" data-val="4">4</button>
+    <button class="num-btn" data-val="5">5</button>
+    <button class="num-btn" data-val="6">6</button>
+    <button class="num-btn" data-val="1">1</button>
+    <button class="num-btn" data-val="2">2</button>
+    <button class="num-btn" data-val="3">3</button>
+    <button class="num-btn del" data-val="del">消</button>
+    <button class="num-btn" data-val="0">0</button>
+    <button class="num-btn submit" id="submitBtn">回答</button>
+  </div>
+</div>
+
+<div id="resultOverlay">
+  <div id="resultStatus"></div>
+  <div class="ans-val" id="correctValue"></div>
+  <div style="font-size: 1rem;">次の問題へ進みます...</div>
+</div>
+
+<script>
+  const canvas = document.getElementById('stereoCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  
+  let currentAnswer = "";
+  let currentGuess = "";
+  let recoveryActive = false;
+  let recoveryFrame = 0;
+
+  // 完全に均一な砂嵐を作るための設定
+  const DPI = 72;
+  const EYE_SEP = DPI * 2.5; // 標準的な目の間隔
+  const MU = 0.33; // 奥行き係数
+
+  function getRandomColor() {
+    const isBW = document.getElementById('bwMode').checked;
+    if (isBW) {
+      const v = Math.random() > 0.5 ? 255 : 0; // 白か黒の2値にすると最も隠蔽性が高い
+      return [v, v, v];
+    } else {
+      const r = Math.random() > 0.5 ? 255 : 0;
+      const g = Math.random() > 0.5 ? 255 : 0;
+      const b = Math.random() > 0.5 ? 255 : 0;
+      return [r, g, b];
     }
+  }
 
-    // ランダムなグレースケール（黒のみ用）- コントラストを改善
-    function randomGray() {
-      const val = Math.floor(Math.random() * 150) + 50; // 50-200の範囲でより見やすく
-      return { r: val, g: val, b: val };
-    }
+  // 隠し画像の生成（メモリ上のみ）
+  function getDepthData(text) {
+    const dCanvas = document.createElement('canvas');
+    dCanvas.width = W;
+    dCanvas.height = H;
+    const dCtx = dCanvas.getContext('2d');
+    dCtx.fillStyle = "black";
+    dCtx.fillRect(0, 0, W, H);
 
-    // ステレオグラム生成関数（改良版）
-    function generateStereogram() {
-      resultEl.textContent = "";
-      resultEl.className = "";
-      hintUsed = false;
-      gameActive = true;
-      submitButton.disabled = false;
-      guessInput.value = ""; // 新しい問題生成時に回答欄をクリア
+    const fontSize = text.length === 1 ? 380 : text.length === 2 ? 280 : 220;
+    dCtx.font = `900 ${fontSize}px sans-serif`;
+    dCtx.textAlign = 'center';
+    dCtx.textBaseline = 'middle';
+    dCtx.fillStyle = "white";
+    // わずかにぼかして立体感を滑らかにするが、エッジが立たないようにする
+    dCtx.shadowColor = "white";
+    dCtx.shadowBlur = 15;
+    dCtx.fillText(text, W / 2, H / 2 + 20);
+    
+    return dCtx.getImageData(0, 0, W, H).data;
+  }
+
+  // SIRDSアルゴリズム（ピクセル連結法）
+  function drawSIRDS(offset = 0) {
+    const depthData = getDepthData(currentAnswer);
+    const imgData = ctx.createImageData(W, H);
+    
+    const curEyeSep = EYE_SEP + offset;
+
+    for (let y = 0; y < H; y++) {
+      const left = new Int32Array(W);
+      const right = new Int32Array(W);
       
-      const mode = levelSelect.value;
+      for (let x = 0; x < W; x++) { left[x] = x; right[x] = x; }
 
-      // モードに応じた隠し数字の生成
-      if (mode.indexOf("digit1") !== -1) {
-        hiddenAnswer = String(Math.floor(Math.random() * 10));   // 0～9
-      } else if (mode.indexOf("digit2") !== -1) {
-        hiddenAnswer = String(Math.floor(Math.random() * 90) + 10); // 10～99
-      } else if (mode.indexOf("digit3") !== -1) {
-        hiddenAnswer = String(Math.floor(Math.random() * 900) + 100); // 100～999
-      }
-      console.log("隠し答え（デバッグ用）:", hiddenAnswer);
-
-      // より大きく、太い文字で深度マップを作成
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = canvasWidth;
-      offCanvas.height = canvasHeight;
-      const offCtx = offCanvas.getContext('2d');
-      offCtx.fillStyle = "black";
-      offCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-      offCtx.fillStyle = "white";
-      
-      // フォントサイズを動的に調整
-      let fontSize = hiddenAnswer.length === 1 ? 280 : hiddenAnswer.length === 2 ? 200 : 140;
-      offCtx.font = `bold ${fontSize}px Arial, sans-serif`;
-      offCtx.textAlign = "center";
-      offCtx.textBaseline = "middle";
-      
-      // 文字を太くするために複数回描画
-      for (let i = 0; i < 3; i++) {
-        offCtx.fillText(hiddenAnswer, canvasWidth / 2 + i, canvasHeight / 2 + i);
-      }
-
-      // ピクセル情報から深度マップを作成
-      const offData = offCtx.getImageData(0, 0, canvasWidth, canvasHeight);
-      let depthMap = [];
-      for (let y = 0; y < canvasHeight; y++) {
-        depthMap[y] = [];
-        for (let x = 0; x < canvasWidth; x++) {
-          const index = (y * canvasWidth + x) * 4;
-          // より強い深度効果のために値を調整
-          depthMap[y][x] =
-            (offData.data[index] > 150 &&
-            offData.data[index + 1] > 150 &&
-            offData.data[index + 2] > 150) ? 0.4 : 0;
-        }
-      }
-
-      // ステレオグラム画像生成（改良版）
-      const eyeSeparation = 80; // 目の分離を大きくして効果を強化
-      const stereoImage = ctx.createImageData(canvasWidth, canvasHeight);
-      for (let y = 0; y < canvasHeight; y++) {
-        let row = new Array(canvasWidth);
+      for (let x = 0; x < W; x++) {
+        // 深度取得 (0.0 - 1.0)
+        const z = depthData[(y * W + x) * 4] / 255;
+        // 分離距離の計算
+        const sep = Math.floor((1 - MU * z) * curEyeSep / (2 - MU * z));
         
-        // より規則的なパターンで初期化
-        for (let x = 0; x < eyeSeparation; x++) {
-          if (mode.indexOf("_color") !== -1) {
-            row[x] = randomColor();
-          } else {
-            row[x] = randomGray();
+        let l = Math.floor(x - sep / 2);
+        let r = l + sep;
+
+        if (l >= 0 && r < W) {
+          // ピクセルをリンクさせる（同じ色にする指示）
+          let visible = true;
+          // 隠面消去の簡易判定
+          if (visible) {
+            left[r] = l;
+            right[l] = r;
           }
         }
-        
-        // 深度マップに応じたシフトを適用
-        for (let x = eyeSeparation; x < canvasWidth; x++) {
-          const shift = Math.round(eyeSeparation * depthMap[y][x]);
-          const srcIndex = x - eyeSeparation + shift;
-          if (srcIndex < 0 || srcIndex >= x) {
-            if (mode.indexOf("_color") !== -1) {
-              row[x] = randomColor();
-            } else {
-              row[x] = randomGray();
-            }
-          } else {
-            row[x] = row[srcIndex];
-          }
-        }
-        
-        // 生成した行データを画像データに反映
-        for (let x = 0; x < canvasWidth; x++) {
-          const idx = (y * canvasWidth + x) * 4;
-          stereoImage.data[idx]     = row[x].r;
-          stereoImage.data[idx + 1] = row[x].g;
-          stereoImage.data[idx + 2] = row[x].b;
-          stereoImage.data[idx + 3] = 255;
-        }
       }
-      ctx.putImageData(stereoImage, 0, 0);
-    }
 
-    // モード変更時の処理
-    levelSelect.addEventListener("change", function () {
-      const mode = levelSelect.value;
-      if (mode.indexOf("digit1") !== -1) {
-        guessInput.placeholder = "0～9 の数字を入力";
-        guessInput.maxLength = "1";
-      } else if (mode.indexOf("digit2") !== -1) {
-        guessInput.placeholder = "10～99 の数字を入力";
-        guessInput.maxLength = "2";
-      } else if (mode.indexOf("digit3") !== -1) {
-        guessInput.placeholder = "100～999 の数字を入力";
-        guessInput.maxLength = "3";
-      }
-      generateStereogram();
-    });
-
-    // 初回出題とフォーカス設定
-    generateStereogram();
-    // setTimeout(() => guessInput.focus(), 500); // ボタン入力のためフォーカスは不要
-
-    // 「回答」ボタンの処理
-    submitButton.addEventListener("click", function () {
-      if (!gameActive) return;
-      
-      const userGuess = guessInput.value.trim();
-      if (userGuess === "") {
-        resultEl.textContent = "📝 数字を入力してください";
-        resultEl.className = "";
-        // guessInput.focus(); // ボタン入力のためフォーカスは不要
-        return;
-      }
-      
-      gameActive = false;
-      submitButton.disabled = true;
-      
-      if (userGuess === hiddenAnswer) {
-        const scoreText = hintUsed ? "🎉 正解！（ヒント使用）" : "🎉 完璧な正解！";
-        resultEl.textContent = scoreText;
-        resultEl.className = "correct";
-        setTimeout(() => {
-          guessInput.value = "";
-          generateStereogram();
-          // guessInput.focus(); // ボタン入力のためフォーカスは不要
-        }, 1500);
-      } else {
-        resultEl.textContent = `❌ 正解は ${hiddenAnswer} でした`;
-        resultEl.className = "incorrect";
-        setTimeout(() => {
-          guessInput.value = "";
-          generateStereogram();
-          // guessInput.focus(); // ボタン入力のためフォーカスは不要
-        }, 2500);
-      }
-    });
-
-    // ヒントボタンの処理
-    hintButton.addEventListener("click", function () {
-      if (!gameActive || hintUsed) return;
-      
-      hintUsed = true;
-      const mode = levelSelect.value;
-      let hintText = "";
-      
-      if (mode.indexOf("digit1") !== -1) {
-        const num = parseInt(hiddenAnswer);
-        hintText = num % 2 === 0 ? "偶数です" : "奇数です";
-      } else if (mode.indexOf("digit2") !== -1) {
-        const num = parseInt(hiddenAnswer);
-        const tens = Math.floor(num / 10);
-        hintText = `十の位は ${tens} です`;
-      } else if (mode.indexOf("digit3") !== -1) {
-        const num = parseInt(hiddenAnswer);
-        const hundreds = Math.floor(num / 100);
-        hintText = `百の位は ${hundreds} です`;
-      }
-      
-      resultEl.textContent = `💡 ヒント: ${hintText}`;
-      resultEl.className = "";
-      // guessInput.focus(); // ボタン入力のためフォーカスは不要
-    });
-
-    // 「新しい問題」ボタンの処理
-    document.getElementById("changeNumber").addEventListener("click", function () {
-      generateStereogram();
-      guessInput.value = "";
-      // guessInput.focus(); // ボタン入力のためフォーカスは不要
-    });
-
-    // 数字ボタンの処理
-    numberButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        if (!gameActive) return;
-
-        const buttonValue = this.dataset.value;
-        const currentInput = guessInput.value;
-        const maxLength = parseInt(guessInput.maxLength);
-
-        if (buttonValue === 'delete') {
-          guessInput.value = currentInput.slice(0, -1);
+      const rowColors = new Uint8ClampedArray(W * 3);
+      for (let x = 0; x < W; x++) {
+        if (left[x] === x) {
+          const c = getRandomColor();
+          rowColors[x * 3] = c[0];
+          rowColors[x * 3 + 1] = c[1];
+          rowColors[x * 3 + 2] = c[2];
         } else {
-          if (currentInput.length < maxLength) {
-            guessInput.value += buttonValue;
-          }
+          // リンクされたピクセルの色をコピー
+          rowColors[x * 3] = rowColors[left[x] * 3];
+          rowColors[x * 3 + 1] = rowColors[left[x] * 3 + 1];
+          rowColors[x * 3 + 2] = rowColors[left[x] * 3 + 2];
         }
-        
-        // 入力がある程度あれば回答ボタンを有効化
-        if (guessInput.value.length > 0) {
-          submitButton.disabled = false;
-        } else {
-          submitButton.disabled = true;
-        }
-      });
-    });
+      }
 
-    // Enterキーでの操作 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
-    guessInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter" && gameActive) {
-        submitButton.click();
+      for (let x = 0; x < W; x++) {
+        const idx = (y * W + x) * 4;
+        imgData.data[idx] = rowColors[x * 3];
+        imgData.data[idx+1] = rowColors[x * 3 + 1];
+        imgData.data[idx+2] = rowColors[x * 3 + 2];
+        imgData.data[idx+3] = 255;
       }
-    });
+    }
+    ctx.putImageData(imgData, 0, 0);
+    drawGuideDots(offset);
+  }
 
-    // 数字以外の入力を制限 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
-    guessInput.addEventListener("input", function (e) {
-      this.value = this.value.replace(/[^0-9]/g, '');
-      if (this.value.length > 0 && gameActive) {
-        submitButton.disabled = false;
-      }
-    });
+  function drawGuideDots(offset = 0) {
+    const dotY = 25;
+    const centerX = W / 2;
+    const sep = (EYE_SEP + offset) / 2.8; 
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(centerX - sep, dotY, 5, 0, 7);
+    ctx.arc(centerX + sep, dotY, 5, 0, 7);
+    ctx.fill();
+  }
 
-    // フォーカス管理 (テキスト入力欄がreadonlyになったため、このイベントは不要になるが、念のため残す)
-    guessInput.addEventListener("focus", function () {
-      this.select(); // 全選択で入力しやすく
-    });
+  function initGame() {
+    const mode = document.getElementById('levelSelect').value;
+    if (mode === "1") currentAnswer = Math.floor(Math.random() * 10).toString();
+    else if (mode === "2") currentAnswer = Math.floor(Math.random() * 90 + 10).toString();
+    else currentAnswer = Math.floor(Math.random() * 900 + 100).toString();
 
-    // ショートカットキー
-    document.addEventListener("keydown", function (e) {
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        document.getElementById("changeNumber").click();
-      }
-      if (e.ctrlKey && e.key === 'h') {
-        e.preventDefault();
-        hintButton.click();
-      }
-      // Enterキーでの回答は、テキスト入力欄がreadonlyのため、数字ボタンでの入力後にEnterを押す場合は機能しない
-      // if (e.key === "Enter" && gameActive) {
-      //   submitButton.click();
-      // }
-      if (e.key === "Escape") {
-        guessInput.blur();
-      }
-      // 数字キーでの入力は、readonlyのため直接は機能しないが、
-      // 将来的にテキスト入力欄を再度編集可能にする場合に備えて残す
-      // if (e.key >= '0' && e.key <= '9' && gameActive) {
-      //   const currentInput = guessInput.value;
-      //   const maxLength = parseInt(guessInput.maxLength);
-      //   if (currentInput.length < maxLength) {
-      //     guessInput.value += e.key;
-      //     submitButton.disabled = false;
-      //   }
-      // }
-      // if (e.key === 'Backspace' && gameActive) {
-      //   guessInput.value = guessInput.value.slice(0, -1);
-      //   if (guessInput.value.length === 0) {
-      //     submitButton.disabled = true;
-      //   }
-      // }
+    currentGuess = "";
+    document.getElementById('guessDisplay').textContent = "";
+    document.getElementById('resultOverlay').style.display = "none";
+    drawSIRDS();
+  }
+
+  // 視力回復アニメーション
+  function animate() {
+    if (!recoveryActive) return;
+    recoveryFrame += 0.04;
+    const offset = Math.sin(recoveryFrame) * 20;
+    drawSIRDS(offset);
+    requestAnimationFrame(animate);
+  }
+
+  // 入力処理
+  document.querySelectorAll('.num-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.val;
+      if (val === 'del') currentGuess = currentGuess.slice(0, -1);
+      else if (val) { if (currentGuess.length < 3) currentGuess += val; }
+      document.getElementById('guessDisplay').textContent = currentGuess;
     });
-  </script>
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', () => {
+    if (!currentGuess) return;
+    const overlay = document.getElementById('resultOverlay');
+    const status = document.getElementById('resultStatus');
+    const correctVal = document.getElementById('correctValue');
+    
+    overlay.style.display = "flex";
+    correctVal.textContent = currentAnswer;
+    
+    if (currentGuess === currentAnswer) {
+      status.textContent = "正解！ 素晴らしい！";
+      status.style.color = "#10b981";
+    } else {
+      status.textContent = "残念！ 正解は...";
+      status.style.color = "#f43f5e";
+    }
+    
+    setTimeout(initGame, 2500);
+  });
+
+  document.getElementById('changeNumber').addEventListener('click', initGame);
+  document.getElementById('recoveryMode').addEventListener('click', (e) => {
+    recoveryActive = !recoveryActive;
+    e.target.textContent = recoveryActive ? "🧘 視力回復 ON" : "🧘 視力回復 OFF";
+    if (recoveryActive) animate(); else drawSIRDS();
+  });
+
+  window.onload = initGame;
+</script>
 </body>
 </html>
