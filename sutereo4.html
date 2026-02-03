@@ -91,7 +91,7 @@
       padding: 8px 10px;
       border-radius: 12px;
       /* もとの2.5remを2.5倍 -> 6.25rem を目安にするが clamp で画面幅に合わせる */
-      font-size: clamp(1.6rem, 6.25rem, 10vw);
+      font-size: clamp(1.6rem, 9rem, 14vw);
       font-weight: bold;
       min-height: 56px;
       color: #fff;
@@ -153,7 +153,7 @@
       h1 { font-size: 1rem; }
       .controls { grid-template-columns: 1fr 1fr; gap: 6px; }
       select, button { padding: 8px 6px; font-size: 0.9rem; }
-      .input-display { font-size: clamp(1.2rem, 6.25rem, 14vw); padding: 6px 8px; min-height: 48px; }
+      .input-display { font-size: clamp(1.2rem, 9rem, 14vw); padding: 6px 8px; min-height: 48px; }
       .canvas-wrapper { margin: 6px 0; }
       .numpad { gap: 6px; padding: 0 4px 6px 4px; max-width: 100%; }
       .num-btn { padding: 10px 0; font-size: 1.4rem; min-height: 44px; border-radius: 10px; }
@@ -164,7 +164,7 @@
     @media (max-width: 360px) {
       .controls { grid-template-columns: 1fr; gap: 6px; }
       .num-btn { font-size: 1.2rem; padding: 8px 0; min-height: 40px; }
-      .input-display { font-size: clamp(1rem, 6.25rem, 18vw); min-height: 44px; }
+      .input-display { font-size: clamp(1rem, 9rem, 18vw); min-height: 44px; }
       h1 { font-size: 0.95rem; }
     }
 
@@ -258,7 +258,20 @@
 
   // 隠し画像の生成（メモリ上のみ）
   // 変更点: 各桁を個別に描画して、数字同士が重ならないように配置する
+  // バグ修正: 変数スコープとループ条件を安定化させ、空文字列対応を追加
   function getDepthData(text) {
+    // 安全対策: text が falsy の場合は空の黒画像を返す
+    if (!text) {
+      const blank = ctx.createImageData(W, H);
+      for (let i = 0; i < blank.data.length; i += 4) {
+        blank.data[i] = 0;
+        blank.data[i+1] = 0;
+        blank.data[i+2] = 0;
+        blank.data[i+3] = 255;
+      }
+      return blank.data;
+    }
+
     const dCanvas = document.createElement('canvas');
     dCanvas.width = W;
     dCanvas.height = H;
@@ -288,38 +301,37 @@
     let widths = digits.map(d => dCtx.measureText(d).width);
     let totalWidth = widths.reduce((a,b)=>a+b,0);
     // 最低限の間隔（桁間スペース）を確保する（桁幅の10%を目安）
-    const gapTarget = Math.max(8, fontSize * 0.08);
-    let requiredWidth = totalWidth + gapTarget * (n - 1);
+    let gap = Math.max(8, fontSize * 0.08);
+    let requiredWidth = totalWidth + gap * (n - 1);
 
     // 画面幅の90%を超える場合、またはフォントサイズがキャンバス高さの90%を超える場合は縮小
     const maxAllowedWidth = W * 0.9;
     const maxAllowedHeight = H * 0.9;
 
-    while ((requiredWidth > maxAllowedWidth || fontSize > maxAllowedHeight) && fontSize > 8) {
+    // 安定したループでフォントサイズを縮小していく
+    let safety = 0;
+    while ((requiredWidth > maxAllowedWidth || fontSize > maxAllowedHeight) && fontSize > 8 && safety < 200) {
+      safety++;
       fontSize = Math.floor(fontSize * 0.95);
       dCtx.font = `900 ${fontSize}px sans-serif`;
-      for (let i = 0; i < n; i++) widths[i] = dCtx.measureText(digits[i]).width;
-      const newTotal = widths.reduce((a,b)=>a+b,0);
-      const newGap = Math.max(6, fontSize * 0.08);
-      if (newTotal + newGap * (n - 1) === requiredWidth) {
-        // avoid infinite loop if nothing changes
-        break;
-      }
-      requiredWidth = newTotal + newGap * (n - 1);
+      widths = digits.map(d => dCtx.measureText(d).width);
+      totalWidth = widths.reduce((a,b)=>a+b,0);
+      gap = Math.max(6, fontSize * 0.08);
+      requiredWidth = totalWidth + gap * (n - 1);
     }
 
     // 最終的な桁間隔を決定（残り幅を均等に配分して桁間を広げる）
     const measuredTotal = widths.reduce((a,b)=>a+b,0);
-    let gap = Math.max(6, fontSize * 0.06);
+    gap = Math.max(6, fontSize * 0.06);
     if (measuredTotal + gap * (n - 1) < maxAllowedWidth) {
-      // 余白があれば均等に広げる（ただし過度には広げない）
       const extra = maxAllowedWidth - (measuredTotal + gap * (n - 1));
       const addPerGap = Math.min(extra / Math.max(1, n - 1), fontSize * 0.5);
       gap += addPerGap;
     } else {
-      // 幅が厳しい場合は縮める
-      while (measuredTotal + gap * (n - 1) > maxAllowedWidth && gap > 2) {
+      let shrinkSafety = 0;
+      while (measuredTotal + gap * (n - 1) > maxAllowedWidth && gap > 2 && shrinkSafety < 200) {
         gap *= 0.95;
+        shrinkSafety++;
       }
     }
 
@@ -499,22 +511,26 @@
     const containerWidth = el.clientWidth - 20; // パディング分を差し引く
     if (!containerWidth) return;
     const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    let targetPx = 6.25 * rootFont; // 6.25rem の px 値（目標）
-    const maxByVw = Math.max(window.innerWidth * 0.10, 24);
-    targetPx = Math.min(targetPx, Math.max(window.innerWidth * 0.18, maxByVw));
+    let targetPx = 9 * rootFont; // CSS の 9rem に合わせる
+    const maxByVw = Math.max(window.innerWidth * 0.12, 24);
+    targetPx = Math.min(targetPx, Math.max(window.innerWidth * 0.22, maxByVw));
 
     el.style.fontSize = targetPx + "px";
     let currentSize = targetPx;
     // 横幅に収まるように縮小
-    while (el.scrollWidth > containerWidth && currentSize > 12) {
+    let safety = 0;
+    while (el.scrollWidth > containerWidth && currentSize > 12 && safety < 200) {
+      safety++;
       currentSize = Math.floor(currentSize * 0.95);
       el.style.fontSize = currentSize + "px";
       if (currentSize < 13) break;
     }
     // 縦方向にも収める
     const maxHeight = Math.max(44, window.innerHeight * 0.08);
+    safety = 0;
     if (el.clientHeight > maxHeight) {
-      while (el.clientHeight > maxHeight && currentSize > 12) {
+      while (el.clientHeight > maxHeight && currentSize > 12 && safety < 200) {
+        safety++;
         currentSize = Math.floor(currentSize * 0.95);
         el.style.fontSize = currentSize + "px";
         if (currentSize < 13) break;
