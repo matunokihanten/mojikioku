@@ -1,553 +1,456 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>超視認性ステレオグラム・真</title>
-  <style>
-    :root {
-      --bg-color: #020617;
-      --card-bg: #1e293b;
-      --highlight: #f43f5e;
-      --text-color: #f1f5f9;
-      --correct: #10b981;
-    }
-    
-    * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-    
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>超視認性ステレオグラム・真</title>
+<style>
+  /* --- 全体 --- */
+  body {
+    background-color: #0a0e27;
+    color: #ffffff;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
 
-    body {
-      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    
-    .container {
-      width: 100%;
-      max-width: 800px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: stretch;
-    }
+  h1 {
+    font-size: 1rem;
+    text-align: center;
+    margin: 2px 0 6px 0;
+    flex-shrink: 0;
+  }
 
-    h1 { font-size: 1.05rem; color: var(--highlight); margin: 4px 0; }
+  /* --- コントロールパネル --- */
+  .control-panel {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: 4px;
+  }
 
-    /* メインキャンバス */
-    .canvas-wrapper {
-      position: relative;
-      margin: 6px 0;
-      background: #000;
-      border-radius: 8px;
-      line-height: 0;
-      box-shadow: 0 0 30px rgba(0,0,0,1);
-      overflow: hidden;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      border-radius: 8px;
-      image-rendering: pixelated; /* 砂嵐をはっきりさせる */
-      display: block;
-    }
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    align-items: center;
+    background-color: #ffffff;
+    color: #000;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .radio-group span {
+    font-size: 0.75rem;
+    margin-right: 2px;
+  }
+  .radio-group label {
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  .radio-group input[type="radio"] {
+    margin-right: 1px;
+  }
 
-    /* 設定エリア */
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 4px;
-      align-items: center;
-    }
-    select, button {
-      padding: 10px 6px;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.95rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #changeNumber { background: #3b82f6; color: white; }
-    #recoveryMode { background: #8b5cf6; color: white; }
-    .mode-active { box-shadow: 0 0 12px white; }
+  .btn {
+    background: linear-gradient(to bottom, #2196F3, #1976D2);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-next {
+    display: flex;
+    align-items: center;
+  }
+  .btn-next::before {
+    content: "🔄";
+    margin-right: 3px;
+  }
 
-    /* 巨大入力欄（数字サイズを2.5倍、ただし画面からはみ出さないように調整） */
-    .input-display {
-      background: #000;
-      margin-bottom: 6px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      /* もとの2.5remを2.5倍 -> 6.25rem を目安にするが clamp で画面幅に合わせる */
-      font-size: clamp(1.6rem, 9rem, 14vw);
-      font-weight: bold;
-      min-height: 56px;
-      color: #fff;
-      border: 2px solid #334155;
-      word-break: keep-all;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-      overflow: hidden;
-    }
+  /* --- オプション --- */
+  .options {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+  }
+  .options label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .options input[type="checkbox"] {
+    margin-right: 3px;
+  }
+  .toggle-btn {
+    background-color: #9c27b0;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-btn::before {
+    content: "🧘";
+    margin-right: 3px;
+  }
+  .toggle-btn.off {
+    background-color: #555;
+  }
 
-    /* 巨大テンキー */
-    .numpad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 0 6px 8px 6px;
-    }
-    .num-btn {
-      background: #334155;
-      color: white;
-      padding: 14px 0;
-      font-size: calc(1.6rem + 0.6vw);
-      border-radius: 12px;
-      min-height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .num-btn:active { background: #475569; }
-    .num-btn.submit { background: var(--highlight); grid-column: span 2; }
-    .num-btn.del { background: #64748b; }
+  /* --- ステレオグラム --- */
+  #stereogram-canvas {
+    width: 100%;
+    max-width: 480px;
+    height: 32vh;
+    min-height: 120px;
+    max-height: 230px;
+    background-color: #333;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    flex-shrink: 1;
+    display: block;
+  }
 
-    /* 結果ポップアップ */
-    #resultOverlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      font-size: 1.8rem;
-    }
-    .ans-val { font-size: 5rem; color: white; margin: 20px; }
+  /* --- 入力表示 --- */
+  .input-display {
+    background-color: #000;
+    border: 2px solid #333;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 480px;
+    height: 56px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    font-size: 52px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
 
-    .option-row { margin: 6px 0; font-size: 0.85rem; display: flex; justify-content: center; gap: 12px; align-items: center; }
+  /* --- テンキー --- */
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+  }
+  .num-btn {
+    background-color: #2c3e50;
+    border: none;
+    color: white;
+    padding: 8px 0;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .num-btn:active {
+    background-color: #34495e;
+  }
+  .btn-clear {
+    background-color: #546e7a;
+  }
 
-    /* レスポンシブ調整: 小さい画面でボタンがはみ出さないようにする */
-    @media (max-width: 480px) {
-      body { padding: 6px; }
-      h1 { font-size: 1rem; }
-      .controls { grid-template-columns: 1fr 1fr; gap: 6px; }
-      select, button { padding: 8px 6px; font-size: 0.9rem; }
-      .input-display { font-size: clamp(1.2rem, 9rem, 14vw); padding: 6px 8px; min-height: 48px; }
-      .canvas-wrapper { margin: 6px 0; }
-      .numpad { gap: 6px; padding: 0 4px 6px 4px; max-width: 100%; }
-      .num-btn { padding: 10px 0; font-size: 1.4rem; min-height: 44px; border-radius: 10px; }
-      .option-row { gap: 8px; font-size: 0.82rem; }
-    }
-
-    /* さらに小さい端末 */
-    @media (max-width: 360px) {
-      .controls { grid-template-columns: 1fr; gap: 6px; }
-      .num-btn { font-size: 1.2rem; padding: 8px 0; min-height: 40px; }
-      .input-display { font-size: clamp(1rem, 9rem, 18vw); min-height: 44px; }
-      h1 { font-size: 0.95rem; }
-    }
-
-    /* 高さ制限を使ってスマホ縦画面でスクロールなしに収めやすくする（ユーザー端末により差あり） */
-    @media (orientation: portrait) and (max-width: 480px) {
-      /* 画面高さに応じてキャンバスの表示領域を制限 */
-      .canvas-wrapper { max-height: calc(100vh - 56px - 48px - 56px - 200px); } /* ヘッダ+controls+input+numpad領域を想定して残す */
-      .canvas-wrapper canvas { height: 28vh; width: 100%; object-fit: cover; }
-    }
-  </style>
+  /* --- 回答ボタン --- */
+  .btn-answer {
+    background-color: #ff1744;
+    width: 100%;
+    max-width: 480px;
+    padding: 9px 0;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-bottom: 2px;
+  }
+  .btn-answer:active {
+    background-color: #d50000;
+  }
+</style>
 </head>
 <body>
 
-<div class="container">
   <h1>👁️ 超視認性ステレオグラム・真</h1>
-  
-  <div class="controls">
-    <select id="levelSelect">
-      <option value="1">1桁</option>
-      <option value="2">2桁</option>
-      <option value="3">3桁</option>
-      <option value="4">4桁</option>
-      <option value="5">5桁</option>
-      <option value="6">6桁</option>
-    </select>
-    <button id="changeNumber">🔄 次の問題</button>
+
+  <div class="control-panel">
+    <div class="radio-group">
+      <span>桁数:</span>
+      <label><input type="radio" name="digits" value="1">1</label>
+      <label><input type="radio" name="digits" value="2">2</label>
+      <label><input type="radio" name="digits" value="3">3</label>
+      <label><input type="radio" name="digits" value="4" checked>4</label>
+      <label><input type="radio" name="digits" value="5">5</label>
+      <label><input type="radio" name="digits" value="6">6</label>
+      <label><input type="radio" name="digits" value="7">7</label>
+      <label><input type="radio" name="digits" value="8">8</label>
+    </div>
+    <button class="btn btn-next" id="next-btn">次の問題</button>
   </div>
 
-  <div class="option-row">
-    <label><input type="checkbox" id="bwMode" checked> 白黒モード</label>
-    <button id="recoveryMode" style="padding: 5px 10px; font-size: 0.8rem;">🧘 視力回復 OFF</button>
+  <div class="options">
+    <label>
+      <input type="checkbox" id="bw-mode" checked> 白黒モード
+    </label>
+    <div class="toggle-btn" id="vision-toggle">視力回復 ON</div>
   </div>
 
-  <div class="canvas-wrapper">
-    <!-- ステレオグラム本体 -->
-    <canvas id="stereoCanvas" width="800" height="450"></canvas>
-  </div>
+  <canvas id="stereogram-canvas"></canvas>
 
-  <div class="input-display" id="guessDisplay" aria-live="polite"></div>
+  <div class="input-display" id="current-input"></div>
 
   <div class="numpad">
-    <button class="num-btn" data-val="7">7</button>
-    <button class="num-btn" data-val="8">8</button>
-    <button class="num-btn" data-val="9">9</button>
-    <button class="num-btn" data-val="4">4</button>
-    <button class="num-btn" data-val="5">5</button>
-    <button class="num-btn" data-val="6">6</button>
-    <button class="num-btn" data-val="1">1</button>
-    <button class="num-btn" data-val="2">2</button>
-    <button class="num-btn" data-val="3">3</button>
-    <button class="num-btn del" data-val="del">消</button>
-    <button class="num-btn" data-val="0">0</button>
-    <button class="num-btn submit" id="submitBtn">回答</button>
+    <button class="num-btn" data-num="7">7</button>
+    <button class="num-btn" data-num="8">8</button>
+    <button class="num-btn" data-num="9">9</button>
+    <button class="num-btn" data-num="4">4</button>
+    <button class="num-btn" data-num="5">5</button>
+    <button class="num-btn" data-num="6">6</button>
+    <button class="num-btn" data-num="1">1</button>
+    <button class="num-btn" data-num="2">2</button>
+    <button class="num-btn" data-num="3">3</button>
+    <button class="num-btn btn-clear" id="clear-btn">消</button>
+    <button class="num-btn" data-num="0">0</button>
+    <div></div>
   </div>
-</div>
 
-<div id="resultOverlay">
-  <div id="resultStatus"></div>
-  <div class="ans-val" id="correctValue"></div>
-  <div style="font-size: 1rem;">次の問題へ進みます...</div>
-</div>
+  <button class="btn-answer" id="answer-btn">回答</button>
 
 <script>
-  const canvas = document.getElementById('stereoCanvas');
+  let currentDigits = 4;
+  let correctAnswer = "";
+  let userInput = "";
+
+  const canvas = document.getElementById('stereogram-canvas');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
-  
-  let currentAnswer = "";
-  let currentGuess = "";
-  let recoveryActive = false;
-  let recoveryFrame = 0;
+  const inputDisplay = document.getElementById('current-input');
+  const digitRadios = document.querySelectorAll('input[name="digits"]');
 
-  // 完全に均一な砂嵐を作るための設定
-  const DPI = 72;
-  const EYE_SEP = DPI * 2.5; // 標準的な目の間隔
-  const MU = 0.33; // 奥行き係数
+  let visionRecovery = true;
+  let animFrameId = null;
+  const visionToggleBtn = document.getElementById('vision-toggle');
+  const bwModeCheckbox = document.getElementById('bw-mode');
 
-  function getRandomColor() {
-    const isBW = document.getElementById('bwMode').checked;
-    if (isBW) {
-      const v = Math.random() > 0.5 ? 255 : 0; // 白か黒の2値にすると最も隠蔽性が高い
-      return [v, v, v];
-    } else {
-      const r = Math.random() > 0.5 ? 255 : 0;
-      const g = Math.random() > 0.5 ? 255 : 0;
-      const b = Math.random() > 0.5 ? 255 : 0;
-      return [r, g, b];
+  // 深さマップ（数字の形）判定用のオフスクリーンキャンバス
+  const offscreenCanvas = document.createElement('canvas');
+  const offCtx = offscreenCanvas.getContext('2d');
+
+  function init() {
+    setCanvasSize();
+    setupEventListeners();
+    generateProblem();
+    startOrStopAnimation();
+  }
+
+  function setCanvasSize() {
+    const w = Math.max(1, Math.floor(canvas.clientWidth));
+    const h = Math.max(1, Math.floor(canvas.clientHeight));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      offscreenCanvas.width = w;
+      offscreenCanvas.height = h;
     }
   }
 
-  // 隠し画像の生成（メモリ上のみ）
-  // 変更点: 各桁を個別に描画して、数字同士が重ならないように配置する
-  // バグ修正: 変数スコープとループ条件を安定化させ、空文字列対応を追加
-  function getDepthData(text) {
-    // 安全対策: text が falsy の場合は空の黒画像を返す
-    if (!text) {
-      const blank = ctx.createImageData(W, H);
-      for (let i = 0; i < blank.data.length; i += 4) {
-        blank.data[i] = 0;
-        blank.data[i+1] = 0;
-        blank.data[i+2] = 0;
-        blank.data[i+3] = 255;
-      }
-      return blank.data;
-    }
+  function setupEventListeners() {
+    digitRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        currentDigits = parseInt(e.target.value);
+        generateProblem();
+      });
+    });
 
-    const dCanvas = document.createElement('canvas');
-    dCanvas.width = W;
-    dCanvas.height = H;
-    const dCtx = dCanvas.getContext('2d');
-    dCtx.fillStyle = "black";
-    dCtx.fillRect(0, 0, W, H);
+    document.getElementById('next-btn').addEventListener('click', generateProblem);
 
-    // 文字列を桁ごとに分割して個別に描画
-    const digits = text.split('');
-    const n = digits.length;
+    document.querySelectorAll('.num-btn[data-num]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (userInput.length < currentDigits) {
+          userInput += e.target.dataset.num;
+          updateDisplay();
+        }
+      });
+    });
 
-    // ベースフォントサイズ（元の値）を用意し、2.5倍を目標にするが、画面幅と高さに収まるように調整する
-    // 桁数に応じた元サイズ（以前のロジックを踏襲）
-    let baseSize;
-    if (n === 1) baseSize = 380;
-    else if (n === 2) baseSize = 280;
-    else if (n === 3) baseSize = 220;
-    else if (n === 4) baseSize = 160;
-    else if (n === 5) baseSize = 120;
-    else baseSize = 90; // 6桁の元サイズ
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      userInput = userInput.slice(0, -1);
+      updateDisplay();
+    });
 
-    // 目標フォントサイズ（2.5倍）
-    let fontSize = Math.floor(baseSize * 2.5);
+    document.getElementById('answer-btn').addEventListener('click', checkAnswer);
 
-    // まず仮のフォントで各桁の幅を測る
-    dCtx.font = `900 ${fontSize}px sans-serif`;
-    let widths = digits.map(d => dCtx.measureText(d).width);
-    let totalWidth = widths.reduce((a,b)=>a+b,0);
-    // 最低限の間隔（桁間スペース）を確保する（桁幅の10%を目安）
-    let gap = Math.max(8, fontSize * 0.08);
-    let requiredWidth = totalWidth + gap * (n - 1);
+    window.addEventListener('resize', () => {
+      setCanvasSize();
+      drawStereogram();
+    });
 
-    // 画面幅の90%を超える場合、またはフォントサイズがキャンバス高さの90%を超える場合は縮小
-    const maxAllowedWidth = W * 0.9;
-    const maxAllowedHeight = H * 0.9;
+    visionToggleBtn.addEventListener('click', () => {
+      visionRecovery = !visionRecovery;
+      updateVisionToggleUI();
+      startOrStopAnimation();
+    });
 
-    // 安定したループでフォントサイズを縮小していく
-    let safety = 0;
-    while ((requiredWidth > maxAllowedWidth || fontSize > maxAllowedHeight) && fontSize > 8 && safety < 200) {
-      safety++;
-      fontSize = Math.floor(fontSize * 0.95);
-      dCtx.font = `900 ${fontSize}px sans-serif`;
-      widths = digits.map(d => dCtx.measureText(d).width);
-      totalWidth = widths.reduce((a,b)=>a+b,0);
-      gap = Math.max(6, fontSize * 0.08);
-      requiredWidth = totalWidth + gap * (n - 1);
-    }
-
-    // 最終的な桁間隔を決定（残り幅を均等に配分して桁間を広げる）
-    const measuredTotal = widths.reduce((a,b)=>a+b,0);
-    gap = Math.max(6, fontSize * 0.06);
-    if (measuredTotal + gap * (n - 1) < maxAllowedWidth) {
-      const extra = maxAllowedWidth - (measuredTotal + gap * (n - 1));
-      const addPerGap = Math.min(extra / Math.max(1, n - 1), fontSize * 0.5);
-      gap += addPerGap;
-    } else {
-      let shrinkSafety = 0;
-      while (measuredTotal + gap * (n - 1) > maxAllowedWidth && gap > 2 && shrinkSafety < 200) {
-        gap *= 0.95;
-        shrinkSafety++;
-      }
-    }
-
-    // 横方向の開始位置（中央揃え）
-    const totalUsed = measuredTotal + gap * (n - 1);
-    let startX = (W - totalUsed) / 2;
-
-    // 縦位置は中央
-    const centerY = H / 2 + 20;
-
-    dCtx.textAlign = 'left';
-    dCtx.textBaseline = 'middle';
-    dCtx.fillStyle = "white";
-    dCtx.shadowColor = "white";
-    dCtx.shadowBlur = 15;
-
-    // 描画：各桁を個別に描画して重なりを防ぐ
-    for (let i = 0; i < n; i++) {
-      dCtx.font = `900 ${fontSize}px sans-serif`;
-      const x = startX;
-      dCtx.fillText(digits[i], x, centerY);
-      startX += widths[i] + gap;
-    }
-
-    return dCtx.getImageData(0, 0, W, H).data;
+    bwModeCheckbox.addEventListener('change', () => {
+      drawStereogram();
+    });
   }
 
-  // SIRDSアルゴリズム（ピクセル連結法）
-  function drawSIRDS(offset = 0) {
-    const depthData = getDepthData(currentAnswer);
-    const imgData = ctx.createImageData(W, H);
+  function updateVisionToggleUI() {
+    if (visionRecovery) {
+      visionToggleBtn.classList.remove('off');
+      visionToggleBtn.textContent = '視力回復 ON';
+    } else {
+      visionToggleBtn.classList.add('off');
+      visionToggleBtn.textContent = '視力回復 OFF';
+    }
+  }
+
+  function animationLoop() {
+    drawStereogram();
+    animFrameId = requestAnimationFrame(animationLoop);
+  }
+
+  function startOrStopAnimation() {
+    if (visionRecovery) {
+      if (animFrameId === null) {
+        animFrameId = requestAnimationFrame(animationLoop);
+      }
+    } else {
+      if (animFrameId !== null) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+      drawStereogram();
+    }
+  }
+
+  function generateProblem() {
+    userInput = "";
+    updateDisplay();
+
+    let min = Math.pow(10, currentDigits - 1);
+    let max = Math.pow(10, currentDigits) - 1;
+    if (currentDigits === 1) { min = 0; max = 9; }
+    correctAnswer = Math.floor(Math.random() * (max - min + 1) + min).toString();
+
+    setCanvasSize();
     
-    const curEyeSep = EYE_SEP + offset;
+    // 隠しキャンバスに数字を描画して「形」を作る
+    offCtx.fillStyle = "black";
+    offCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+    offCtx.fillStyle = "white";
+    const fontSize = Math.min(offscreenCanvas.width / (currentDigits * 0.7), offscreenCanvas.height * 0.8);
+    offCtx.font = `bold ${fontSize}px sans-serif`;
+    offCtx.textAlign = "center";
+    offCtx.textBaseline = "middle";
+    offCtx.fillText(correctAnswer, offscreenCanvas.width / 2, offscreenCanvas.height / 2);
 
-    for (let y = 0; y < H; y++) {
-      const left = new Int32Array(W);
-      const right = new Int32Array(W);
-      
-      for (let x = 0; x < W; x++) { left[x] = x; right[x] = x; }
+    drawStereogram();
+  }
 
-      for (let x = 0; x < W; x++) {
-        // 深度取得 (0.0 - 1.0)
-        const z = depthData[(y * W + x) * 4] / 255;
-        // 分離距離の計算
-        const sep = Math.floor((1 - MU * z) * curEyeSep / (2 - MU * z));
+  function updateDisplay() {
+    inputDisplay.textContent = userInput;
+  }
+
+  function checkAnswer() {
+    if (userInput === "") return;
+    if (userInput === correctAnswer) {
+      alert("正解です！");
+      generateProblem();
+    } else {
+      alert("不正解です。");
+      userInput = "";
+      updateDisplay();
+    }
+  }
+
+  // --- 修正されたステレオグラム描画ロジック ---
+  function drawStereogram() {
+    const w = canvas.width;
+    const h = canvas.height;
+    if (w === 0 || h === 0) return;
+
+    const depthData = offCtx.getImageData(0, 0, w, h).data;
+    const imgData = ctx.createImageData(w, h);
+    const data = imgData.data;
+    const bw = bwModeCheckbox.checked;
+
+    // パターンの繰り返し幅（これがあることで立体視が可能になる）
+    const patternWidth = 64; 
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
         
-        let l = Math.floor(x - sep / 2);
-        let r = l + sep;
+        // 数字がある場所（白）は視差を8px分つける
+        let shift = 0;
+        if (depthData[idx] > 128) {
+          shift = 8; 
+        }
 
-        if (l >= 0 && r < W) {
-          // ピクセルをリンクさせる（同じ色にする指示）
-          let visible = true;
-          // 隠面消去の簡易判定
-          if (visible) {
-            left[r] = l;
-            right[l] = r;
+        if (x < patternWidth) {
+          // 左端のベースパターン生成
+          let r, g, b;
+          if (bw) {
+            const val = Math.random() < 0.5 ? 0 : 255;
+            r = g = b = val;
+          } else {
+            r = Math.random() < 0.5 ? 0 : 255;
+            g = Math.random() < 0.5 ? 0 : 255;
+            b = Math.random() < 0.5 ? 0 : 255;
           }
-        }
-      }
-
-      const rowColors = new Uint8ClampedArray(W * 3);
-      for (let x = 0; x < W; x++) {
-        if (left[x] === x) {
-          const c = getRandomColor();
-          rowColors[x * 3] = c[0];
-          rowColors[x * 3 + 1] = c[1];
-          rowColors[x * 3 + 2] = c[2];
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = b;
+          data[idx + 3] = 255;
         } else {
-          // リンクされたピクセルの色をコピー
-          rowColors[x * 3] = rowColors[left[x] * 3];
-          rowColors[x * 3 + 1] = rowColors[left[x] * 3 + 1];
-          rowColors[x * 3 + 2] = rowColors[left[x] * 3 + 2];
+          // 前のパターンを「shift」分ずらしてコピーすることで奥行きを作る
+          const targetX = x - patternWidth + shift;
+          const prevIdx = (y * w + targetX) * 4;
+          data[idx] = data[prevIdx];
+          data[idx + 1] = data[prevIdx + 1];
+          data[idx + 2] = data[prevIdx + 2];
+          data[idx + 3] = 255;
         }
-      }
-
-      for (let x = 0; x < W; x++) {
-        const idx = (y * W + x) * 4;
-        imgData.data[idx] = rowColors[x * 3];
-        imgData.data[idx+1] = rowColors[x * 3 + 1];
-        imgData.data[idx+2] = rowColors[x * 3 + 2];
-        imgData.data[idx+3] = 255;
       }
     }
     ctx.putImageData(imgData, 0, 0);
-    drawGuideDots(offset);
   }
 
-  function drawGuideDots(offset = 0) {
-    const dotY = 25;
-    const centerX = W / 2;
-    const sep = (EYE_SEP + offset) / 2.8; 
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(centerX - sep, dotY, 5, 0, 7);
-    ctx.arc(centerX + sep, dotY, 5, 0, 7);
-    ctx.fill();
-  }
-
-  function initGame() {
-    const mode = document.getElementById('levelSelect').value;
-    if (mode === "1") currentAnswer = Math.floor(Math.random() * 10).toString();
-    else if (mode === "2") currentAnswer = Math.floor(Math.random() * 90 + 10).toString();
-    else if (mode === "3") currentAnswer = Math.floor(Math.random() * 900 + 100).toString();
-    else if (mode === "4") currentAnswer = Math.floor(Math.random() * 9000 + 1000).toString();
-    else if (mode === "5") currentAnswer = Math.floor(Math.random() * 90000 + 10000).toString();
-    else currentAnswer = Math.floor(Math.random() * 900000 + 100000).toString();
-
-    currentGuess = "";
-    document.getElementById('guessDisplay').textContent = "";
-    document.getElementById('resultOverlay').style.display = "none";
-    drawSIRDS();
-    adjustGuessFont(); // 初期化時に表示領域に収める
-  }
-
-  // 視力回復アニメーション
-  function animate() {
-    if (!recoveryActive) return;
-    recoveryFrame += 0.04;
-    const offset = Math.sin(recoveryFrame) * 20;
-    drawSIRDS(offset);
-    requestAnimationFrame(animate);
-  }
-
-  // 入力処理
-  const guessDisplay = document.getElementById('guessDisplay');
-  document.querySelectorAll('.num-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const val = btn.dataset.val;
-      if (val === 'del') currentGuess = currentGuess.slice(0, -1);
-      else if (val) { if (currentGuess.length < 6) currentGuess += val; } // 最大6桁に制限
-      guessDisplay.textContent = currentGuess;
-      adjustGuessFont(); // 文字が変わるたびに調整
-    });
-  });
-
-  document.getElementById('submitBtn').addEventListener('click', () => {
-    if (!currentGuess) return;
-    const overlay = document.getElementById('resultOverlay');
-    const status = document.getElementById('resultStatus');
-    const correctVal = document.getElementById('correctValue');
-    
-    overlay.style.display = "flex";
-    correctVal.textContent = currentAnswer;
-    
-    if (currentGuess === currentAnswer) {
-      status.textContent = "正解！ 素晴らしい！";
-      status.style.color = "#10b981";
-    } else {
-      status.textContent = "残念！ 正解は...";
-      status.style.color = "#f43f5e";
-    }
-    
-    setTimeout(initGame, 2500);
-  });
-
-  document.getElementById('changeNumber').addEventListener('click', initGame);
-  document.getElementById('recoveryMode').addEventListener('click', (e) => {
-    recoveryActive = !recoveryActive;
-    e.target.textContent = recoveryActive ? "🧘 視力回復 ON" : "🧘 視力回復 OFF";
-    if (recoveryActive) animate(); else drawSIRDS();
-  });
-
-  // 初期化時にキャンバスの表示サイズを端末に合わせて調整（見た目の高さを抑える）
-  function adjustCanvasDisplay() {
-    if (window.matchMedia("(orientation: portrait) and (max-width: 480px)").matches) {
-      canvas.style.height = Math.max(window.innerHeight * 0.28, 140) + "px";
-    } else {
-      canvas.style.height = "auto";
-    }
-    drawSIRDS();
-  }
-
-  // guessDisplay のフォントサイズを動的に調整して、数字が画面からはみ出さないようにする
-  function adjustGuessFont() {
-    const el = guessDisplay;
-    // 基本の最大フォントサイズ（2.5倍相当）をピクセルで取得
-    const containerWidth = el.clientWidth - 20; // パディング分を差し引く
-    if (!containerWidth) return;
-    const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    let targetPx = 9 * rootFont; // CSS の 9rem に合わせる
-    const maxByVw = Math.max(window.innerWidth * 0.12, 24);
-    targetPx = Math.min(targetPx, Math.max(window.innerWidth * 0.22, maxByVw));
-
-    el.style.fontSize = targetPx + "px";
-    let currentSize = targetPx;
-    // 横幅に収まるように縮小
-    let safety = 0;
-    while (el.scrollWidth > containerWidth && currentSize > 12 && safety < 200) {
-      safety++;
-      currentSize = Math.floor(currentSize * 0.95);
-      el.style.fontSize = currentSize + "px";
-      if (currentSize < 13) break;
-    }
-    // 縦方向にも収める
-    const maxHeight = Math.max(44, window.innerHeight * 0.08);
-    safety = 0;
-    if (el.clientHeight > maxHeight) {
-      while (el.clientHeight > maxHeight && currentSize > 12 && safety < 200) {
-        safety++;
-        currentSize = Math.floor(currentSize * 0.95);
-        el.style.fontSize = currentSize + "px";
-        if (currentSize < 13) break;
-      }
-    }
-  }
-
-  window.addEventListener('resize', () => {
-    adjustCanvasDisplay();
-    adjustGuessFont();
-  });
-
-  window.onload = () => {
-    initGame();
-    adjustCanvasDisplay();
-    adjustGuessFont();
-  };
+  updateVisionToggleUI();
+  init();
 </script>
 </body>
 </html>
