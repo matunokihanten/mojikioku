@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>超視認性ステレオグラム・真</title>
   <style>
     :root {
@@ -13,90 +13,119 @@
       --correct: #10b981;
     }
     
-    * { box-sizing: border-box; touch-action: manipulation; }
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
     body {
       font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
-      padding: 10px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     .container {
       width: 100%;
       max-width: 800px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
     }
 
-    h1 { font-size: 1.2rem; color: var(--highlight); margin: 5px 0; }
+    h1 { font-size: 1.05rem; color: var(--highlight); margin: 4px 0; }
 
     /* メインキャンバス */
     .canvas-wrapper {
       position: relative;
-      margin: 10px 0;
+      margin: 6px 0;
       background: #000;
       border-radius: 8px;
       line-height: 0;
       box-shadow: 0 0 30px rgba(0,0,0,1);
+      overflow: hidden;
     }
     canvas {
       width: 100%;
       height: auto;
       border-radius: 8px;
       image-rendering: pixelated; /* 砂嵐をはっきりさせる */
+      display: block;
     }
 
     /* 設定エリア */
     .controls {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 4px;
+      align-items: center;
     }
     select, button {
-      padding: 15px 5px;
-      border-radius: 12px;
+      padding: 10px 6px;
+      border-radius: 10px;
       border: none;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
     }
     #changeNumber { background: #3b82f6; color: white; }
     #recoveryMode { background: #8b5cf6; color: white; }
-    .mode-active { box-shadow: 0 0 15px white; }
+    .mode-active { box-shadow: 0 0 12px white; }
 
-    /* 巨大入力欄 */
+    /* 巨大入力欄（数字サイズを2.5倍、ただし画面からはみ出さないように調整） */
     .input-display {
       background: #000;
-      margin-bottom: 10px;
-      padding: 10px;
+      margin-bottom: 6px;
+      padding: 8px 10px;
       border-radius: 12px;
-      font-size: 2.5rem;
+      /* もとの2.5remを2.5倍 -> 6.25rem を目安にするが clamp で画面幅に合わせる */
+      font-size: clamp(1.6rem, 6.25rem, 10vw);
       font-weight: bold;
-      min-height: 60px;
+      min-height: 56px;
       color: #fff;
       border: 2px solid #334155;
+      word-break: keep-all;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     /* 巨大テンキー */
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 8px;
+      width: 100%;
       max-width: 500px;
       margin: 0 auto;
+      padding: 0 6px 8px 6px;
     }
     .num-btn {
       background: #334155;
       color: white;
-      padding: 25px 0;
-      font-size: 2rem;
-      border-radius: 15px;
+      padding: 14px 0;
+      font-size: calc(1.6rem + 0.6vw);
+      border-radius: 12px;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .num-btn:active { background: #475569; }
     .num-btn.submit { background: var(--highlight); grid-column: span 2; }
@@ -112,11 +141,39 @@
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      font-size: 2rem;
+      font-size: 1.8rem;
     }
     .ans-val { font-size: 5rem; color: white; margin: 20px; }
 
-    .option-row { margin: 10px 0; font-size: 0.9rem; display: flex; justify-content: center; gap: 20px; }
+    .option-row { margin: 6px 0; font-size: 0.85rem; display: flex; justify-content: center; gap: 12px; align-items: center; }
+
+    /* レスポンシブ調整: 小さい画面でボタンがはみ出さないようにする */
+    @media (max-width: 480px) {
+      body { padding: 6px; }
+      h1 { font-size: 1rem; }
+      .controls { grid-template-columns: 1fr 1fr; gap: 6px; }
+      select, button { padding: 8px 6px; font-size: 0.9rem; }
+      .input-display { font-size: clamp(1.2rem, 6.25rem, 14vw); padding: 6px 8px; min-height: 48px; }
+      .canvas-wrapper { margin: 6px 0; }
+      .numpad { gap: 6px; padding: 0 4px 6px 4px; max-width: 100%; }
+      .num-btn { padding: 10px 0; font-size: 1.4rem; min-height: 44px; border-radius: 10px; }
+      .option-row { gap: 8px; font-size: 0.82rem; }
+    }
+
+    /* さらに小さい端末 */
+    @media (max-width: 360px) {
+      .controls { grid-template-columns: 1fr; gap: 6px; }
+      .num-btn { font-size: 1.2rem; padding: 8px 0; min-height: 40px; }
+      .input-display { font-size: clamp(1rem, 6.25rem, 18vw); min-height: 44px; }
+      h1 { font-size: 0.95rem; }
+    }
+
+    /* 高さ制限を使ってスマホ縦画面でスクロールなしに収めやすくする（ユーザー端末により差あり） */
+    @media (orientation: portrait) and (max-width: 480px) {
+      /* 画面高さに応じてキャンバスの表示領域を制限 */
+      .canvas-wrapper { max-height: calc(100vh - 56px - 48px - 56px - 200px); } /* ヘッダ+controls+input+numpad領域を想定して残す */
+      .canvas-wrapper canvas { height: 28vh; width: 100%; object-fit: cover; }
+    }
   </style>
 </head>
 <body>
@@ -129,6 +186,9 @@
       <option value="1">1桁</option>
       <option value="2">2桁</option>
       <option value="3">3桁</option>
+      <option value="4">4桁</option>
+      <option value="5">5桁</option>
+      <option value="6">6桁</option>
     </select>
     <button id="changeNumber">🔄 次の問題</button>
   </div>
@@ -143,7 +203,7 @@
     <canvas id="stereoCanvas" width="800" height="450"></canvas>
   </div>
 
-  <div class="input-display" id="guessDisplay"></div>
+  <div class="input-display" id="guessDisplay" aria-live="polite"></div>
 
   <div class="numpad">
     <button class="num-btn" data-val="7">7</button>
@@ -197,6 +257,7 @@
   }
 
   // 隠し画像の生成（メモリ上のみ）
+  // 変更点: 各桁を個別に描画して、数字同士が重ならないように配置する
   function getDepthData(text) {
     const dCanvas = document.createElement('canvas');
     dCanvas.width = W;
@@ -205,16 +266,84 @@
     dCtx.fillStyle = "black";
     dCtx.fillRect(0, 0, W, H);
 
-    const fontSize = text.length === 1 ? 380 : text.length === 2 ? 280 : 220;
+    // 文字列を桁ごとに分割して個別に描画
+    const digits = text.split('');
+    const n = digits.length;
+
+    // ベースフォントサイズ（元の値）を用意し、2.5倍を目標にするが、画面幅と高さに収まるように調整する
+    // 桁数に応じた元サイズ（以前のロジックを踏襲）
+    let baseSize;
+    if (n === 1) baseSize = 380;
+    else if (n === 2) baseSize = 280;
+    else if (n === 3) baseSize = 220;
+    else if (n === 4) baseSize = 160;
+    else if (n === 5) baseSize = 120;
+    else baseSize = 90; // 6桁の元サイズ
+
+    // 目標フォントサイズ（2.5倍）
+    let fontSize = Math.floor(baseSize * 2.5);
+
+    // まず仮のフォントで各桁の幅を測る
     dCtx.font = `900 ${fontSize}px sans-serif`;
-    dCtx.textAlign = 'center';
+    let widths = digits.map(d => dCtx.measureText(d).width);
+    let totalWidth = widths.reduce((a,b)=>a+b,0);
+    // 最低限の間隔（桁間スペース）を確保する（桁幅の10%を目安）
+    const gapTarget = Math.max(8, fontSize * 0.08);
+    let requiredWidth = totalWidth + gapTarget * (n - 1);
+
+    // 画面幅の90%を超える場合、またはフォントサイズがキャンバス高さの90%を超える場合は縮小
+    const maxAllowedWidth = W * 0.9;
+    const maxAllowedHeight = H * 0.9;
+
+    while ((requiredWidth > maxAllowedWidth || fontSize > maxAllowedHeight) && fontSize > 8) {
+      fontSize = Math.floor(fontSize * 0.95);
+      dCtx.font = `900 ${fontSize}px sans-serif`;
+      for (let i = 0; i < n; i++) widths[i] = dCtx.measureText(digits[i]).width;
+      const newTotal = widths.reduce((a,b)=>a+b,0);
+      const newGap = Math.max(6, fontSize * 0.08);
+      if (newTotal + newGap * (n - 1) === requiredWidth) {
+        // avoid infinite loop if nothing changes
+        break;
+      }
+      requiredWidth = newTotal + newGap * (n - 1);
+    }
+
+    // 最終的な桁間隔を決定（残り幅を均等に配分して桁間を広げる）
+    const measuredTotal = widths.reduce((a,b)=>a+b,0);
+    let gap = Math.max(6, fontSize * 0.06);
+    if (measuredTotal + gap * (n - 1) < maxAllowedWidth) {
+      // 余白があれば均等に広げる（ただし過度には広げない）
+      const extra = maxAllowedWidth - (measuredTotal + gap * (n - 1));
+      const addPerGap = Math.min(extra / Math.max(1, n - 1), fontSize * 0.5);
+      gap += addPerGap;
+    } else {
+      // 幅が厳しい場合は縮める
+      while (measuredTotal + gap * (n - 1) > maxAllowedWidth && gap > 2) {
+        gap *= 0.95;
+      }
+    }
+
+    // 横方向の開始位置（中央揃え）
+    const totalUsed = measuredTotal + gap * (n - 1);
+    let startX = (W - totalUsed) / 2;
+
+    // 縦位置は中央
+    const centerY = H / 2 + 20;
+
+    dCtx.textAlign = 'left';
     dCtx.textBaseline = 'middle';
     dCtx.fillStyle = "white";
-    // わずかにぼかして立体感を滑らかにするが、エッジが立たないようにする
     dCtx.shadowColor = "white";
     dCtx.shadowBlur = 15;
-    dCtx.fillText(text, W / 2, H / 2 + 20);
-    
+
+    // 描画：各桁を個別に描画して重なりを防ぐ
+    for (let i = 0; i < n; i++) {
+      dCtx.font = `900 ${fontSize}px sans-serif`;
+      const x = startX;
+      dCtx.fillText(digits[i], x, centerY);
+      startX += widths[i] + gap;
+    }
+
     return dCtx.getImageData(0, 0, W, H).data;
   }
 
@@ -293,12 +422,16 @@
     const mode = document.getElementById('levelSelect').value;
     if (mode === "1") currentAnswer = Math.floor(Math.random() * 10).toString();
     else if (mode === "2") currentAnswer = Math.floor(Math.random() * 90 + 10).toString();
-    else currentAnswer = Math.floor(Math.random() * 900 + 100).toString();
+    else if (mode === "3") currentAnswer = Math.floor(Math.random() * 900 + 100).toString();
+    else if (mode === "4") currentAnswer = Math.floor(Math.random() * 9000 + 1000).toString();
+    else if (mode === "5") currentAnswer = Math.floor(Math.random() * 90000 + 10000).toString();
+    else currentAnswer = Math.floor(Math.random() * 900000 + 100000).toString();
 
     currentGuess = "";
     document.getElementById('guessDisplay').textContent = "";
     document.getElementById('resultOverlay').style.display = "none";
     drawSIRDS();
+    adjustGuessFont(); // 初期化時に表示領域に収める
   }
 
   // 視力回復アニメーション
@@ -311,12 +444,14 @@
   }
 
   // 入力処理
+  const guessDisplay = document.getElementById('guessDisplay');
   document.querySelectorAll('.num-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.dataset.val;
       if (val === 'del') currentGuess = currentGuess.slice(0, -1);
-      else if (val) { if (currentGuess.length < 3) currentGuess += val; }
-      document.getElementById('guessDisplay').textContent = currentGuess;
+      else if (val) { if (currentGuess.length < 6) currentGuess += val; } // 最大6桁に制限
+      guessDisplay.textContent = currentGuess;
+      adjustGuessFont(); // 文字が変わるたびに調整
     });
   });
 
@@ -347,7 +482,56 @@
     if (recoveryActive) animate(); else drawSIRDS();
   });
 
-  window.onload = initGame;
+  // 初期化時にキャンバスの表示サイズを端末に合わせて調整（見た目の高さを抑える）
+  function adjustCanvasDisplay() {
+    if (window.matchMedia("(orientation: portrait) and (max-width: 480px)").matches) {
+      canvas.style.height = Math.max(window.innerHeight * 0.28, 140) + "px";
+    } else {
+      canvas.style.height = "auto";
+    }
+    drawSIRDS();
+  }
+
+  // guessDisplay のフォントサイズを動的に調整して、数字が画面からはみ出さないようにする
+  function adjustGuessFont() {
+    const el = guessDisplay;
+    // 基本の最大フォントサイズ（2.5倍相当）をピクセルで取得
+    const containerWidth = el.clientWidth - 20; // パディング分を差し引く
+    if (!containerWidth) return;
+    const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    let targetPx = 6.25 * rootFont; // 6.25rem の px 値（目標）
+    const maxByVw = Math.max(window.innerWidth * 0.10, 24);
+    targetPx = Math.min(targetPx, Math.max(window.innerWidth * 0.18, maxByVw));
+
+    el.style.fontSize = targetPx + "px";
+    let currentSize = targetPx;
+    // 横幅に収まるように縮小
+    while (el.scrollWidth > containerWidth && currentSize > 12) {
+      currentSize = Math.floor(currentSize * 0.95);
+      el.style.fontSize = currentSize + "px";
+      if (currentSize < 13) break;
+    }
+    // 縦方向にも収める
+    const maxHeight = Math.max(44, window.innerHeight * 0.08);
+    if (el.clientHeight > maxHeight) {
+      while (el.clientHeight > maxHeight && currentSize > 12) {
+        currentSize = Math.floor(currentSize * 0.95);
+        el.style.fontSize = currentSize + "px";
+        if (currentSize < 13) break;
+      }
+    }
+  }
+
+  window.addEventListener('resize', () => {
+    adjustCanvasDisplay();
+    adjustGuessFont();
+  });
+
+  window.onload = () => {
+    initGame();
+    adjustCanvasDisplay();
+    adjustGuessFont();
+  };
 </script>
 </body>
 </html>
