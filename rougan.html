@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gabor Eye Mastery Pro - Clinical Edition</title>
+<style>
+:root {
+    --bg: #111;
+    --bg-light: #f5f5f5;
+    --card: #252525;
+    --card-light: #ffffff;
+    --accent: #00ffcc;
+    --text: #ffffff;
+    --text-dark: #111111;
+    --success: #4caf50;
+    --danger: #f44336;
+}
+
+/* Reset & base */
+*{margin:0;padding:0;box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+body{
+    background:var(--bg);
+    color:var(--text);
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    touch-action:none;
+}
+
+/* Header */
+#header{
+    padding:8px 14px;
+    background:var(--card);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:2px solid #333;
+    z-index:20;
+}
+#score-board{font-size:13px;color:var(--accent);font-weight:bold;}
+#timer{font-family:"Courier New",monospace;font-size:19px;}
+#session-info{font-size:11px;opacity:0.8;}
+
+/* Stage */
+#stage{
+    flex:1;
+    position:relative;
+    background:#000;
+    overflow:hidden;
+}
+canvas{width:100%;height:100%;display:block;}
+
+/* Bottom UI */
+#ui{
+    background:var(--card);
+    padding:10px 12px env(safe-area-inset-bottom,10px);
+    border-top:1px solid #444;
+    z-index:20;
+    font-size:12px;
+}
+.mode-selector{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px;
+    margin-bottom:6px;
+}
+button{
+    height:40px;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:opacity .2s, background .2s, transform .05s;
+    font-size:11px;
+    -webkit-tap-highlight-color:transparent;
+}
+button:active{transform:scale(0.98);}
+.btn-mode{background:#3d3d3d;color:#ccc;}
+.btn-mode.active{background:var(--accent);color:#000;}
+
+.main-controls{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:8px;
+    margin-bottom:6px;
+}
+#start-btn{background:var(--success);color:#fff;font-size:14px;}
+#reset-btn{background:#555;color:#fff;}
+
+#instruction{
+    text-align:center;
+    font-size:11px;
+    color:var(--accent);
+    margin-top:4px;
+    min-height:1.5em;
+    letter-spacing:0.08em;
+}
+
+/* clinical controls */
+#clinical-panel{
+    margin-top:6px;
+    padding:6px 8px;
+    border-radius:8px;
+    background:rgba(0,0,0,0.55);
+    display:grid;
+    grid-template-columns:1.1fr 1.1fr 1.2fr;
+    gap:6px;
+}
+.control-group{display:flex;flex-direction:column;gap:2px;}
+.control-label{font-size:10px;opacity:0.8;}
+select, input[type="range"]{
+    width:100%;
+    font-size:10px;
+    border-radius:6px;
+    border:none;
+    padding:2px 4px;
+    background:#3a3a3a;
+    color:#eee;
+}
+
+#target-display{
+    position:absolute;
+    top:10px;left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.88);
+    padding:8px;
+    border-radius:14px;
+    display:none;
+    text-align:center;
+    border:2px solid var(--accent);
+    z-index:10;
+    box-shadow:0 3px 10px rgba(0,0,0,.5);
+}
+#target-display p{
+    font-size:10px;
+    margin-bottom:4px;
+    color:#fff;
+    font-weight:bold;
+}
+#target-canvas{
+    width:70px;height:70px;
+}
+
+/* feedback flash */
+.feedback{
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    padding:6px 10px;
+    border-radius:10px;
+    background:rgba(0,0,0,0.85);
+    color:#fff;
+    font-size:13px;
+    font-weight:bold;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .15s;
+    z-index:15;
+}
+.feedback.show{opacity:1;}
+
+#warning{
+    margin-top:4px;
+    font-size:10px;
+    color:#ffdd55;
+}
+
+/* light mode */
+body.light{
+    background:var(--bg-light);
+    color:var(--text-dark);
+}
+body.light #header{
+    background:var(--card-light);
+    border-bottom-color:#ddd;
+}
+body.light #ui{
+    background:var(--card-light);
+    border-top-color:#ddd;
+}
+body.light #clinical-panel{
+    background:rgba(230,230,230,0.85);
+}
+body.light #instruction{color:#00796b;}
+body.light #stage{background:#f0f0f0;}
+</style>
+</head>
+<body>
+
+<div id="header">
+    <div>
+        <div id="score-board">SCORE: <span id="score">0</span></div>
+        <div id="session-info">本日のセッション: <span id="session-count">0</span></div>
+    </div>
+    <div id="timer">03:00</div>
+</div>
+
+<div id="stage">
+    <canvas id="c"></canvas>
+    <div id="target-display">
+        <p>これと同じ向きを全て選択</p>
+        <canvas id="target-canvas" width="70" height="70"></canvas>
+    </div>
+    <div id="feedback" class="feedback"></div>
+</div>
+
+<div id="ui">
+    <div class="mode-selector">
+        <button class="btn-mode active" data-mode="match">同じ形探し</button>
+        <button class="btn-mode" data-mode="search">仲間外れ</button>
+        <button class="btn-mode" data-mode="breath">遠近ブレス</button>
+        <button class="btn-mode" data-mode="flow">追従フロー</button>
+    </div>
+
+    <div class="main-controls">
+        <button id="start-btn">トレーニング開始</button>
+        <button id="reset-btn">リセット</button>
+    </div>
+
+    <div id="clinical-panel">
+        <div class="control-group">
+            <span class="control-label">コントラスト(難易度)</span>
+            <input id="contrast-range" type="range" min="0.3" max="1" step="0.05" value="0.7">
+        </div>
+        <div class="control-group">
+            <span class="control-label">パッチサイズ</span>
+            <select id="size-select">
+                <option value="large">大 (弱視・遠視)</option>
+                <option value="medium" selected>中</option>
+                <option value="small">小 (上級)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <span class="control-label">背景 / 距離メモ</span>
+            <select id="bg-select">
+                <option value="dark">暗背景 (暗室)</option>
+                <option value="light">明背景 (明室)</option>
+            </select>
+            <span style="font-size:9px;opacity:0.7;">※ 40〜60cm, 片眼ずつも可</span>
+        </div>
+    </div>
+
+    <div id="instruction">モードを選んで「トレーニング開始」を押してください。</div>
+    <div id="warning">連続使用は30分まで。疲れ・頭痛・かすみ目が出たら必ず休憩してください。</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const tCanvas = document.getElementById('target-canvas');
+const tCtx = tCanvas.getContext('2d');
+
+const startBtn = document.getElementById('start-btn');
+const resetBtn = document.getElementById('reset-btn');
+const modeBtns = document.querySelectorAll('.btn-mode');
+const scoreDisp = document.getElementById('score');
+const timerDisp = document.getElementById('timer');
+const instructDisp = document.getElementById('instruction');
+const targetUI = document.getElementById('target-display');
+const feedbackEl = document.getElementById('feedback');
+const sessionCountEl = document.getElementById('session-count');
+
+const contrastRange = document.getElementById('contrast-range');
+const sizeSelect = document.getElementById('size-select');
+const bgSelect = document.getElementById('bg-select');
+
+let w = 0, h = 0, dpr = window.devicePixelRatio || 1;
+let active = false, tick = 0, ani = null;
+let currentMode = 'match';
+let score = 0, startTime = 0;
+let duration = 180;      // 3 minutes
+let timerInterval = null;
+let patches = [];
+let targetAngle = 0;
+
+// clinical parameters
+const baseAngles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4]; // 0,45,90,135°
+let gaborCache = {}; // key: size-contrast-frequency-angle
+
+// SESSION STORAGE for count
+let todaysDateKey = new Date().toISOString().slice(0,10);
+let storedCount = Number(localStorage.getItem('gabor_sessions_'+todaysDateKey) || '0');
+sessionCountEl.textContent = storedCount.toString();
+
+// ---------- Utility ----------
+function showFeedback(text, ok=true){
+    feedbackEl.textContent = text;
+    feedbackEl.style.background = ok ? 'rgba(0,80,0,0.85)' : 'rgba(120,0,0,0.85)';
+    feedbackEl.classList.add('show');
+    setTimeout(()=>feedbackEl.classList.remove('show'), 600);
+}
+
+// prevent repeated scaling bug
+function setCanvasSize(){
+    const stage = document.getElementById('stage');
+    const cw = stage.clientWidth;
+    const ch = stage.clientHeight;
+    if(cw === 0 || ch === 0) return;
+    w = cw; h = ch;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+// size presets
+function getPatchSize(){
+    const base = Math.min(w,h);
+    if(sizeSelect.value === 'large') return base/4;
+    if(sizeSelect.value === 'small') return base/8;
+    return base/6;
+}
+
+// ---------- Gabor generator (off-screen) ----------
+function makeGabor(size, angle, freq, contrast){
+    const key = `${size}_${angle.toFixed(2)}_${freq}_${contrast.toFixed(2)}`;
+    if(gaborCache[key]) return gaborCache[key];
+
+    const off = document.createElement('canvas');
+    off.width = off.height = size;
+    const gctx = off.getContext('2d');
+
+    gctx.translate(size/2,size/2);
+    gctx.rotate(angle);
+    gctx.translate(-size/2,-size/2);
+
+    // sinusoidal grating
+    for(let y=0;y<size;y++){
+        const v = Math.sin(y*freq)*127*contrast + 128;
+        const g = Math.max(0,Math.min(255,Math.round(v)));
+        gctx.fillStyle = `rgb(${g},${g},${g})`;
+        gctx.fillRect(0,y,size,1);
+    }
+
+    // gaussian mask
+    const mask = document.createElement('canvas');
+    mask.width = mask.height = size;
+    const mctx = mask.getContext('2d');
+    const grad = mctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+    grad.addColorStop(0,`rgba(255,255,255,${contrast})`);
+    grad.addColorStop(0.6,`rgba(255,255,255,${contrast*0.7})`);
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    mctx.fillStyle = grad;
+    mctx.fillRect(0,0,size,size);
+
+    gctx.globalCompositeOperation='destination-in';
+    gctx.drawImage(mask,0,0);
+
+    gaborCache[key]=off;
+    return off;
+}
+
+function drawGabor(context,x,y,size,angle,freq,contrast){
+    const img = makeGabor(size,angle,freq,contrast);
+    context.drawImage(img,x-size/2,y-size/2);
+}
+
+// ---------- Game init ----------
+function initGame(){
+    patches.length = 0;
+    const cols = 4, rows = 5;
+    const paddingX = w * 0.15;
+    const paddingY = h * 0.15;
+    const stepX = (w - paddingX*2)/(cols-1);
+    const stepY = (h - paddingY*2)/(rows-1);
+    const size = getPatchSize();
+    const freq = 0.35 * (size/60); // sizeに応じて周波数調整
+    const contrast = parseFloat(contrastRange.value);
+
+    if(currentMode === 'match'){
+        targetAngle = baseAngles[Math.floor(Math.random()*baseAngles.length)];
+        targetUI.style.display='block';
+        tCtx.clearRect(0,0,tCanvas.width,tCanvas.height);
+        drawGabor(tCtx,tCanvas.width/2,tCanvas.height/2,60,targetAngle,freq,contrast);
+    }else{
+        targetUI.style.display='none';
+    }
+
+    const oddIdx = Math.floor(Math.random()*(cols*rows));
+    const baseAngle = baseAngles[Math.floor(Math.random()*baseAngles.length)];
+    const oddAngle = baseAngle + Math.PI/2;
+
+    for(let i=0;i<cols*rows;i++){
+        let ang;
+        if(currentMode==='search'){
+            ang = (i===oddIdx)? oddAngle : baseAngle;
+        }else if(currentMode==='match'){
+            ang = baseAngles[Math.floor(Math.random()*baseAngles.length)];
+        }else{
+            ang = baseAngles[Math.floor(Math.random()*baseAngles.length)];
+        }
+        const x = paddingX + (i%cols)*stepX;
+        const y = paddingY + Math.floor(i/cols)*stepY;
+
+        const isTarget =
+            (currentMode==='search' && i===oddIdx) ||
+            (currentMode==='match' && Math.abs(ang-targetAngle)<0.001);
+
+        patches.push({
+            x,y,angle:ang,size,
+            isTarget,
+            found:false,
+            freq,contrast
+        });
+    }
+
+    // Match: ensure reasonable number of targets (3〜6)
+    if(currentMode==='match'){
+        let currentTargets = patches.filter(p=>p.isTarget).length;
+        if(currentTargets < 3){
+            const others = patches.filter(p=>!p.isTarget);
+            while(currentTargets < 3 && others.length){
+                const idx = Math.floor(Math.random()*others.length);
+                const p = others.splice(idx,1)[0];
+                p.angle = targetAngle;
+                p.isTarget = true;
+                currentTargets++;
+            }
+        }else if(currentTargets>6){
+            const targets = patches.filter(p=>p.isTarget);
+            while(currentTargets>6 && targets.length){
+                const idx = Math.floor(Math.random()*targets.length);
+                const p = targets.splice(idx,1)[0];
+                p.isTarget=false;
+                currentTargets--;
+            }
+        }
+    }
+    updateInstruction();
+}
+
+// ---------- Instruction ----------
+function updateInstruction(){
+    if(currentMode==='match'){
+        instructDisp.textContent = 'ターゲットと同じ向きのパッチを全てタップしてください。';
+    }else if(currentMode==='search'){
+        instructDisp.textContent = '1つだけ向きが違うパッチをタップしてください。';
+    }else if(currentMode==='breath'){
+        instructDisp.textContent = '画面中央のガボールを見つめ、拡大・縮小に合わせてピントを合わせてください。';
+    }else{
+        instructDisp.textContent = '動くガボールを目だけで追い続けてください（頭は動かさない）。';
+    }
+}
+
+// ---------- Animation loop ----------
+function loop(){
+    if(!active) return;
+    ctx.fillStyle = (document.body.classList.contains('light')) ? '#f0f0f0' : '#000000';
+    ctx.fillRect(0,0,w,h);
+    tick += 0.02;
+
+    if(currentMode==='match' || currentMode==='search'){
+        patches.forEach(p=>{
+            if(!p.found){
+                drawGabor(ctx,p.x,p.y,p.size,p.angle,p.freq,p.contrast);
+            }else{
+                // found onesは薄く表示
+                const c = p.contrast*0.25;
+                drawGabor(ctx,p.x,p.y,p.size,p.angle,p.freq,c);
+            }
+        });
+    }else if(currentMode==='breath'){
+        const size = getPatchSize()*1.8 + Math.sin(tick)*getPatchSize()*0.9;
+        const freqBase = 0.32*(size/60);
+        drawGabor(ctx,w/2,h/2,size,0,freqBase,parseFloat(contrastRange.value));
+    }else if(currentMode==='flow'){
+        const size = getPatchSize()*1.4;
+        const x = w/2 + Math.sin(tick)*w*0.35;
+        const y = h/2 + Math.cos(tick*0.8)*h*0.28;
+        drawGabor(ctx,x,y,size,tick,0.28*(size/60),parseFloat(contrastRange.value));
+    }
+
+    ani = requestAnimationFrame(loop);
+}
+
+// ---------- Pointer handling ----------
+canvas.addEventListener('pointerdown', e=>{
+    if(!active || (currentMode!=='match' && currentMode!=='search')) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left);
+    const my = (e.clientY - rect.top);
+
+    let hit = null;
+    for(const p of patches){
+        const dist = Math.hypot(p.x-mx,p.y-my);
+        if(dist < p.size*0.7){ // 少し広め
+            hit = p;
+            break;
+        }
+    }
+    if(!hit) return;
+
+    if(hit.isTarget && !hit.found){
+        hit.found = true;
+        score += 10;
+        scoreDisp.textContent = score.toString();
+        showFeedback('正解 +10',true);
+
+        const remaining = patches.filter(p=>p.isTarget && !p.found).length;
+        if(currentMode==='search' || remaining===0){
+            instructDisp.textContent = '正解です。次のセットに進みます。';
+            // 正解位置を2秒ハイライト
+            highlightTargets();
+            setTimeout(initGame,800);
+        }
+    }else if(!hit.isTarget){
+        score = Math.max(0, score-5);
+        scoreDisp.textContent = score.toString();
+        showFeedback('不正解 -5',false);
+        instructDisp.textContent = '違う向きです。黄色枠をよく見てください。';
+        highlightTargets();
+        setTimeout(updateInstruction,1200);
+    }
+});
+
+// highlight correct ones for feedback
+function highlightTargets(){
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffd740';
+    patches.forEach(p=>{
+        if(p.isTarget){
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,p.size*0.8,0,Math.PI*2);
+            ctx.stroke();
+        }
+    });
+    ctx.restore();
+}
+
+// ---------- Mode switching ----------
+modeBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+        modeBtns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        if(active) initGame();
+        else instructDisp.textContent = '「トレーニング開始」を押してください。';
+    });
+});
+
+// ---------- Timer / session ----------
+function updateTimer(){
+    const elapsed = Math.floor((Date.now()-startTime)/1000);
+    const remain = Math.max(0, duration-elapsed);
+    const m = String(Math.floor(remain/60)).padStart(2,'0');
+    const s = String(remain%60).padStart(2,'0');
+    timerDisp.textContent = `${m}:${s}`;
+    if(remain===0){
+        alert(`トレーニング終了
+スコア: ${score}`);
+        stopGame();
+    }
+}
+
+function startGame(){
+    active = true;
+    score = 0;
+    scoreDisp.textContent = '0';
+    tick = 0;
+    startTime = Date.now();
+    startBtn.textContent = '一時停止';
+    startBtn.style.backgroundColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--danger');
+    initGame();
+    loop();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer,1000);
+}
+function pauseGame(){
+    active=false;
+    cancelAnimationFrame(ani);
+    clearInterval(timerInterval);
+    startBtn.textContent='再開';
+    startBtn.style.backgroundColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--success');
+}
+function stopGame(){
+    active=false;
+    clearInterval(timerInterval);
+    cancelAnimationFrame(ani);
+    startBtn.textContent='トレーニング開始';
+    startBtn.style.backgroundColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--success');
+    targetUI.style.display='none';
+    ctx.clearRect(0,0,w,h);
+}
+startBtn.addEventListener('click', ()=>{
+    if(!active && timerInterval){ // paused
+        active=true;
+        startBtn.textContent='一時停止';
+        startBtn.style.backgroundColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--danger');
+        startTime = Date.now() - (180 - parseInt(timerDisp.textContent.slice(0,2))*60
+                                    - parseInt(timerDisp.textContent.slice(3))) * 1000;
+        loop();
+        timerInterval = setInterval(updateTimer,1000);
+    }else if(!active){
+        startGame();
+        storedCount++;
+        localStorage.setItem('gabor_sessions_'+todaysDateKey, String(storedCount));
+        sessionCountEl.textContent = storedCount.toString();
+    }else{
+        pauseGame();
+    }
+});
+resetBtn.addEventListener('click', ()=>{
+    stopGame();
+    score = 0;
+    scoreDisp.textContent='0';
+    timerDisp.textContent='03:00';
+    instructDisp.textContent='モードを選んで「トレーニング開始」を押してください。';
+});
+
+// ---------- Clinical UI ----------
+bgSelect.addEventListener('change', ()=>{
+    if(bgSelect.value==='light'){
+        document.body.classList.add('light');
+    }else{
+        document.body.classList.remove('light');
+    }
+});
+
+// ---------- Resize ----------
+function handleResize(){
+    setCanvasSize();
+    if(active){
+        initGame();
+    }else{
+        ctx.clearRect(0,0,w,h);
+    }
+}
+window.addEventListener('resize', handleResize);
+handleResize();
+</script>
+</body>
+</html>
