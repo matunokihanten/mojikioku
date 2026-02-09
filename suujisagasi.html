@@ -328,17 +328,35 @@
       }
     }
 
-    // ヒントボタン：重複している数字のセルを一時的にハイライト
+    // ヒントボタン：重複している数字のセルのうち「片方だけ」を一時的にハイライト
     function showHint() {
       if (isProcessing) return;
+
+      // 既にヒントでハイライトされているセルがあれば先に解除
+      const prevHints = document.querySelectorAll('.cell.hint');
+      prevHints.forEach(h => h.classList.remove('hint'));
+
+      // 候補を収集（重複数字で、削除済みやマッチ済みでないセル）
+      const candidates = [];
       const cells = document.querySelectorAll('.cell');
       cells.forEach(cell => {
-        if (cell.textContent === String(duplicateNumber)) {
-          cell.classList.add('hint');
+        if (cell.textContent === String(duplicateNumber) && !cell.classList.contains('removed') && !cell.classList.contains('matched')) {
+          candidates.push(cell);
         }
       });
+
+      if (candidates.length === 0) {
+        // もし候補がなければ（既にマッチ済みなど）何もしない
+        return;
+      }
+
+      // 候補のうちランダムに1つだけハイライト
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      pick.classList.add('hint');
+
+      // 1秒後にハイライトを解除
       setTimeout(() => {
-        cells.forEach(cell => cell.classList.remove('hint'));
+        pick.classList.remove('hint');
       }, 1000);
     }
 
