@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>瞬間オーダー記憶 - 松之木飯店ver 5.0 (完全版)</title>
+    <title>記憶の宮殿トレーニング - 松之木飯店ver 6.0</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -19,16 +19,16 @@
         }
         .game-container {
             background: white;
-            padding: 20px 30px;
+            padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 600px;
+            width: 95%;
+            max-width: 800px; /* 横幅を少し広げました */
             position: relative;
         }
         h1 { margin: 10px 0 20px 0; color: #d32f2f; font-size: 24px; }
         
-        /* 設定エリアのデザイン */
+        /* 設定エリア */
         .settings-area {
             background-color: #fff3e0;
             padding: 15px;
@@ -47,19 +47,48 @@
             background: white;
         }
 
-        /* ゲーム画面要素 */
-        #display-area {
-            font-size: 50px;
+        /* 記憶の宮殿（場所）表示エリア */
+        #palace-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
             margin: 20px 0;
-            min-height: 80px;
-            letter-spacing: 5px;
-            word-break: keep-all;
+            width: 100%;
         }
+
+        .location-card {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        
+        .location-name {
+            font-size: 14px;
+            color: #666;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .food-icon {
+            font-size: 70px; /* アイコン巨大化 */
+            line-height: 1.1;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+        }
+
+        /* ボタン類 */
         .btn {
             background-color: #e60012;
             color: white;
             border: none;
-            padding: 15px 40px;
+            padding: 15px 30px;
             font-size: 18px;
             border-radius: 30px;
             cursor: pointer;
@@ -71,17 +100,19 @@
         .btn:active { transform: translateY(0); }
         
         .btn-blue { background-color: #1976d2; } 
-        .btn-green { background-color: #43a047; } /* 次の質問へボタン */
-        .btn-gray { background-color: #78909c; padding: 10px 20px; font-size: 14px;} /* 終了ボタン */
+        .btn-green { background-color: #43a047; }
+        .btn-gray { background-color: #78909c; padding: 10px 20px; font-size: 14px;}
         
         .btn-option {
             background-color: #ff9800;
             width: 100%;
             margin: 8px 0;
             font-size: 20px;
+            text-align: left;
+            padding-left: 20px;
         }
 
-        #message { font-size: 20px; font-weight: bold; color: #555; min-height: 30px; margin-bottom: 10px;}
+        #message { font-size: 22px; font-weight: bold; color: #555; min-height: 35px; margin-bottom: 10px;}
         #round-info { color: #888; font-size: 14px; margin-bottom: 5px; }
         #sub-question-info { color: #e60012; font-weight:bold; font-size: 16px; margin-bottom: 5px; }
 
@@ -92,14 +123,14 @@
         .score-text { font-size: 40px; color: #e60012; font-weight: bold; margin: 20px 0; }
         
         /* アニメーション */
-        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .pop-anim { animation: pop 0.3s ease; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <h1 id="title">🍜 瞬間オーダー記憶 v5.0</h1>
+    <h1 id="title">🏰 記憶の宮殿トレーニング v6.0</h1>
 
     <div id="settings-panel" class="settings-area">
         <div class="settings-row">
@@ -110,28 +141,25 @@
             </select>
         </div>
         <div class="settings-row">
-            <label>🔥 難易度 (アイコン数):</label>
+            <label>🔥 広さ (場所の数):</label>
             <select id="level-select">
-                <option value="easy">初級 (3個 / 5秒)</option>
-                <option value="normal" selected>中級 (5個 / 3秒)</option>
-                <option value="hard">上級 (7個 / 2秒)</option>
-                <option value="god">神級 (9個 / 1秒)</option>
+                <option value="easy">狭い店 (3箇所 / 5秒)</option>
+                <option value="normal" selected>普通のお店 (5箇所 / 3秒)</option>
+                <option value="hard">大繁盛店 (7箇所 / 2秒)</option>
+                <option value="god">王宮レストラン (9箇所 / 1秒)</option>
             </select>
         </div>
         <div class="settings-row">
             <label>🧠 1オーダーあたりの質問数:</label>
             <select id="questions-per-order">
                 <option value="1">1問だけ</option>
-                <option value="2">2問連続</option>
-                <option value="3">3問連続</option>
+                <option value="3" selected>3問連続 (おすすめ)</option>
                 <option value="5">5問連続 (ハード)</option>
-                <option value="10">10問連続 (超・鬼モード)</option>
             </select>
         </div>
         <div class="settings-row">
             <label>🔢 全体のラウンド数:</label>
             <select id="round-select">
-                <option value="1">1ラウンド</option>
                 <option value="3">3ラウンド</option>
                 <option value="5" selected>5ラウンド</option>
             </select>
@@ -146,7 +174,7 @@
 
     <div id="message">設定を選んでスタート！</div>
 
-    <div id="display-area" class="hidden"></div>
+    <div id="palace-grid" class="hidden"></div>
 
     <div id="controls">
         <button id="start-btn" class="btn" onclick="startGame()">ゲームスタート！</button>
@@ -156,12 +184,12 @@
     </div>
 
     <div id="quiz-area" class="hidden">
-        <div id="question-text" style="font-size: 22px; margin-bottom: 20px; font-weight:bold;"></div>
+        <div id="question-text" style="font-size: 24px; margin-bottom: 20px; font-weight:bold; color:#1565c0;"></div>
         <div id="options-container"></div>
     </div>
 
     <div id="result-area" class="hidden">
-        <h2>🎉 ゲーム終了！ 🎉</h2>
+        <h2>🎉 トレーニング終了！</h2>
         <div class="score-text" id="final-score"></div>
         <div id="comment" style="font-size:18px; color:#555;"></div>
         <button class="btn" onclick="resetToTitle()">タイトルに戻る</button>
@@ -169,16 +197,24 @@
 </div>
 
 <script>
-    // 🥟 完全復活：飲食店・料理アイコン (25種類)
+    // 🥟 メニューアイコン
     const menuItems = [
         '🍜', '🥟', '🍚', '🍺', '🥗', '🍦', '🥢', '🥩', 
         '🍣', '🍤', '🍱', '🍛', '🍵', '🍶', '🍔', '🍟', 
         '🍕', '🍝', '🥪', '🍰', '☕', '🍳', '🥓', '🍞', '🍮'
     ];
+
+    // 🏰 記憶の場所（パレス）の定義：順番が重要です
+    const palaceLocations = [
+        "① 入口", "② カウンター左", "③ カウンター右", 
+        "④ 1番テーブル", "⑤ 2番テーブル", "⑥ 3番テーブル", 
+        "⑦ レジ", "⑧ 厨房", "⑨ 出前バイク"
+    ];
     
     // ゲーム状態変数
-    let currentOrder = [];
+    let currentOrderMap = []; // { loc: "入口", item: "🍜" } の配列
     let correctAnswer = "";
+    let correctValue = ""; // 内部比較用
     let timerInterval = null;
     
     let currentRound = 0;
@@ -190,7 +226,7 @@
     let totalQuestionsAsked = 0;
     let isGameActive = false;
     
-    let askedQuestionsLog = []; // 重複質問防止用
+    let askedQuestionsLog = [];
 
     // 🎮 ゲーム開始
     function startGame() {
@@ -212,7 +248,7 @@
         nextRound();
     }
 
-    // 🆕 新しいオーダー（ラウンド）の開始
+    // 🆕 新しいオーダー（ラウンド）
     function nextRound() {
         currentRound++;
         
@@ -221,19 +257,17 @@
             return;
         }
 
-        // 変数リセット
         currentQuestionCount = 0;
-        askedQuestionsLog = []; // 質問履歴クリア
+        askedQuestionsLog = [];
 
-        // UIリセット
         document.getElementById('round-info').innerText = `第 ${currentRound} / ${maxRounds} ラウンド`;
         document.getElementById('sub-question-info').classList.add('hidden');
         document.getElementById('quiz-area').classList.add('hidden');
         document.getElementById('next-round-btn').classList.add('hidden');
-        document.getElementById('display-area').classList.remove('hidden');
+        document.getElementById('palace-grid').classList.remove('hidden');
         document.body.style.backgroundColor = "#f0f4f8";
 
-        // レベル・モード設定
+        // 設定読み込み
         const level = document.getElementById('level-select').value;
         const mode = document.getElementById('mode-select').value;
         
@@ -245,30 +279,49 @@
         else if (level === 'hard') { itemCount = 7; timeLimit = 2; }
         else if (level === 'god') { itemCount = 9; timeLimit = 1; }
 
-        // オーダー生成
-        currentOrder = [];
-        for (let i = 0; i < itemCount; i++) {
-            currentOrder.push(menuItems[Math.floor(Math.random() * menuItems.length)]);
+        // 🏰 パレス生成ロジック
+        currentOrderMap = [];
+        // ランダムにアイテムを選ぶ
+        let selectedItems = [];
+        for(let i=0; i<itemCount; i++) {
+             selectedItems.push(menuItems[Math.floor(Math.random() * menuItems.length)]);
         }
+        
+        // 場所とアイテムを紐付ける（ここが記憶の宮殿の肝）
+        const grid = document.getElementById('palace-grid');
+        grid.innerHTML = ""; // クリア
 
-        // 表示
-        document.getElementById('display-area').innerText = currentOrder.join(' ');
+        for (let i = 0; i < itemCount; i++) {
+            const locName = palaceLocations[i];
+            const item = selectedItems[i];
+            
+            // データ保存
+            currentOrderMap.push({ location: locName, item: item });
+
+            // カード生成
+            const card = document.createElement('div');
+            card.className = 'location-card';
+            card.innerHTML = `
+                <div class="location-name">${locName}</div>
+                <div class="food-icon">${item}</div>
+            `;
+            grid.appendChild(card);
+        }
 
         // モード別動作
         if (mode === 'manual') {
-            document.getElementById('message').innerText = "覚えたらボタンを押してね 👇";
+            document.getElementById('message').innerText = "場所と物をイメージして覚えて！👇";
             document.getElementById('manual-hide-btn').classList.remove('hidden');
         } else {
-            // タイムアタックモード復活！
             document.getElementById('manual-hide-btn').classList.add('hidden');
             let timeLeft = timeLimit;
-            document.getElementById('message').innerText = `残り ${timeLeft.toFixed(1)} 秒！`;
+            document.getElementById('message').innerText = `記憶タイム: 残り ${timeLeft.toFixed(1)} 秒`;
             
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 if(!isGameActive) { clearInterval(timerInterval); return; }
                 timeLeft -= 0.1;
-                document.getElementById('message').innerText = `残り ${Math.max(0, timeLeft).toFixed(1)} 秒！`;
+                document.getElementById('message').innerText = `記憶タイム: 残り ${Math.max(0, timeLeft).toFixed(1)} 秒`;
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     hideOrderAndStartQuizLoop();
@@ -277,110 +330,149 @@
         }
     }
 
-    // 🙈 オーダーを隠して、質問ループを開始
+    // 🙈 隠してクイズ開始
     function hideOrderAndStartQuizLoop() {
-        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('palace-grid').classList.add('hidden');
         document.getElementById('manual-hide-btn').classList.add('hidden');
-        
         nextSubQuestion(); 
     }
 
-    // ❓ 質問を生成・表示する（ループ内）
+    // ❓ 質問ループ
     function nextSubQuestion() {
         currentQuestionCount++;
         document.body.style.backgroundColor = "#f0f4f8"; 
         document.getElementById('next-q-btn').classList.add('hidden'); 
-        document.getElementById('message').innerText = "問題！";
+        document.getElementById('message').innerText = "イメージを思い出して！";
 
-        // UI表示更新
         const subInfo = document.getElementById('sub-question-info');
         if (questionsPerOrder > 1) {
             subInfo.classList.remove('hidden');
             subInfo.innerText = `質問 ${currentQuestionCount} / ${questionsPerOrder}`;
         }
 
-        generateQuiz();
+        generatePalaceQuiz();
     }
 
-    // 🎲 クイズ生成ロジック（改良版：10問連続対応）
-    function generateQuiz() {
+    // 🎲 記憶の宮殿専用クイズ生成
+    function generatePalaceQuiz() {
         const questionText = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
+        // クイズタイプをランダム決定
+        // 1. 場所クイズ: 「[場所] にあったのは？」 (難易度:低)
+        // 2. 逆引きクイズ: 「[アイテム] があった場所は？」 (難易度:高)
+        // 3. 個数クイズ: (アクセントとして残す)
+        
+        const r = Math.random();
+        let quizType = 'LOCATION_TO_ITEM'; // Default
+        
+        if (r < 0.4) quizType = 'LOCATION_TO_ITEM'; 
+        else if (r < 0.8) quizType = 'ITEM_TO_LOCATION';
+        else quizType = 'COUNT';
+
         let validQuizFound = false;
-        let retryCount = 0;
-        const maxRetries = 30; // 試行回数上限
+        let retry = 0;
 
-        // 有効なクイズが見つかるまでループ
-        while (!validQuizFound && retryCount < maxRetries) {
-            retryCount++;
-            const quizType = Math.random() > 0.5 ? 'COUNT' : 'POSITION';
-            let quizKey = ""; 
-
-            if (quizType === 'COUNT') {
-                const targetItem = menuItems[Math.floor(Math.random() * menuItems.length)];
-                quizKey = `COUNT-${targetItem}`;
-
-                if (!askedQuestionsLog.includes(quizKey)) {
-                    askedQuestionsLog.push(quizKey);
+        while (!validQuizFound && retry < 20) {
+            retry++;
+            
+            if (quizType === 'LOCATION_TO_ITEM') {
+                // 場所 → 物
+                const target = currentOrderMap[Math.floor(Math.random() * currentOrderMap.length)];
+                const key = `L2I-${target.location}`;
+                
+                if (!askedQuestionsLog.includes(key)) {
+                    askedQuestionsLog.push(key);
+                    questionText.innerText = `「${target.location}」に あったのは？`;
+                    correctAnswer = target.item;
+                    correctValue = target.item;
                     
-                    const count = currentOrder.filter(item => item === targetItem).length;
-                    correctAnswer = count;
-                    questionText.innerText = `「${targetItem}」は何個あった？`;
-                    
-                    let options = [count, count + 1, Math.max(0, count - 1), count + 2].slice(0, 3);
-                    options = [...new Set(options)].sort(() => Math.random() - 0.5);
-                    options.forEach(opt => createButton(opt, opt));
+                    let options = [target.item];
+                    while(options.length < 3) {
+                        const dummy = menuItems[Math.floor(Math.random() * menuItems.length)];
+                        if(!options.includes(dummy)) options.push(dummy);
+                    }
+                    createButtons(options, false); // false = アイコン表示
                     validQuizFound = true;
                 }
-
-            } else {
-                const index = Math.floor(Math.random() * currentOrder.length);
-                quizKey = `POS-${index}`;
-
-                if (!askedQuestionsLog.includes(quizKey)) {
-                    askedQuestionsLog.push(quizKey);
+            } 
+            else if (quizType === 'ITEM_TO_LOCATION') {
+                // 物 → 場所
+                const target = currentOrderMap[Math.floor(Math.random() * currentOrderMap.length)];
+                const key = `I2L-${target.location}`; // 場所を一意のキーにする
+                
+                if (!askedQuestionsLog.includes(key)) {
+                    askedQuestionsLog.push(key);
+                    questionText.innerText = `「${target.item}」が 置いてあった場所は？`;
+                    correctAnswer = target.location;
+                    correctValue = target.location;
                     
-                    correctAnswer = currentOrder[index];
-                    questionText.innerText = `${index + 1}番目にあったのは何？`;
-                    
-                    let options = [correctAnswer];
-                    while (options.length < 3) {
-                        const dummy = menuItems[Math.floor(Math.random() * menuItems.length)];
-                        if (!options.includes(dummy)) options.push(dummy);
+                    let options = [target.location];
+                    // ダミーの場所を作成（現在のオーダーに含まれない場所も含める）
+                    while(options.length < 3) {
+                        const dummy = palaceLocations[Math.floor(Math.random() * palaceLocations.length)];
+                        if(!options.includes(dummy)) options.push(dummy);
                     }
-                    options.sort(() => Math.random() - 0.5);
-                    options.forEach(opt => createButton(opt, opt));
+                    createButtons(options, true); // true = 文字表示
                     validQuizFound = true;
                 }
             }
+            else {
+                // 個数（箸休め）
+                 const targetItem = currentOrderMap[Math.floor(Math.random() * currentOrderMap.length)].item;
+                 const key = `CNT-${targetItem}`;
+                 
+                 if (!askedQuestionsLog.includes(key)) {
+                    askedQuestionsLog.push(key);
+                    const count = currentOrderMap.filter(d => d.item === targetItem).length;
+                    questionText.innerText = `全体で「${targetItem}」は いくつあった？`;
+                    correctValue = count; // 数値
+                    correctAnswer = count.toString(); // 表示用文字（使わないかも）
+                    
+                    let options = [count, count+1, Math.max(0, count-1)];
+                    options = [...new Set(options)]; 
+                    while(options.length < 3) {
+                         let d = Math.floor(Math.random() * 5);
+                         if(!options.includes(d)) options.push(d);
+                    }
+                    createButtons(options, true);
+                    validQuizFound = true;
+                 }
+            }
+        }
+
+        // フォールバック（問題切れの場合）
+        if (!validQuizFound) {
+            const target = currentOrderMap[0];
+            questionText.innerText = `(サービス)「${target.location}」にあったのは？`;
+            correctValue = target.item;
+            createButtons([target.item, menuItems[0], menuItems[1]], false);
         }
         
-        // 10問連続などで「もう聞くことないよ！」となった場合のフォールバック（重複を許可して出題）
-        if (!validQuizFound) {
-            // シンプルなランダム問題（ログ確認なし）
-            const index = Math.floor(Math.random() * currentOrder.length);
-            correctAnswer = currentOrder[index];
-            questionText.innerText = `(サービス問題) ${index + 1}番目にあったのは何？`;
-            let options = [correctAnswer];
-            while (options.length < 3) {
-                const dummy = menuItems[Math.floor(Math.random() * menuItems.length)];
-                if (!options.includes(dummy)) options.push(dummy);
-            }
-            options.sort(() => Math.random() - 0.5);
-            options.forEach(opt => createButton(opt, opt));
-        }
-
         document.getElementById('quiz-area').classList.remove('hidden');
     }
 
-    function createButton(text, value) {
-        const btn = document.createElement('button');
-        btn.innerText = text;
-        btn.className = 'btn btn-option';
-        btn.onclick = () => checkAnswer(value);
-        document.getElementById('options-container').appendChild(btn);
+    function createButtons(options, isText) {
+        // シャッフル
+        options.sort(() => Math.random() - 0.5);
+        
+        const container = document.getElementById('options-container');
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-option';
+            // アイコンのみの場合は大きく表示
+            if (!isText && typeof opt === 'string' && opt.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]/)) {
+                btn.style.fontSize = "40px";
+                btn.style.textAlign = "center";
+                btn.innerText = opt;
+            } else {
+                btn.style.fontSize = "20px";
+                btn.innerText = opt;
+            }
+            btn.onclick = () => checkAnswer(opt);
+            container.appendChild(btn);
+        });
     }
 
     // ✅ 正解判定
@@ -393,28 +485,25 @@
         void container.offsetWidth;
         container.classList.add('pop-anim');
 
-        if (userAnswer === correctAnswer) {
+        // 正誤判定 (型を合わせる)
+        if (String(userAnswer) === String(correctValue)) {
             totalScore++;
-            message.innerText = "🎉 正解！！";
+            message.innerText = "🎉 正解！！ナイス記憶！";
             document.body.style.backgroundColor = "#c8e6c9";
         } else {
-            message.innerText = `😢 ブッブー... 正解は「${correctAnswer}」`;
+            message.innerText = `😢 残念... 正解は「${correctValue}」でした`;
             document.body.style.backgroundColor = "#ffcdd2";
         }
 
         document.getElementById('quiz-area').classList.add('hidden');
 
-        // まだ質問が残っているか？
         if (currentQuestionCount < questionsPerOrder) {
-            // 次の「質問」へボタンを表示
             const nextBtn = document.getElementById('next-q-btn');
             nextBtn.classList.remove('hidden');
             nextBtn.innerText = `次の質問へ (${currentQuestionCount}/${questionsPerOrder})`;
         } else {
-            // 次の「ラウンド」へボタンを表示
             const nextRndBtn = document.getElementById('next-round-btn');
             nextRndBtn.classList.remove('hidden');
-            
             if (currentRound >= maxRounds) {
                 nextRndBtn.innerText = "結果を見る 🏆";
             } else {
@@ -423,31 +512,26 @@
         }
     }
 
-    // 🏆 完全復活：結果発表画面
+    // 🏆 結果発表
     function showResults() {
         isGameActive = false;
         document.getElementById('game-status').classList.add('hidden');
-        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('palace-grid').classList.add('hidden');
         document.getElementById('controls').classList.add('hidden'); 
         
-        const resultArea = document.getElementById('result-area');
-        resultArea.classList.remove('hidden');
-        
+        document.getElementById('result-area').classList.remove('hidden');
         document.getElementById('final-score').innerText = `${totalQuestionsAsked}問中、${totalScore}問正解！`;
         
-        // 評価コメント機能復活！
         const rate = totalScore / totalQuestionsAsked;
         let comment = "";
-        if (rate === 1) comment = "記憶の神様ですか！？完璧です！😇✨";
-        else if (rate >= 0.8) comment = "素晴らしい！店長級の能力です！👨‍🍳🔥";
-        else if (rate >= 0.6) comment = "なかなかやりますね！その調子！👍";
-        else if (rate >= 0.4) comment = "ドンマイ！次はもっといけるはず！💪";
-        else comment = "まずは「初級」から練習してみましょう！🔰";
+        if (rate === 1) comment = "🧠 記憶の宮殿マスター！！脳が輝いています！✨";
+        else if (rate >= 0.8) comment = "素晴らしい空間把握能力！その調子です！🗺️";
+        else if (rate >= 0.6) comment = "「場所」と「物」の結びつけができています！👍";
+        else comment = "場所のイメージを強く思い浮かべるのがコツです！🏠";
         
         document.getElementById('comment').innerText = comment;
     }
 
-    // 🚪 復活：ゲーム終了ボタン機能
     function quitGame() {
         clearInterval(timerInterval);
         isGameActive = false;
@@ -458,7 +542,7 @@
         document.getElementById('result-area').classList.add('hidden');
         document.getElementById('game-status').classList.add('hidden');
         document.getElementById('quiz-area').classList.add('hidden');
-        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('palace-grid').classList.add('hidden');
         document.getElementById('next-q-btn').classList.add('hidden');
         document.getElementById('next-round-btn').classList.add('hidden');
         document.getElementById('manual-hide-btn').classList.add('hidden');
