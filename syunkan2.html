@@ -1,1 +1,486 @@
-<!DOCTYPE html><html lang="ja"><head>  <meta charset="UTF-8">  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>3Dメモリーゲーム - 進化版</title>  <style>    body {      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;      text-align: center;      margin: 0;      padding: 30px 0;      background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);      display: flex;      flex-direction: column;      align-items: center;      min-height: 100vh;      color: #333;    }    h1 {      color: #2c3e50;      margin-bottom: 20px;      font-size: 2.5em;      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);    }    #container {      background-color: #ffffff;      border-radius: 15px;      box-shadow: 0 10px 30px rgba(0,0,0,0.15);      padding: 30px;      display: flex;      flex-direction: column;      align-items: center;      width: 90%;      max-width: 600px;      box-sizing: border-box;      position: relative;    }    #levelDisplay {      font-size: 1.4em;      margin-bottom: 15px;      color: #555;      font-weight: bold;    }    #message {      font-size: 1.2em;      margin: 10px 0 20px 0;      height: 1.5em;      color: #444;      font-weight: 500;    }    #settings {        margin-bottom: 25px;        display: flex;        flex-wrap: wrap;        justify-content: center;        gap: 20px;        width: 100%;        padding: 10px 0;        border-top: 1px solid #eee;        border-bottom: 1px solid #eee;    }    #flashDurationSelector, #gameModeSelector {        display: flex;        flex-direction: column;        align-items: flex-start;        font-size: 0.95em;        color: #666;    }    #flashDurationSelector span, #gameModeSelector span {        font-weight: bold;        margin-bottom: 8px;        color: #333;    }    input[type="radio"] {        margin-right: 5px;    }    label {        margin-bottom: 4px;        cursor: pointer;    }    .grid {      width: 100%;      max-width: 400px;      margin: 20px auto;      display: grid;      /* 修正：パネル同士の隙間を確実に確保 */      grid-gap: 15px;       transform-style: preserve-3d;      /* 修正：パースを緩やかにして歪み（ぼやけ）を抑制 */      perspective: 1500px;       padding: 10px;    }    .cell {      width: 100%;      padding-top: 100%;      background-color: #e0e0e0;      border: none;      border-radius: 8px;      position: relative;      /* 修正：ぼやけ防止のためのアンチエイリアス処理 */      transition: background-color 0.3s ease-out, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease-out;      cursor: pointer;      box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.8) inset;      /* 修正：GPUレンダリングの安定化 */      transform: translate3d(0,0,0) rotateZ(0.01deg);      backface-visibility: hidden;      transform-origin: center center;      will-change: transform, background-color;    }    .cell:hover:not(.active):not(.correct):not(.wrong) {      /* 修正：隣のパネルに干渉しない程度の浮き上がり */      transform: translate3d(0, -2px, 15px) rotateZ(0.01deg);      box-shadow: 0 10px 20px rgba(0,0,0,0.25), 0 0 0 2px rgba(255,255,255,0.9) inset;    }    .cell.active {      background-color: #ffeb3b;      transform: translate3d(0, -5px, 40px) scale(1.02) rotateZ(0.01deg);      box-shadow: 0 0 25px 10px rgba(255,235,59,0.7), 0 15px 25px rgba(0,0,0,0.4);      z-index: 10;    }    .cell.correct {      background-color: #8bc34a;      /* 修正：回転角度を抑えて隣との接触を回避 */      transform: scale(1.05) rotateY(10deg) translate3d(0, 0, 20px);      box-shadow: 0 0 20px 8px rgba(139,195,74,0.6), 0 10px 15px rgba(0,0,0,0.3);      z-index: 10;    }    .cell.wrong {      background-color: #f44336;      transform: translate3d(0, 0, 0) rotateZ(0.01deg);      animation: shake 0.3s ease-in-out;      box-shadow: 0 0 15px 5px rgba(244,67,54,0.6), 0 5px 10px rgba(0,0,0,0.4);      z-index: 10;    }    @keyframes shake {      0% { transform: translate3d(0, 0, 0); }      25% { transform: translate3d(-4px, 0, 10px); }      50% { transform: translate3d(4px, 0, 0); }      75% { transform: translate3d(-4px, 0, 10px); }      100% { transform: translate3d(0, 0, 0); }    }    .cell-content {      position: absolute;      top: 0;      left: 0;      width: 100%;      height: 100%;      display: flex;      justify-content: center;      align-items: center;      font-size: 2em;      color: rgba(0,0,0,0.3);      font-weight: bold;    }    #controls {      margin-top: 25px;      display: flex;      gap: 15px;    }    button {      padding: 12px 25px;      font-size: 1.1em;      border: none;      border-radius: 8px;      cursor: pointer;      background-color: #3498db;      color: white;      transition: background-color 0.3s ease, transform 0.1s ease;      box-shadow: 0 4px 8px rgba(0,0,0,0.2);    }    button:hover {      background-color: #2980b9;      transform: translateY(-2px);      box-shadow: 0 6px 12px rgba(0,0,0,0.25);    }    button:active {      transform: translateY(0);      box-shadow: 0 2px 4px rgba(0,0,0,0.2);    }    button:disabled {        background-color: #cccccc;        cursor: not-allowed;        box-shadow: none;        transform: none;    }    @media (max-width: 600px) {        body { padding: 15px 0; }        h1 { font-size: 2em; }        #container { padding: 20px; }        #levelDisplay { font-size: 1.2em; }        #message { font-size: 1em; margin-bottom: 15px; }        #settings { flex-direction: column; align-items: center; gap: 15px; }        #flashDurationSelector, #gameModeSelector { align-items: center; }        .grid { grid-gap: 10px; max-width: 300px; }        button { padding: 10px 20px; font-size: 1em; }    }  </style></head><body>  <h1>メモリーゲーム</h1>  <div id="container">    <div id="levelDisplay">Level: 1 (グリッド: 2×2, 光る数: 2)</div>    <div id="message">準備ができました！スタートボタンを押してください。</div>    <div id="settings">      <div id="flashDurationSelector">        <span>マスが光る時間: </span>        <label><input type="radio" name="flashDuration" value="1000">1秒</label>        <label><input type="radio" name="flashDuration" value="2000">2秒</label>        <label><input type="radio" name="flashDuration" value="3000" checked>3秒</label>        <label><input type="radio" name="flashDuration" value="4000">4秒</label>        <label><input type="radio" name="flashDuration" value="5000">5秒</label>      </div>      <div id="gameModeSelector">        <span>ゲームモード: </span>        <label><input type="radio" name="gameMode" value="position" checked>位置記憶</label>        <label><input type="radio" name="gameMode" value="sequence">順番記憶</label>      </div>    </div>    <div id="grid" class="grid"></div>    <div id="controls">      <button id="startButton">スタート</button>      <button id="exitButton">終了</button>    </div>  </div>  <script>    let level = 1;    let gridSize = 2;    let patternCount = 2;    let cells = [];    let patternCells = [];    let userSelections = [];    let flashing = false;    let patternFinished = false;    let gameMode = 'position';    const grid = document.getElementById('grid');    const startButton = document.getElementById('startButton');    const exitButton = document.getElementById('exitButton');    const levelDisplay = document.getElementById('levelDisplay');    const message = document.getElementById('message');    const flashDurationRadios = document.getElementsByName("flashDuration");    const gameModeRadios = document.getElementsByName("gameMode");    function getFlashDuration() {      for (let i = 0; i < flashDurationRadios.length; i++) {        if (flashDurationRadios[i].checked) {          return parseInt(flashDurationRadios[i].value);        }      }      return 3000;    }    function updateDifficulty() {      gridSize = Math.min(2 + Math.floor((level - 1) / 3), 6);      patternCount = 2 + (level - 1);      if (patternCount > gridSize * gridSize) {        patternCount = gridSize * gridSize;      }      levelDisplay.textContent = `Level: ${level} (グリッド: ${gridSize}×${gridSize}, 光る数: ${patternCount})`;    }    function setupGrid() {      grid.innerHTML = "";      cells = [];      grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;      const totalCells = gridSize * gridSize;      for (let i = 0; i < totalCells; i++) {        const cell = document.createElement('div');        cell.className = 'cell';        cell.dataset.index = i;        cell.addEventListener('click', handleCellClick);        const inner = document.createElement('div');        inner.className = "cell-content";        cell.appendChild(inner);        grid.appendChild(cell);        cells.push(cell);      }      grid.style.pointerEvents = 'auto';      startButton.disabled = false;      exitButton.disabled = false;    }    function handleCellClick(event) {      if (!flashing && patternFinished) {        const cell = event.currentTarget;        const idx = parseInt(cell.dataset.index);        if (userSelections.includes(idx)) {          return;        }        userSelections.push(idx);        cell.classList.add('active');        if (userSelections.length === patternCount) {          checkAnswer();        } else if (gameMode === 'sequence') {          if (userSelections[userSelections.length - 1] !== patternCells[userSelections.length - 1]) {            flashing = true;            patternFinished = false;            userSelections.forEach(selectedIdx => {                if (patternCells.includes(selectedIdx)) {                    cells[selectedIdx].classList.add('correct');                } else {                    cells[selectedIdx].classList.add('wrong');                }            });            patternCells.forEach(patIdx => {                if (!userSelections.includes(patIdx)) {                    cells[patIdx].classList.add('wrong');                }            });            message.textContent = "残念！不正解です。";            setTimeout(() => {                if (level > 1) { level--; }                message.textContent = `間違い！レベルを${level}に下げます。`;                setTimeout(nextLevel, 1000);            }, 1500);            return;          }        }      }    }    function flashPattern() {      flashing = true;      patternFinished = false;      message.textContent = "よく見て、パターンを覚えてください……";      disableSettingsAndButtons(true);      const totalCells = gridSize * gridSize;      patternCells = [];      while (patternCells.length < patternCount) {        const r = Math.floor(Math.random() * totalCells);        if (!patternCells.includes(r)) {          patternCells.push(r);        }      }      if (gameMode === 'sequence') {        let delay = 0;        const flashDuration = getFlashDuration();        const pauseBetweenFlashes = 250;        patternCells.forEach((idx, i) => {          setTimeout(() => {            cells[idx].classList.add('active');          }, delay);          setTimeout(() => {            cells[idx].classList.remove('active');            if (i === patternCells.length - 1) {              flashing = false;              patternFinished = true;              message.textContent = "クリックしてパターンを選んでください";              disableSettingsAndButtons(false);            }          }, delay + flashDuration);          delay += flashDuration + pauseBetweenFlashes;        });      } else {        patternCells.forEach(idx => {          cells[idx].classList.add('active');        });        const flashDuration = getFlashDuration();        setTimeout(() => {          patternCells.forEach(idx => {            cells[idx].classList.remove('active');          });          flashing = false;          patternFinished = true;          message.textContent = "クリックしてパターンを選んでください";          disableSettingsAndButtons(false);        }, flashDuration);      }    }    function checkAnswer() {      patternFinished = false;      let isCorrect = false;      if (gameMode === 'sequence') {        isCorrect = userSelections.every((val, index) => val === patternCells[index]);      } else {        const sortedUser = [...userSelections].sort((a, b) => a - b);        const sortedPattern = [...patternCells].sort((a, b) => a - b);        isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedPattern);      }      userSelections.forEach(idx => {        if (patternCells.includes(idx)) {          cells[idx].classList.add('correct');          cells[idx].classList.remove('active');        } else {          cells[idx].classList.add('wrong');          cells[idx].classList.remove('active');        }      });      patternCells.forEach(idx => {        if (!userSelections.includes(idx)) {          cells[idx].classList.add('wrong');        }      });      setTimeout(() => {        if (isCorrect) {          message.textContent = "正解！ 次のレベルへ進みます！";          level++;        } else {          message.textContent = "残念！不正解です。";          if (level > 1) {            level--;          }        }        setTimeout(nextLevel, 1500);      }, 700);    }    function nextLevel() {      userSelections = [];      clearCellFeedback();      updateDifficulty();      setupGrid();      flashPattern();    }    function clearCellFeedback() {        cells.forEach(cell => {            cell.classList.remove('active', 'correct', 'wrong');        });    }    function exitGame() {      flashing = false;      patternFinished = false;      message.textContent = "ゲームを終了しました。お疲れ様でした！";      grid.style.pointerEvents = 'none';      userSelections = [];      clearCellFeedback();      disableSettingsAndButtons(false);      startButton.disabled = false;    }    function disableSettingsAndButtons(isDisabled) {        for (let i = 0; i < flashDurationRadios.length; i++) {            flashDurationRadios[i].disabled = isDisabled;        }        for (let i = 0; i < gameModeRadios.length; i++) {            gameModeRadios[i].disabled = isDisabled;        }        startButton.disabled = isDisabled;        exitButton.disabled = isDisabled ? true : false;    }    startButton.addEventListener('click', function() {      level = 1;      gameMode = document.querySelector('input[name="gameMode"]:checked').value;      updateDifficulty();      setupGrid();      userSelections = [];      grid.style.pointerEvents = 'auto';      flashPattern();    });    exitButton.addEventListener('click', function() {      exitGame();    });    document.addEventListener('DOMContentLoaded', () => {        updateDifficulty();        setupGrid();        exitGame();        message.textContent = "準備ができました！スタートボタンを押してください。";    });  </script></body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3Dメモリーゲーム - 完全版</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px 0;
+      background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+      /* スマホでのダブルタップ拡大防止 */
+      touch-action: manipulation;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-size: 2em;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    #container {
+      background-color: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 95%;
+      max-width: 500px; /* 少しコンパクトに */
+      box-sizing: border-box;
+    }
+    #levelDisplay {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      color: #555;
+      font-weight: bold;
+    }
+    #message {
+      font-size: 1.1em;
+      margin: 5px 0 15px 0;
+      min-height: 1.5em; /* 高さ確保でガタつき防止 */
+      color: #e65100;
+      font-weight: 600;
+    }
+    #settings {
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      width: 100%;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      font-size: 0.9em;
+    }
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .setting-group span {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .radio-group {
+      display: flex;
+      gap: 8px;
+    }
+    label { cursor: pointer; }
+    
+    .grid {
+      width: 100%;
+      max-width: 350px;
+      margin: 10px auto;
+      display: grid;
+      grid-gap: 10px;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+      padding: 10px;
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%;
+      background-color: #e0e0e0;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #bbb; /* 立体感をborder-bottomではなくbox-shadowで */
+      transition: transform 0.1s, background-color 0.2s, box-shadow 0.1s;
+      transform: translate3d(0,0,0);
+      /* スマホでのタップハイライトを消す */
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* PCのみホバー効果（スマホで誤作動しないように） */
+    @media (hover: hover) {
+      .cell:hover:not(.active):not(.correct):not(.wrong) {
+        transform: translateY(-2px);
+        background-color: #eaeaea;
+      }
+    }
+
+    /* クリック時の沈み込み演出 */
+    .cell:active {
+      transform: translateY(4px);
+      box-shadow: 0 0 0 #bbb;
+    }
+
+    .cell.active {
+      background-color: #ffeb3b;
+      box-shadow: 0 0 15px rgba(255, 235, 59, 0.8), 0 4px 0 #c7b62b;
+      transform: translateY(0);
+    }
+    .cell.correct {
+      background-color: #8bc34a;
+      box-shadow: 0 0 15px rgba(139, 195, 74, 0.8), 0 4px 0 #558b2f;
+    }
+    .cell.wrong {
+      background-color: #f44336;
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+
+    #controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+    }
+    button {
+      padding: 12px 30px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+    }
+    button:hover { background-color: #2980b9; transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+    button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    button:disabled { background-color: #b0bec5; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    /* 終了ボタンは赤系に */
+    #exitButton { background-color: #ef5350; }
+    #exitButton:hover { background-color: #d32f2f; }
+
+  </style>
+</head>
+<body>
+  <h1>🧩 メモリーゲーム 3D</h1>
+  <div id="container">
+    <div id="levelDisplay">Level: 1</div>
+    <div id="message">準備完了！</div>
+    
+    <div id="settings">
+      <div class="setting-group">
+        <span>光る時間 (位置記憶用)</span>
+        <div class="radio-group">
+          <label><input type="radio" name="flashDuration" value="1000">1秒</label>
+          <label><input type="radio" name="flashDuration" value="2000" checked>2秒</label>
+          <label><input type="radio" name="flashDuration" value="3000">3秒</label>
+        </div>
+      </div>
+      <div class="setting-group">
+        <span>モード</span>
+        <div class="radio-group">
+          <label><input type="radio" name="gameMode" value="position" checked>位置</label>
+          <label><input type="radio" name="gameMode" value="sequence">順番</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div id="controls">
+      <button id="startButton">スタート</button>
+      <button id="exitButton" disabled>終了</button>
+    </div>
+  </div>
+
+  <script>
+    let level = 1;
+    let gridSize = 2;
+    let patternCount = 2;
+    let cells = [];
+    let patternCells = [];
+    let userSelections = [];
+    let flashing = false;
+    let patternFinished = false; // 入力受付可能かどうか
+    let gameMode = 'position';
+    
+    // タイマー管理用配列 (バグ防止の要)
+    let timeouts = [];
+
+    const grid = document.getElementById('grid');
+    const startButton = document.getElementById('startButton');
+    const exitButton = document.getElementById('exitButton');
+    const levelDisplay = document.getElementById('levelDisplay');
+    const message = document.getElementById('message');
+    
+    // 安全なsetTimeout
+    function setGameTimeout(callback, delay) {
+      const id = setTimeout(callback, delay);
+      timeouts.push(id);
+      return id;
+    }
+
+    // 全タイマーの停止
+    function clearAllTimeouts() {
+      timeouts.forEach(id => clearTimeout(id));
+      timeouts = [];
+    }
+
+    function getFlashDuration() {
+      const radios = document.getElementsByName("flashDuration");
+      for (const radio of radios) {
+        if (radio.checked) return parseInt(radio.value);
+      }
+      return 2000;
+    }
+
+    function updateDifficulty() {
+        // 難易度調整を少しマイルドに
+        if (level <= 2) { gridSize = 2; patternCount = 2; }
+        else if (level <= 4) { gridSize = 3; patternCount = 3; }
+        else if (level <= 6) { gridSize = 3; patternCount = 4; }
+        else if (level <= 8) { gridSize = 4; patternCount = 5; }
+        else if (level <= 10) { gridSize = 4; patternCount = 6; }
+        else { gridSize = 5; patternCount = level - 4; }
+
+        // グリッドサイズ上限
+        gridSize = Math.min(gridSize, 5); 
+        // パターン数がマス数を超えないように
+        patternCount = Math.min(patternCount, gridSize * gridSize);
+
+        levelDisplay.textContent = `Level: ${level} (グリッド: ${gridSize}×${gridSize} | 覚える数: ${patternCount})`;
+    }
+
+    function setupGrid() {
+      grid.innerHTML = "";
+      cells = [];
+      grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      
+      const totalCells = gridSize * gridSize;
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        // タッチデバイス対応のため 'pointerdown' も考慮したいが、clickで統一しCSSでtouch-action制御
+        cell.addEventListener('click', handleCellClick);
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+      
+      // グリッド全体のクリック無効化（初期状態）
+      grid.style.pointerEvents = 'none';
+    }
+
+    function handleCellClick(event) {
+      if (!patternFinished || flashing) return;
+
+      const cell = event.currentTarget;
+      const idx = parseInt(cell.dataset.index);
+
+      // 既に押した場所の重複チェック（位置記憶モードの場合のみ）
+      if (gameMode === 'position' && userSelections.includes(idx)) return;
+
+      userSelections.push(idx);
+      cell.classList.add('active'); // 黄色く光らせる
+
+      // --- 順番記憶モードの即時判定 ---
+      if (gameMode === 'sequence') {
+        const currentStep = userSelections.length - 1;
+        
+        // 間違えた時点でアウト
+        if (userSelections[currentStep] !== patternCells[currentStep]) {
+          patternFinished = false; // 入力ロック
+          cell.classList.remove('active');
+          cell.classList.add('wrong');
+          message.textContent = "不正解...";
+          handleWrongAnswer();
+          return;
+        }
+
+        // 1つ正解の演出（すぐ消す）
+        setGameTimeout(() => {
+             cell.classList.remove('active');
+             cell.classList.add('correct'); // 一瞬緑にする
+        }, 100);
+        setGameTimeout(() => {
+             cell.classList.remove('correct');
+        }, 300);
+      }
+
+      // --- 全クリア判定 ---
+      if (userSelections.length === patternCount) {
+        checkAnswer();
+      }
+    }
+
+    function flashPattern() {
+      flashing = true;
+      patternFinished = false;
+      grid.style.pointerEvents = 'none'; // 操作禁止
+      message.textContent = "パターンを覚えて！";
+      
+      // パターン生成
+      const totalCells = gridSize * gridSize;
+      patternCells = [];
+      
+      if (gameMode === 'position') {
+        // 位置記憶: 重複なし
+        while (patternCells.length < patternCount) {
+          const r = Math.floor(Math.random() * totalCells);
+          if (!patternCells.includes(r)) patternCells.push(r);
+        }
+      } else {
+        // 順番記憶: 重複ありOK
+        for(let i=0; i<patternCount; i++) {
+            patternCells.push(Math.floor(Math.random() * totalCells));
+        }
+      }
+
+      // 光らせる処理
+      if (gameMode === 'sequence') {
+        let delay = 500;
+        const seqFlashTime = 600; // 順番記憶は固定テンポで光らせる(UX向上)
+        const seqPause = 200;
+
+        patternCells.forEach((idx, i) => {
+          setGameTimeout(() => cells[idx].classList.add('active'), delay);
+          setGameTimeout(() => {
+            cells[idx].classList.remove('active');
+            if (i === patternCells.length - 1) {
+              finishFlashing();
+            }
+          }, delay + seqFlashTime);
+          delay += seqFlashTime + seqPause;
+        });
+      } else {
+        // 位置記憶モード
+        setGameTimeout(() => {
+            patternCells.forEach(idx => cells[idx].classList.add('active'));
+        }, 500);
+
+        const duration = getFlashDuration();
+        setGameTimeout(() => {
+          patternCells.forEach(idx => cells[idx].classList.remove('active'));
+          finishFlashing();
+        }, 500 + duration);
+      }
+    }
+
+    function finishFlashing() {
+      flashing = false;
+      patternFinished = true;
+      grid.style.pointerEvents = 'auto'; // 操作許可
+      message.textContent = "同じ場所をクリック！";
+    }
+
+    function checkAnswer() {
+      patternFinished = false; // 入力ロック
+      grid.style.pointerEvents = 'none';
+
+      let isCorrect = false;
+
+      if (gameMode === 'sequence') {
+        // 順番モードは途中判定済みなので、ここまで来れば全正解
+        isCorrect = true;
+      } else {
+        // 位置記憶モードの判定
+        const sortedUser = [...userSelections].sort((a, b) => a - b);
+        const sortedPattern = [...patternCells].sort((a, b) => a - b);
+        isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedPattern);
+        
+        // 正誤表示
+        cells.forEach((cell, idx) => {
+            cell.classList.remove('active');
+            if (patternCells.includes(idx)) {
+                if(userSelections.includes(idx)) {
+                    cell.classList.add('correct');
+                } else {
+                    // 光っていたのに選ばなかった場所（見逃し）
+                    cell.classList.add('active'); // 黄色のまま残す、あるいは別の色
+                }
+            } else if (userSelections.includes(idx)) {
+                cell.classList.add('wrong');
+            }
+        });
+      }
+
+      if (isCorrect) {
+        message.textContent = "正解！🎉 次のレベルへ";
+        level++;
+        setGameTimeout(nextLevel, 1500);
+      } else {
+        message.textContent = "残念...不正解😢";
+        handleWrongAnswer();
+      }
+    }
+
+    function handleWrongAnswer() {
+        if (level > 1) level--;
+        setGameTimeout(() => {
+            message.textContent = `Level ${level} からリトライ`;
+            setGameTimeout(nextLevel, 1500);
+        }, 1000);
+    }
+
+    function nextLevel() {
+      userSelections = [];
+      clearCellFeedback();
+      updateDifficulty();
+      setupGrid();
+      flashPattern();
+    }
+
+    function clearCellFeedback() {
+        cells.forEach(cell => {
+          cell.className = 'cell'; // クラスをリセット
+        });
+    }
+
+    function resetGame() {
+      clearAllTimeouts(); // ★最重要: 前の処理をすべて消す
+      flashing = false;
+      patternFinished = false;
+      grid.style.pointerEvents = 'none';
+      startButton.disabled = false;
+      exitButton.disabled = true;
+      // 設定変更可能にする
+      document.querySelectorAll('input[type=radio]').forEach(r => r.disabled = false);
+    }
+
+    function exitGame() {
+      resetGame();
+      message.textContent = "ゲーム終了。お疲れ様でした！";
+      clearCellFeedback();
+      userSelections = [];
+    }
+
+    startButton.addEventListener('click', function() {
+      // ゲーム開始
+      resetGame(); // 一度クリーンにする
+      level = 1;
+      gameMode = document.querySelector('input[name="gameMode"]:checked').value;
+      
+      startButton.disabled = true;
+      exitButton.disabled = false;
+      // ゲーム中は設定変更不可
+      document.querySelectorAll('input[type=radio]').forEach(r => r.disabled = true);
+
+      updateDifficulty();
+      setupGrid();
+      userSelections = [];
+      
+      // 少し間をおいて開始
+      setGameTimeout(flashPattern, 500);
+    });
+
+    exitButton.addEventListener('click', exitGame);
+
+    // 初期化
+    updateDifficulty();
+    setupGrid();
+  </script>
+</body>
+</html>
