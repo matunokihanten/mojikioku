@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瞬間オーダー記憶 - 松之木飯店ver 5.0 (完全版)</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        h1 { margin: 10px 0 20px 0; color: #d32f2f; font-size: 24px; }
+        
+        /* 設定エリアのデザイン */
+        .settings-area {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .settings-row { margin-bottom: 12px; }
+        label { font-weight: bold; margin-right: 10px; display:block; margin-bottom: 5px;}
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+            background: white;
+        }
+
+        /* ゲーム画面要素 */
+        #display-area {
+            font-size: 50px;
+            margin: 20px 0;
+            min-height: 80px;
+            letter-spacing: 5px;
+            word-break: keep-all;
+        }
+        .btn {
+            background-color: #e60012;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 5px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn-blue { background-color: #1976d2; } 
+        .btn-green { background-color: #43a047; } /* 次の質問へボタン */
+        .btn-gray { background-color: #78909c; padding: 10px 20px; font-size: 14px;} /* 終了ボタン */
+        
+        .btn-option {
+            background-color: #ff9800;
+            width: 100%;
+            margin: 8px 0;
+            font-size: 20px;
+        }
+
+        #message { font-size: 20px; font-weight: bold; color: #555; min-height: 30px; margin-bottom: 10px;}
+        #round-info { color: #888; font-size: 14px; margin-bottom: 5px; }
+        #sub-question-info { color: #e60012; font-weight:bold; font-size: 16px; margin-bottom: 5px; }
+
+        .hidden { display: none !important; }
+        
+        /* 結果画面 */
+        #result-area { text-align: center; }
+        .score-text { font-size: 40px; color: #e60012; font-weight: bold; margin: 20px 0; }
+        
+        /* アニメーション */
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .pop-anim { animation: pop 0.3s ease; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1 id="title">🍜 瞬間オーダー記憶 v5.0</h1>
+
+    <div id="settings-panel" class="settings-area">
+        <div class="settings-row">
+            <label>🎮 モード選択:</label>
+            <select id="mode-select">
+                <option value="manual">じっくり (自分のペース)</option>
+                <option value="time">タイムアタック (時間制限)</option>
+            </select>
+        </div>
+        <div class="settings-row">
+            <label>🔥 難易度 (アイコン数):</label>
+            <select id="level-select">
+                <option value="easy">初級 (3個 / 5秒)</option>
+                <option value="normal" selected>中級 (5個 / 3秒)</option>
+                <option value="hard">上級 (7個 / 2秒)</option>
+                <option value="god">神級 (9個 / 1秒)</option>
+            </select>
+        </div>
+        <div class="settings-row">
+            <label>🧠 1オーダーあたりの質問数:</label>
+            <select id="questions-per-order">
+                <option value="1">1問だけ</option>
+                <option value="2">2問連続</option>
+                <option value="3">3問連続</option>
+                <option value="5">5問連続 (ハード)</option>
+                <option value="10">10問連続 (超・鬼モード)</option>
+            </select>
+        </div>
+        <div class="settings-row">
+            <label>🔢 全体のラウンド数:</label>
+            <select id="round-select">
+                <option value="1">1ラウンド</option>
+                <option value="3">3ラウンド</option>
+                <option value="5" selected>5ラウンド</option>
+            </select>
+        </div>
+    </div>
+    
+    <div id="game-status" class="hidden">
+        <div id="round-info">第 1 ラウンド</div>
+        <div id="sub-question-info" class="hidden">質問 1/3</div>
+        <button onclick="quitGame()" class="btn btn-gray" style="position: absolute; top: 10px; right: 10px;">終了</button>
+    </div>
+
+    <div id="message">設定を選んでスタート！</div>
+
+    <div id="display-area" class="hidden"></div>
+
+    <div id="controls">
+        <button id="start-btn" class="btn" onclick="startGame()">ゲームスタート！</button>
+        <button id="manual-hide-btn" class="btn btn-blue hidden" onclick="hideOrderAndStartQuizLoop()">覚えた！ (回答)</button>
+        <button id="next-q-btn" class="btn btn-green hidden" onclick="nextSubQuestion()">次の質問へ ➡️</button>
+        <button id="next-round-btn" class="btn hidden" onclick="nextRound()">次のオーダーへ 🆕</button>
+    </div>
+
+    <div id="quiz-area" class="hidden">
+        <div id="question-text" style="font-size: 22px; margin-bottom: 20px; font-weight:bold;"></div>
+        <div id="options-container"></div>
+    </div>
+
+    <div id="result-area" class="hidden">
+        <h2>🎉 ゲーム終了！ 🎉</h2>
+        <div class="score-text" id="final-score"></div>
+        <div id="comment" style="font-size:18px; color:#555;"></div>
+        <button class="btn" onclick="resetToTitle()">タイトルに戻る</button>
+    </div>
+</div>
+
+<script>
+    // 🥟 完全復活：飲食店・料理アイコン (25種類)
+    const menuItems = [
+        '🍜', '🥟', '🍚', '🍺', '🥗', '🍦', '🥢', '🥩', 
+        '🍣', '🍤', '🍱', '🍛', '🍵', '🍶', '🍔', '🍟', 
+        '🍕', '🍝', '🥪', '🍰', '☕', '🍳', '🥓', '🍞', '🍮'
+    ];
+    
+    // ゲーム状態変数
+    let currentOrder = [];
+    let correctAnswer = "";
+    let timerInterval = null;
+    
+    let currentRound = 0;
+    let maxRounds = 5;
+    let questionsPerOrder = 1;
+    let currentQuestionCount = 0; 
+    
+    let totalScore = 0;
+    let totalQuestionsAsked = 0;
+    let isGameActive = false;
+    
+    let askedQuestionsLog = []; // 重複質問防止用
+
+    // 🎮 ゲーム開始
+    function startGame() {
+        maxRounds = parseInt(document.getElementById('round-select').value);
+        questionsPerOrder = parseInt(document.getElementById('questions-per-order').value);
+        
+        currentRound = 0;
+        totalScore = 0;
+        totalQuestionsAsked = 0;
+        isGameActive = true;
+
+        // UI初期化
+        document.getElementById('settings-panel').classList.add('hidden');
+        document.getElementById('start-btn').classList.add('hidden');
+        document.getElementById('result-area').classList.add('hidden');
+        document.getElementById('game-status').classList.remove('hidden');
+        document.getElementById('title').classList.add('hidden');
+
+        nextRound();
+    }
+
+    // 🆕 新しいオーダー（ラウンド）の開始
+    function nextRound() {
+        currentRound++;
+        
+        if (currentRound > maxRounds) {
+            showResults();
+            return;
+        }
+
+        // 変数リセット
+        currentQuestionCount = 0;
+        askedQuestionsLog = []; // 質問履歴クリア
+
+        // UIリセット
+        document.getElementById('round-info').innerText = `第 ${currentRound} / ${maxRounds} ラウンド`;
+        document.getElementById('sub-question-info').classList.add('hidden');
+        document.getElementById('quiz-area').classList.add('hidden');
+        document.getElementById('next-round-btn').classList.add('hidden');
+        document.getElementById('display-area').classList.remove('hidden');
+        document.body.style.backgroundColor = "#f0f4f8";
+
+        // レベル・モード設定
+        const level = document.getElementById('level-select').value;
+        const mode = document.getElementById('mode-select').value;
+        
+        let itemCount = 5;
+        let timeLimit = 3;
+
+        if (level === 'easy') { itemCount = 3; timeLimit = 5; }
+        else if (level === 'normal') { itemCount = 5; timeLimit = 3; }
+        else if (level === 'hard') { itemCount = 7; timeLimit = 2; }
+        else if (level === 'god') { itemCount = 9; timeLimit = 1; }
+
+        // オーダー生成
+        currentOrder = [];
+        for (let i = 0; i < itemCount; i++) {
+            currentOrder.push(menuItems[Math.floor(Math.random() * menuItems.length)]);
+        }
+
+        // 表示
+        document.getElementById('display-area').innerText = currentOrder.join(' ');
+
+        // モード別動作
+        if (mode === 'manual') {
+            document.getElementById('message').innerText = "覚えたらボタンを押してね 👇";
+            document.getElementById('manual-hide-btn').classList.remove('hidden');
+        } else {
+            // タイムアタックモード復活！
+            document.getElementById('manual-hide-btn').classList.add('hidden');
+            let timeLeft = timeLimit;
+            document.getElementById('message').innerText = `残り ${timeLeft.toFixed(1)} 秒！`;
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if(!isGameActive) { clearInterval(timerInterval); return; }
+                timeLeft -= 0.1;
+                document.getElementById('message').innerText = `残り ${Math.max(0, timeLeft).toFixed(1)} 秒！`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    hideOrderAndStartQuizLoop();
+                }
+            }, 100);
+        }
+    }
+
+    // 🙈 オーダーを隠して、質問ループを開始
+    function hideOrderAndStartQuizLoop() {
+        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('manual-hide-btn').classList.add('hidden');
+        
+        nextSubQuestion(); 
+    }
+
+    // ❓ 質問を生成・表示する（ループ内）
+    function nextSubQuestion() {
+        currentQuestionCount++;
+        document.body.style.backgroundColor = "#f0f4f8"; 
+        document.getElementById('next-q-btn').classList.add('hidden'); 
+        document.getElementById('message').innerText = "問題！";
+
+        // UI表示更新
+        const subInfo = document.getElementById('sub-question-info');
+        if (questionsPerOrder > 1) {
+            subInfo.classList.remove('hidden');
+            subInfo.innerText = `質問 ${currentQuestionCount} / ${questionsPerOrder}`;
+        }
+
+        generateQuiz();
+    }
+
+    // 🎲 クイズ生成ロジック（改良版：10問連続対応）
+    function generateQuiz() {
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+        
+        let validQuizFound = false;
+        let retryCount = 0;
+        const maxRetries = 30; // 試行回数上限
+
+        // 有効なクイズが見つかるまでループ
+        while (!validQuizFound && retryCount < maxRetries) {
+            retryCount++;
+            const quizType = Math.random() > 0.5 ? 'COUNT' : 'POSITION';
+            let quizKey = ""; 
+
+            if (quizType === 'COUNT') {
+                const targetItem = menuItems[Math.floor(Math.random() * menuItems.length)];
+                quizKey = `COUNT-${targetItem}`;
+
+                if (!askedQuestionsLog.includes(quizKey)) {
+                    askedQuestionsLog.push(quizKey);
+                    
+                    const count = currentOrder.filter(item => item === targetItem).length;
+                    correctAnswer = count;
+                    questionText.innerText = `「${targetItem}」は何個あった？`;
+                    
+                    let options = [count, count + 1, Math.max(0, count - 1), count + 2].slice(0, 3);
+                    options = [...new Set(options)].sort(() => Math.random() - 0.5);
+                    options.forEach(opt => createButton(opt, opt));
+                    validQuizFound = true;
+                }
+
+            } else {
+                const index = Math.floor(Math.random() * currentOrder.length);
+                quizKey = `POS-${index}`;
+
+                if (!askedQuestionsLog.includes(quizKey)) {
+                    askedQuestionsLog.push(quizKey);
+                    
+                    correctAnswer = currentOrder[index];
+                    questionText.innerText = `${index + 1}番目にあったのは何？`;
+                    
+                    let options = [correctAnswer];
+                    while (options.length < 3) {
+                        const dummy = menuItems[Math.floor(Math.random() * menuItems.length)];
+                        if (!options.includes(dummy)) options.push(dummy);
+                    }
+                    options.sort(() => Math.random() - 0.5);
+                    options.forEach(opt => createButton(opt, opt));
+                    validQuizFound = true;
+                }
+            }
+        }
+        
+        // 10問連続などで「もう聞くことないよ！」となった場合のフォールバック（重複を許可して出題）
+        if (!validQuizFound) {
+            // シンプルなランダム問題（ログ確認なし）
+            const index = Math.floor(Math.random() * currentOrder.length);
+            correctAnswer = currentOrder[index];
+            questionText.innerText = `(サービス問題) ${index + 1}番目にあったのは何？`;
+            let options = [correctAnswer];
+            while (options.length < 3) {
+                const dummy = menuItems[Math.floor(Math.random() * menuItems.length)];
+                if (!options.includes(dummy)) options.push(dummy);
+            }
+            options.sort(() => Math.random() - 0.5);
+            options.forEach(opt => createButton(opt, opt));
+        }
+
+        document.getElementById('quiz-area').classList.remove('hidden');
+    }
+
+    function createButton(text, value) {
+        const btn = document.createElement('button');
+        btn.innerText = text;
+        btn.className = 'btn btn-option';
+        btn.onclick = () => checkAnswer(value);
+        document.getElementById('options-container').appendChild(btn);
+    }
+
+    // ✅ 正解判定
+    function checkAnswer(userAnswer) {
+        totalQuestionsAsked++;
+        const message = document.getElementById('message');
+        const container = document.querySelector('.game-container');
+        
+        container.classList.remove('pop-anim');
+        void container.offsetWidth;
+        container.classList.add('pop-anim');
+
+        if (userAnswer === correctAnswer) {
+            totalScore++;
+            message.innerText = "🎉 正解！！";
+            document.body.style.backgroundColor = "#c8e6c9";
+        } else {
+            message.innerText = `😢 ブッブー... 正解は「${correctAnswer}」`;
+            document.body.style.backgroundColor = "#ffcdd2";
+        }
+
+        document.getElementById('quiz-area').classList.add('hidden');
+
+        // まだ質問が残っているか？
+        if (currentQuestionCount < questionsPerOrder) {
+            // 次の「質問」へボタンを表示
+            const nextBtn = document.getElementById('next-q-btn');
+            nextBtn.classList.remove('hidden');
+            nextBtn.innerText = `次の質問へ (${currentQuestionCount}/${questionsPerOrder})`;
+        } else {
+            // 次の「ラウンド」へボタンを表示
+            const nextRndBtn = document.getElementById('next-round-btn');
+            nextRndBtn.classList.remove('hidden');
+            
+            if (currentRound >= maxRounds) {
+                nextRndBtn.innerText = "結果を見る 🏆";
+            } else {
+                nextRndBtn.innerText = "次のオーダーへ 🆕";
+            }
+        }
+    }
+
+    // 🏆 完全復活：結果発表画面
+    function showResults() {
+        isGameActive = false;
+        document.getElementById('game-status').classList.add('hidden');
+        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('controls').classList.add('hidden'); 
+        
+        const resultArea = document.getElementById('result-area');
+        resultArea.classList.remove('hidden');
+        
+        document.getElementById('final-score').innerText = `${totalQuestionsAsked}問中、${totalScore}問正解！`;
+        
+        // 評価コメント機能復活！
+        const rate = totalScore / totalQuestionsAsked;
+        let comment = "";
+        if (rate === 1) comment = "記憶の神様ですか！？完璧です！😇✨";
+        else if (rate >= 0.8) comment = "素晴らしい！店長級の能力です！👨‍🍳🔥";
+        else if (rate >= 0.6) comment = "なかなかやりますね！その調子！👍";
+        else if (rate >= 0.4) comment = "ドンマイ！次はもっといけるはず！💪";
+        else comment = "まずは「初級」から練習してみましょう！🔰";
+        
+        document.getElementById('comment').innerText = comment;
+    }
+
+    // 🚪 復活：ゲーム終了ボタン機能
+    function quitGame() {
+        clearInterval(timerInterval);
+        isGameActive = false;
+        resetToTitle();
+    }
+
+    function resetToTitle() {
+        document.getElementById('result-area').classList.add('hidden');
+        document.getElementById('game-status').classList.add('hidden');
+        document.getElementById('quiz-area').classList.add('hidden');
+        document.getElementById('display-area').classList.add('hidden');
+        document.getElementById('next-q-btn').classList.add('hidden');
+        document.getElementById('next-round-btn').classList.add('hidden');
+        document.getElementById('manual-hide-btn').classList.add('hidden');
+        document.getElementById('controls').classList.remove('hidden');
+
+        document.getElementById('settings-panel').classList.remove('hidden');
+        document.getElementById('start-btn').classList.remove('hidden');
+        document.getElementById('title').classList.remove('hidden');
+        document.getElementById('message').innerText = "設定を選んでスタート！";
+        document.body.style.backgroundColor = "#f0f4f8";
+    }
+</script>
+
+</body>
+</html>
