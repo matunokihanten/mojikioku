@@ -1,1 +1,319 @@
-<!DOCTYPE html><html lang="ja"><head>  <meta charset="UTF-8">  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">  <title>3Dメモリーゲーム - シンプル＆奥行きデザイン</title>  <style>    :root {      /* 色パレットをシンプルでモダンなものに変更 */      --bg: #eceff1;      --text: #37474f;      --panel: #ffffff;      --panel-border: #cfd8dc;      --active: #ffd54f;      --correct: #4db6ac;      --wrong: #e57373;      --shadow-color: rgba(54, 71, 79, 0.2);    }    body {      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;      text-align: center; margin: 0; padding: 0;      background: var(--bg); color: var(--text);      display: flex; flex-direction: column;      justify-content: center; align-items: center;      height: 100vh; overflow: hidden;    }    #container {      background: #fff; border-radius: 12px; padding: 20px;      box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* 全体の影も柔らかく */      width: 90%; max-width: 400px;      display: flex; flex-direction: column; max-height: 98vh;    }    .stats-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }    .level-text { font-weight: 700; font-size: 1.3em; color: var(--text); }    #message { font-size: 0.95em; height: 1.5em; margin-bottom: 15px; color: #607d8b; font-weight: 500; }    #settings {      font-size: 0.8em; border-top: 1px solid #eceff1; border-bottom: 1px solid #eceff1;      padding: 15px 0; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; color: #546e7a;    }    input[type="radio"] { accent-color: #546e7a; }    /* グリッドとパネルのデザイン変更 */    .grid {      display: grid; grid-gap: 12px; /* 隙間を少し広げて独立感を出す */      margin: 0 auto 20px;      perspective: 1200px; /* 奥行きの視点 */      width: 100%; aspect-ratio: 1/1; min-height: 280px;      padding: 5px; /* 影が切れないように余白 */    }    .cell {      background: var(--panel);      border-radius: 4px; /* 角丸を小さくしてシャープに */      border: 1px solid var(--panel-border); /* 薄い枠線で輪郭をはっきりさせる */      cursor: pointer; position: relative;      /* キビキビした動きのためのトランジション */      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;      transform-style: preserve-3d;      will-change: transform; /* ぼやけ防止の最適化 */      /* 通常時の影：薄く、紙が浮いているような表現 */      box-shadow: 0 2px 5px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);    }    .cell::before { content: ""; display: block; padding-top: 100%; }    /* ホバー時の表現 */    .cell:hover:not(.active):not(.correct):not(.wrong) {      transform: translateZ(15px) translateY(-4px);      /* ホバー時の影：少し浮き上がり、影が遠くになる */      box-shadow: 0 15px 25px var(--shadow-color);      border-color: transparent;    }    /* アクティブ（光っている）時の表現 */    .cell.active {      background: var(--active) !important;      border-color: var(--active);      /* 最も手前に浮き出てくる表現 */      transform: translateZ(40px) translateY(-8px);      z-index: 10;      /* 深い奥行きを感じさせる、濃く遠い影と発光感 */      box-shadow: 0 25px 50px rgba(255, 193, 7, 0.5), 0 10px 15px var(--shadow-color);    }    /* 正解・不正解の表現（シンプルに色のみ変化） */    .cell.correct { background: var(--correct) !important; border-color: var(--correct); color: white; }    .cell.wrong { background: var(--wrong) !important; border-color: var(--wrong); color: white; animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }    @keyframes shake {      10%, 90% { transform: translate3d(-1px, 0, 0); }      20%, 80% { transform: translate3d(2px, 0, 0); }      30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }      40%, 60% { transform: translate3d(3px, 0, 0); }    }    /* ボタンのデザインもフラットに合わせる */    #startBtn, #resetBtn, .modal-btn {      padding: 12px; border: none; border-radius: 6px; font-weight: 600;      cursor: pointer; transition: filter 0.2s, transform 0.1s;      box-shadow: 0 2px 5px rgba(0,0,0,0.1);    }    #startBtn { background: var(--correct); color: #fff; flex: 0 0 90px; }    #resetBtn { background: #eceff1; color: var(--text); width: 100%; }    #startBtn:active, #resetBtn:active, .modal-btn:active { transform: translateY(2px); box-shadow: none; }    /* モーダル */    #modalOverlay {      position: fixed; top: 0; left: 0; width: 100%; height: 100%;      background: rgba(38, 50, 56, 0.8); display: none; justify-content: center; align-items: center; z-index: 9999;      backdrop-filter: blur(4px); /* 背景を少しぼかす */    }    .modal { background: #fff; padding: 30px; border-radius: 12px; width: 85%; max-width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }    .modal-btn { margin-top: 15px; color: #fff; width: 100%; font-size: 1.05em; }  </style></head><body>  <div id="container">    <div class="stats-row">      <div id="levelDisplay" class="level-text">Level: 1</div>      <button id="startBtn">開始</button>    </div>    <div id="message">ボタンを押してスタート！</div>    <div id="settings">      <div><b>時間:</b><br><label><input type="radio" name="dur" value="1000">1s</label> <label><input type="radio" name="dur" value="2000">2s</label> <label><input type="radio" name="dur" value="3000" checked>3s</label></div>      <div><b>モード:</b><br><label><input type="radio" name="mode" value="position" checked>位置</label> <label><input type="radio" name="mode" value="sequence">順番</label> <label><input type="radio" name="mode" value="tracking">追跡</label></div>    </div>    <div id="grid" class="grid"></div>    <button id="resetBtn">設定をリセット</button>  </div>  <div id="modalOverlay">    <div class="modal">      <h2 id="modalTitle" style="margin:0; color: var(--wrong);">ミス！</h2>      <p id="modalDesc" style="color:#546e7a; margin: 15px 0 25px;"></p>      <button id="btnRetry" class="modal-btn" style="background:#29b6f6;">やり直す</button>      <button id="btnRestart" class="modal-btn" style="background:var(--wrong);">最初から</button>    </div>  </div>  <script>    (function() {      const state = { level: 1, pattern: [], user: [], cells: [], isBusy: false };      const dom = {        grid: document.getElementById('grid'),        msg: document.getElementById('message'),        lvl: document.getElementById('levelDisplay'),        start: document.getElementById('startBtn'),        modal: document.getElementById('modalOverlay'),        mDesc: document.getElementById('modalDesc'),        mRestart: document.getElementById('btnRestart'),        mRetry: document.getElementById('btnRetry')      };      function getMode() { return document.querySelector('input[name="mode"]:checked').value; }      function getDur() { return parseInt(document.querySelector('input[name="dur"]:checked').value); }      function buildGrid() {        const mode = getMode();        const size = (mode === 'tracking') ? 4 : Math.min(2 + Math.floor((state.level - 1) / 3), 6);        dom.grid.innerHTML = ""; state.cells = [];        dom.grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;        for (let i = 0; i < size * size; i++) {          const c = document.createElement('div'); c.className = 'cell';          c.onclick = () => { if(!state.isBusy) onCellClick(i); };          dom.grid.appendChild(c); state.cells.push(c);        }        dom.lvl.textContent = `Level: ${state.level} (${size}x${size})`;        return size;      }      function onCellClick(idx) {        if (state.user.includes(idx)) return;        const mode = getMode();        state.user.push(idx); state.cells[idx].classList.add('active');        if (mode === 'sequence' || mode === 'tracking') {          if (state.user[state.user.length-1] !== state.pattern[state.user.length-1]) return onFinish(false);        }        if (state.user.length === state.pattern.length) {          onFinish(mode === 'position' ? state.user.every(v => state.pattern.includes(v)) : true);        }      }      function nextRound() {        state.isBusy = true; state.user = []; dom.start.disabled = true;        dom.msg.textContent = "記憶してください...";        const mode = getMode(); const dur = getDur(); const size = buildGrid();        if (mode !== 'tracking') state.pattern = [];        const target = (mode === 'tracking') ? state.level : 2 + (state.level - 1);        while (state.pattern.length < target) {          const avail = [];          for(let i=0; i<size*size; i++) if(!state.pattern.includes(i)) avail.push(i);          if(avail.length === 0) break;          state.pattern.push(avail[Math.floor(Math.random()*avail.length)]);        }        let d = 600;        if (mode === 'position') {          setTimeout(() => {            state.pattern.forEach(i => state.cells[i]?.classList.add('active'));            setTimeout(() => {              state.pattern.forEach(i => state.cells[i]?.classList.remove('active'));              state.isBusy = false; dom.msg.textContent = "答えてください！";            }, dur);          }, d);        } else {          state.pattern.forEach((idx, i) => {            setTimeout(() => state.cells[idx]?.classList.add('active'), d);            setTimeout(() => {              state.cells[idx]?.classList.remove('active');              if (i === state.pattern.length - 1) { state.isBusy = false; dom.msg.textContent = "順番に！"; }            }, d + (dur * 0.7));            d += dur;          });        }      }      function onFinish(win) {        state.isBusy = true;        if (win) {          dom.msg.textContent = "正解！"; state.level++; setTimeout(nextRound, 800);        } else {          dom.msg.textContent = "ミス！";          state.cells.forEach((c, i) => {            if (state.pattern.includes(i)) c.classList.add('correct');            else if (state.user.includes(i)) c.classList.add('wrong');          });          setTimeout(() => {            const mode = getMode();            dom.mDesc.innerHTML = mode === 'tracking' ? `<b>追跡モード：Level ${state.level}</b><br>どうしますか？` : "レベルが1つ下がります。<br>次こそ頑張りましょう！";            dom.mRestart.style.display = (mode === 'tracking') ? 'block' : 'none';            dom.mRetry.onclick = () => {              if(mode !== 'tracking') { state.level = Math.max(1, state.level - 1); state.pattern = []; }              dom.modal.style.display = 'none'; nextRound();            };            dom.mRestart.onclick = () => {              state.level = 1; state.pattern = []; dom.modal.style.display = 'none'; nextRound();            };          }, 1200);        }      }      dom.start.onclick = () => { state.isBusy = false; state.level = 1; state.pattern = []; nextRound(); };      document.getElementById('resetBtn').onclick = () => location.reload();      buildGrid();    })();  </script></body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3Dメモリーゲーム - 脳科学的最適色版</title>
+  <style>
+    :root {
+      --bg: #eceff1;
+      --text: #37474f;
+      --panel: #ffffff;
+      --panel-border: #cfd8dc;
+      /* 変更点: 脳に最も焼き付く、刺激の強いエレクトリック・イエローに変更 */
+      --active: #FFEA00; 
+      --correct: #4db6ac;
+      --wrong: #e57373;
+      --shadow-color: rgba(54, 71, 79, 0.2);
+    }
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      text-align: center; margin: 0; padding: 0;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      height: 100vh; overflow: hidden;
+      /* スマホでのテキスト選択やハイライトを無効化 */
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #container {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      width: 90%; max-width: 400px;
+      display: flex; flex-direction: column; max-height: 98vh;
+    }
+    .stats-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .level-text { font-weight: 700; font-size: 1.3em; }
+    #message { font-size: 0.95em; height: 1.5em; margin-bottom: 15px; color: #607d8b; font-weight: 500; }
+    
+    #settings {
+      font-size: 0.8em; border-top: 1px solid #eceff1; border-bottom: 1px solid #eceff1;
+      padding: 12px 0; margin-bottom: 15px; display: flex; justify-content: space-between; text-align: left; gap: 5px;
+    }
+    #settings > div { flex: 1; }
+    #settings > div:first-child { flex: 0.7; }
+
+    .grid {
+      display: grid; grid-gap: 12px; margin: 0 auto 20px;
+      perspective: 1200px; width: 100%; aspect-ratio: 1/1; min-height: 280px; padding: 5px;
+    }
+    
+    .cell {
+      background: var(--panel); border-radius: 4px; border: 1px solid var(--panel-border);
+      cursor: pointer; position: relative;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
+      transform-style: preserve-3d; will-change: transform;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      touch-action: none; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cell::before { content: ""; display: block; padding-top: 100%; }
+    
+    .cell.pressed {
+      transform: translateZ(0px) scale(0.92) !important;
+      background: #e0e6ed;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
+      transition: all 0.05s ease;
+    }
+
+    /* 光って手前に飛び出す表現（色を変更） */
+    .cell.active {
+      background: var(--active) !important; border-color: var(--active);
+      transform: translateZ(35px) translateY(-5px); z-index: 10;
+      /* 影の色も新しい黄色に合わせて調整し、発光感を強める */
+      box-shadow: 0 20px 50px rgba(255, 234, 0, 0.6);
+    }
+    .cell.correct { background: var(--correct) !important; border-color: var(--correct); }
+    .cell.wrong { background: var(--wrong) !important; border-color: var(--wrong); animation: shake 0.4s both; }
+    
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      30%, 70% { transform: translate3d(-3px, 0, 0); }
+      40%, 60% { transform: translate3d(3px, 0, 0); }
+    }
+    
+    button {
+      padding: 12px; border: none; border-radius: 6px; font-weight: 600;
+      cursor: pointer; transition: transform 0.1s ease, opacity 0.2s;
+      touch-action: manipulation;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.92);
+    }
+    #startBtn { background: var(--correct); color: #fff; flex: 0 0 90px; }
+    #resetBtn { background: #eceff1; color: var(--text); width: 100%; }
+    #startBtn:disabled { background: #cfd8dc; cursor: not-allowed; transform: none; }
+    
+    input[type="number"] {
+      width: 45px; margin-top: 4px; padding: 4px;
+      border: 1px solid var(--panel-border); border-radius: 4px;
+      font-weight: bold; color: var(--text); text-align: center;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div class="stats-row">
+      <div id="levelDisplay" class="level-text">Level: 1</div>
+      <button id="startBtn">開始</button>
+    </div>
+    <div id="message">ボタンを押してスタート！</div>
+    
+    <div id="settings">
+      <div><b>開始Lv:</b><br>
+        <input type="number" id="startLevel" value="1" min="1" max="99">
+      </div>
+      <div><b>時間:</b><br>
+        <label><input type="radio" name="dur" value="1000">1s</label>
+        <label><input type="radio" name="dur" value="2000">2s</label>
+        <label><input type="radio" name="dur" value="3000" checked>3s</label>
+      </div>
+      <div><b>モード:</b><br>
+        <label><input type="radio" name="mode" value="position" checked>位置</label>
+        <label><input type="radio" name="mode" value="sequence">順番</label>
+        <label><input type="radio" name="mode" value="tracking">追跡</label>
+      </div>
+    </div>
+    
+    <div id="grid" class="grid"></div>
+    <button id="resetBtn">最初からやり直す</button>
+  </div>
+
+  <script>
+    // 画面の読み込みが完全に終わってからスクリプトを動かす（起動バグの完全防止）
+    document.addEventListener('DOMContentLoaded', function() {
+      
+      let state = { level: 1, pattern: [], user: [], cells: [], isBusy: false, timers: [] };
+      
+      const dom = {
+        grid: document.getElementById('grid'),
+        msg: document.getElementById('message'),
+        lvl: document.getElementById('levelDisplay'),
+        start: document.getElementById('startBtn'),
+        reset: document.getElementById('resetBtn'),
+        startLevel: document.getElementById('startLevel')
+      };
+
+      // タイマー管理：古いタイマーをすべて消去して競合を防ぐ
+      function safeTimeout(fn, ms) {
+        const t = setTimeout(fn, ms);
+        state.timers.push(t);
+        return t;
+      }
+
+      function clearAllTimers() {
+        state.timers.forEach(t => clearTimeout(t));
+        state.timers = [];
+      }
+
+      function getMode() { 
+        const el = document.querySelector('input[name="mode"]:checked');
+        return el ? el.value : 'position';
+      }
+
+      function getDur() { 
+        const el = document.querySelector('input[name="dur"]:checked');
+        return el ? parseInt(el.value) : 3000;
+      }
+
+      function buildGrid() {
+        const mode = getMode();
+        const size = (mode === 'tracking') ? 4 : Math.min(2 + Math.floor((state.level - 1) / 3), 6);
+        dom.grid.innerHTML = ""; 
+        state.cells = [];
+        dom.grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        
+        for (let i = 0; i < size * size; i++) {
+          const c = document.createElement('div'); 
+          c.className = 'cell';
+          
+          // タッチ感を向上させるPointerイベント
+          c.addEventListener('pointerdown', function() {
+            if(!state.isBusy && !state.user.includes(i)) {
+              c.classList.add('pressed');
+            }
+          });
+          
+          ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => {
+            c.addEventListener(evt, function() {
+              c.classList.remove('pressed');
+            });
+          });
+
+          // イベントリスナー方式で確実にクリックを検知
+          c.addEventListener('click', function() {
+            c.classList.remove('pressed');
+            if(!state.isBusy) onCellClick(i);
+          });
+          dom.grid.appendChild(c); 
+          state.cells.push(c);
+        }
+        dom.lvl.textContent = `Level: ${state.level} (${size}x${size})`;
+        return size;
+      }
+
+      function onCellClick(idx) {
+        if (state.user.includes(idx)) return;
+        const mode = getMode();
+        state.user.push(idx); 
+        
+        if(state.cells[idx]) state.cells[idx].classList.add('active');
+        
+        if (mode === 'sequence' || mode === 'tracking') {
+          if (state.user[state.user.length-1] !== state.pattern[state.user.length-1]) return onFinish(false);
+        }
+        
+        if (state.user.length === state.pattern.length) {
+          onFinish(mode === 'position' ? state.user.every(v => state.pattern.includes(v)) : true);
+        }
+      }
+
+      function nextRound() {
+        clearAllTimers();
+        state.isBusy = true; 
+        state.user = []; 
+        dom.start.disabled = true;
+        dom.msg.textContent = "記憶してください...";
+        
+        const mode = getMode(); 
+        const dur = getDur(); 
+        const size = buildGrid();
+        const total = size * size;
+
+        // パターン生成ロジック（フリーズ防止版）
+        if (mode !== 'tracking' || state.pattern.length === 0) {
+            if (mode !== 'tracking') state.pattern = [];
+            const target = (mode === 'tracking') ? state.level : 2 + (state.level - 1);
+            while (state.pattern.length < target) {
+                const avail = [];
+                for(let i=0; i<total; i++) if(!state.pattern.includes(i)) avail.push(i);
+                if(avail.length === 0) break;
+                state.pattern.push(avail[Math.floor(Math.random()*avail.length)]);
+            }
+        } else if (mode === 'tracking' && state.pattern.length < state.level) {
+            while (state.pattern.length < state.level) {
+                const avail = [];
+                for(let i=0; i<total; i++) if(!state.pattern.includes(i)) avail.push(i);
+                if(avail.length === 0) break;
+                state.pattern.push(avail[Math.floor(Math.random()*avail.length)]);
+            }
+        }
+
+        let d = 600;
+        if (mode === 'position') {
+          safeTimeout(() => {
+            state.pattern.forEach(i => { if(state.cells[i]) state.cells[i].classList.add('active'); });
+            safeTimeout(() => {
+              state.pattern.forEach(i => { if(state.cells[i]) state.cells[i].classList.remove('active'); });
+              state.isBusy = false; dom.msg.textContent = "答えてください！";
+            }, dur);
+          }, d);
+        } else {
+          state.pattern.forEach((idx, i) => {
+            safeTimeout(() => { if(state.cells[idx]) state.cells[idx].classList.add('active'); }, d);
+            safeTimeout(() => {
+              if(state.cells[idx]) state.cells[idx].classList.remove('active');
+              if (i === state.pattern.length - 1) { state.isBusy = false; dom.msg.textContent = "順番に！"; }
+            }, d + (dur * 0.7));
+            d += dur;
+          });
+        }
+      }
+
+      function onFinish(win) {
+        state.isBusy = true;
+        if (win) {
+          dom.msg.textContent = "正解！"; 
+          state.level++; 
+          safeTimeout(nextRound, 800);
+        } else {
+          dom.msg.textContent = "ミス！同じレベルで再挑戦";
+          state.cells.forEach((c, i) => {
+            if (state.pattern.includes(i)) c.classList.add('correct');
+            else if (state.user.includes(i)) c.classList.add('wrong');
+          });
+          // 無限脳トレ仕様：自動で同じレベルをリスタート
+          safeTimeout(() => {
+            if (getMode() !== 'tracking') state.pattern = [];
+            nextRound();
+          }, 1500);
+        }
+      }
+
+      // ボタンのイベントリスナーも確実な方式で登録
+      dom.start.addEventListener('click', function() {
+        clearAllTimers();
+        state.isBusy = false; 
+        
+        // 入力された開始レベルを取得して適用
+        const inputLv = parseInt(dom.startLevel.value);
+        state.level = (!isNaN(inputLv) && inputLv >= 1) ? inputLv : 1;
+        
+        state.pattern = []; 
+        nextRound(); 
+      });
+
+      dom.reset.addEventListener('click', function() {
+        location.reload();
+      });
+
+      // 初期のグリッド描画
+      buildGrid();
+
+    });
+  </script>
+</body>
+</html>
