@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>記憶の宮殿 Pro v11.0 - 松乃木飯店</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>記憶の宮殿 Pro v13.2 - 松乃木飯店</title>
     <style>
         :root {
             --primary: #d32f2f;
@@ -11,153 +11,155 @@
             --accent: #ff9800;
             --bg: #f8f9fa;
         }
-        body {
+        /* 全画面固定レイアウト（スクロール禁止） */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100dvh;
+            overflow: hidden;
             font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
             background-color: var(--bg);
-            margin: 0;
+        }
+        body {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
         }
         .game-container {
-            width: 95%;
-            max-width: 600px;
+            width: 100vw;
+            height: 100dvh;
+            max-width: 850px;
             background: white;
-            padding: 15px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-top: 10px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            padding: 10px;
             position: relative;
         }
-        h1 { color: var(--primary); font-size: 22px; margin: 5px 0; }
+        h1 { 
+            color: var(--primary); 
+            font-size: 18px; 
+            margin: 0 0 5px 0; 
+            line-height: 1.2;
+        }
 
+        /* 設定エリア */
         .setting-box {
             background: #fff3e0;
-            padding: 12px;
-            border-radius: 15px;
-            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin: 4px 0;
             text-align: left;
+            font-size: 13px;
         }
-        select {
+        select, input[type="number"] {
             width: 100%;
-            padding: 10px;
-            font-size: 15px;
-            border-radius: 8px;
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 6px;
             border: 2px solid var(--accent);
-            margin-top: 5px;
+            margin-top: 3px;
             background: white;
             box-sizing: border-box;
         }
-        input[type="number"] {
-            box-sizing: border-box;
-        }
 
-        /* 巨大化対応マップ領域 */
+        /* ==============================================
+           記憶マップ領域（縦の長さを2倍に拡張＆重なり解消）
+           ============================================== */
         #palace-map {
             position: relative;
             width: 100%;
-            height: 550px;
-            background: #fffdfa;
-            border: 2px dashed #ccc;
-            border-radius: 20px;
-            margin-bottom: 80px;
-            overflow: hidden;
+            /* 16/9（横長）から 8/9（縦長：元の2倍の高さ）に変更 */
+            aspect-ratio: 8 / 9; 
+            max-height: 55vh; /* 画面からはみ出さないよう安全装置 */
+            background-color: #f0e5d8;
+            background-image: url('image_9c8142.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            overflow: visible; 
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+        
         .loc-node {
             position: absolute;
-            width: 110px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            z-index: 5;
-        }
-        /* 配置座標 */
-        .pos-0 { top: 80%; left: 35%; } .pos-1 { top: 35%; left: 2%; }
-        .pos-2 { top: 12%; left: 2%; }  .pos-3 { top: 8%; left: 38%; }
-        .pos-4 { top: 8%; left: 68%; }  .pos-5 { top: 38%; left: 68%; }
-        .pos-6 { top: 75%; left: 5%; }  .pos-7 { top: 45%; left: 35%; }
-        .pos-8 { top: 80%; left: 70%; }
-
-        .loc-label {
-            font-size: 11px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 3px 6px;
-            border-radius: 6px;
-            white-space: nowrap;
-            z-index: 10;
-        }
-        /* アイコン */
-        .loc-icon { 
-            font-size: 55px; 
-            line-height: 1.1; 
-            margin: 5px 0; 
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2)); 
-            display: inline-block;
+            width: 32%; /* 3列に並べるため幅を確保 */
+            z-index: 20;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            gap: 3px; 
         }
         
+        /* 座標：重なりを完全に防ぐため、3×3の均等なグリッド状に配置
+        */
+        .pos-7 { top: 16%; left: 17%; } /* 厨房 (左上) */
+        .pos-2 { top: 16%; left: 50%; } /* カウンター右 (中上) */
+        .pos-0 { top: 16%; left: 83%; } /* 入口 (右上) */
+
+        .pos-1 { top: 50%; left: 17%; } /* カウンター左 (左中) */
+        .pos-3 { top: 50%; left: 50%; } /* 1番テーブル (真ん中) */
+        .pos-8 { top: 50%; left: 83%; } /* 出前バイク (右中) */
+
+        .pos-6 { top: 84%; left: 17%; } /* レジ (左下) */
+        .pos-4 { top: 84%; left: 50%; } /* 2番テーブル (中下) */
+        .pos-5 { top: 84%; left: 83%; } /* 3番テーブル (右下) */
+
+        .loc-label {
+            font-size: 10px;
+            font-weight: bold;
+            background: #000;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 22;
+        }
+        .loc-icon { 
+            font-size: clamp(28px, 9vw, 42px);
+            line-height: 1; 
+            margin: 2px 0;
+            filter: drop-shadow(2px 3px 5px rgba(0,0,0,0.4)); 
+            z-index: 21;
+        }
         .loc-action {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--primary);
             font-weight: bold;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             border: 2px solid var(--primary);
-            padding: 2px 4px;
-            border-radius: 6px;
-            line-height: 1.2;
-            z-index: 10;
+            padding: 2px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 22;
         }
 
-        /* =========================================
-           アイコンのアニメーション定義
-           ========================================= */
-        @keyframes anim-dance { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-20deg); } 75% { transform: rotate(20deg); } }
-        .anim-dance { animation: anim-dance 0.5s ease-in-out infinite; }
-
-        @keyframes anim-explode { 0%, 100% { transform: scale(1); filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2)); } 50% { transform: scale(1.3) rotate(10deg); filter: drop-shadow(0 0 15px red); } }
-        .anim-explode { animation: anim-explode 0.4s infinite; }
-
-        .anim-freeze { filter: hue-rotate(180deg) saturate(300%) brightness(0.8) drop-shadow(0 0 10px cyan) !important; transform: scale(0.95); }
-
-        @keyframes anim-sing { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.1); } }
-        .anim-sing { animation: anim-sing 0.8s ease-in-out infinite; }
-
-        @keyframes anim-melt { 0%, 100% { transform: scaleY(1) translateY(0); } 50% { transform: scaleY(0.5) scaleX(1.3) translateY(20px); } }
-        .anim-melt { animation: anim-melt 2s ease-in-out infinite; transform-origin: bottom; }
-
-        @keyframes anim-spin { 100% { transform: rotate(360deg); } }
-        .anim-spin { animation: anim-spin 2s linear infinite; }
-
-        @keyframes anim-glow { 0%, 100% { filter: drop-shadow(0 0 5px gold); } 50% { filter: drop-shadow(0 0 30px yellow) brightness(1.3); } }
-        .anim-glow { animation: anim-glow 1s infinite; }
-
-        .anim-giant { transform: scale(1.6); transition: transform 0.5s; z-index: 8; }
-
-        @keyframes anim-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } }
-        .anim-float { animation: anim-float 2.5s ease-in-out infinite; }
-
-        .anim-split { text-shadow: -35px 0 0 rgba(0,0,0,0.3), 35px 0 0 rgba(0,0,0,0.3); }
-
-        @keyframes anim-scared { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-        .anim-scared { animation: anim-scared 0.1s infinite; }
-
-        @keyframes anim-talk { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.8); } }
-        .anim-talk { animation: anim-talk 0.2s infinite; transform-origin: bottom; }
-        /* ========================================= */
-
-        .bottom-controls {
-            position: sticky;
-            bottom: 10px;
+        .content-flex {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
             width: 100%;
-            background: white;
-            padding: 10px 0;
-            border-top: 1px solid #eee;
-            z-index: 100;
+        }
+
+        #message { 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin: 8px 0; 
+            color: #333; 
+            min-height: 1.2em;
         }
 
         .btn {
-            padding: 15px 30px;
+            width: 100%;
+            padding: 16px;
             font-size: 18px;
             border-radius: 50px;
             border: none;
@@ -165,254 +167,200 @@
             background: var(--primary);
             color: white;
             font-weight: bold;
-            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
-            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+            transition: transform 0.1s;
         }
-        .btn:active { transform: scale(0.95); }
+        .btn:active { transform: scale(0.96); }
         .btn-sub { background: var(--secondary); box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3); }
 
+        /* 絵文字キーボード */
         .emoji-keyboard {
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px auto;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            width: 100%;
+            overflow-y: auto;
+            max-height: 25vh;
         }
         .emoji-btn {
-            font-size: 32px; padding: 10px; border: 1px solid #ccc; border-radius: 12px; background: white; cursor:pointer;
+            font-size: 28px;
+            padding: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        
-        #interference-panel { background: #e3f2fd; padding: 25px; border-radius: 20px; }
-        #calc-input { font-size: 32px; width: 120px; text-align: center; margin: 15px; border-radius: 10px; border: 3px solid var(--secondary); }
 
-        /* タイマーバー */
+        /* アニメーション */
+        @keyframes anim-dance { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+        .anim-dance { animation: anim-dance 0.5s infinite; }
+        @keyframes anim-explode { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); filter: brightness(1.2); } }
+        .anim-explode { animation: anim-explode 0.4s infinite; }
+        .anim-freeze { filter: hue-rotate(180deg) saturate(250%) brightness(0.9); }
+        @keyframes anim-sing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .anim-sing { animation: anim-sing 0.8s infinite; }
+        @keyframes anim-spin { 100% { transform: rotate(360deg); } }
+        .anim-spin { animation: anim-spin 2s linear infinite; }
+        @keyframes anim-glow { 0%, 100% { filter: drop-shadow(0 0 2px gold); } 50% { filter: drop-shadow(0 0 15px yellow); } }
+        .anim-glow { animation: anim-glow 1s infinite; }
+        .anim-giant { transform: scale(1.35); z-index: 30; }
+        @keyframes anim-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .anim-float { animation: anim-float 2.5s infinite; }
+        .anim-split { text-shadow: -25px 0 0 rgba(0,0,0,0.2); }
+        @keyframes anim-scared { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+        .anim-scared { animation: anim-scared 0.1s infinite; }
+
+        .hidden { display: none !important; }
+
         #timer-container {
             width: 100%;
             height: 10px;
-            background: #e0e0e0;
+            background: #eee;
             border-radius: 5px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             overflow: hidden;
         }
-        #timer-bar {
-            height: 100%;
-            width: 100%;
-            background: #4caf50;
-            transition: width 0.1s linear, background-color 0.3s;
-        }
+        #timer-bar { height: 100%; width: 100%; background: #4caf50; transition: width 0.1s linear; }
 
-        .hidden { display: none !important; }
-        #message { font-size: 18px; font-weight: bold; margin: 10px; color: #555; min-height: 24px;}
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding-bottom: 5px;
+        }
+        .story-hint { font-size: 11px; color: #666; margin-bottom: 5px; font-style: italic; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <h1>🏰 記憶の宮殿 Pro v11.0<br><span style="font-size:16px; color:#555;">〜 松乃木飯店 〜</span></h1>
+    <h1>🏰 記憶の宮殿 Pro v13.2 <span style="font-size:12px; color:#555;">松乃木飯店</span></h1>
     
-    <div id="setup-area">
+    <div id="setup-area" class="content-flex">
         <div class="setting-box">
             <label><strong>🔥 難易度を選択:</strong></label>
             <select id="diff-select" onchange="toggleCustomSettings()">
-                <option value="lv1">1. 見習い (3箇所 / 3問 / 動き文ナシ)</option>
-                <option value="lv2">2. 新人 (4箇所 / 5問 / 動き文ナシ)</option>
-                <option value="lv3">3. 一般 (5箇所 / 7問 / 動き文アリ)</option>
-                <option value="lv4" selected>4. 主任 (6箇所 / 10問 / 動き文アリ)</option>
-                <option value="lv5">5. 店長 (7箇所 / 12問 / 複雑な動き文)</option>
-                <option value="lv6">6. 達人 (8箇所 / 15問 / 複雑な動き文)</option>
-                <option value="lv7">7. 神業 (9箇所全域 / 20問 / 複雑な動き文)</option>
-                <option value="custom">8. カスタム (自分で設定)</option>
+                <option value="lv1">1. 見習い (3箇所/3問/無)</option>
+                <option value="lv2">2. 新人 (4箇所/5問/無)</option>
+                <option value="lv3">3. 一般 (5箇所/7問/有)</option>
+                <option value="lv4" selected>4. 主任 (6箇所/10問/有)</option>
+                <option value="lv5">5. 店長 (7箇所/12問/有)</option>
+                <option value="lv6">6. 達人 (8箇所/15問/有)</option>
+                <option value="lv7">7. 神業 (9箇所/20問/有)</option>
+                <option value="custom">8. カスタム設定</option>
             </select>
         </div>
 
-        <div id="custom-settings" class="hidden setting-box" style="background: #e1bee7; border: 2px dashed #9c27b0;">
-            <label><strong>📍 箇所の数 (1〜9):</strong></label>
-            <input type="number" id="custom-locs" value="5" min="1" max="9" style="width:100%; padding:10px; font-size:15px; border-radius:8px; border:2px solid #ab47bc; margin: 5px 0 10px 0;">
-            
-            <label><strong>❓ 1ラウンドの問題数:</strong></label>
-            <input type="number" id="custom-qs" value="10" min="1" max="50" style="width:100%; padding:10px; font-size:15px; border-radius:8px; border:2px solid #ab47bc; margin: 5px 0 10px 0;">
-            
-            <label><strong>🏃 動きの複雑さ:</strong></label>
-            <select id="custom-action" style="border:2px solid #ab47bc;">
-                <option value="none">なし (場所と物だけ)</option>
-                <option value="base">基本の動き</option>
-                <option value="hard">複雑な動き (全てのアクション)</option>
-            </select>
+        <div id="custom-settings" class="hidden setting-box" style="background: #f3e5f5;">
+            📍箇所: <input type="number" id="custom-locs" value="5" min="1" max="9" style="width:45px;">
+            ❓問題: <input type="number" id="custom-qs" value="10" min="1" max="50" style="width:45px;">
+            🏃動き: <select id="custom-action" style="width:auto;"><option value="none">無</option><option value="base" selected>有</option></select>
         </div>
         
-        <div class="setting-box">
-            <label><strong>⏳ タイマー（制限時間）:</strong></label>
-            <select id="timer-select">
-                <option value="on" selected>あり (推奨：焦りで脳を鍛える)</option>
-                <option value="off">なし (自分のペースでじっくり)</option>
-            </select>
+        <div class="setting-box" style="display:flex; gap:10px;">
+            <div style="flex:1;">⏳ タイマー: <select id="timer-select"><option value="on" selected>有</option><option value="off">無</option></select></div>
+            <div style="flex:1;">✨ アニメ: <select id="anim-select"><option value="on" selected>有</option><option value="off">無</option></select></div>
         </div>
 
-        <div class="setting-box">
-            <label><strong>✨ アイコンのアニメーション:</strong></label>
-            <select id="anim-select">
-                <option value="on" selected>あり (視覚的な動きで記憶を強化)</option>
-                <option value="off">なし (文字だけで想像する)</option>
-            </select>
-        </div>
-
-        <button class="btn" style="margin-top: 15px;" onclick="initGame()">トレーニング開始</button>
+        <button class="btn" onclick="initGame()">トレーニング開始</button>
     </div>
 
-    <div id="game-info" class="hidden" style="font-size: 15px; font-weight:bold; margin-bottom: 5px; width: 100%; box-sizing: border-box; padding: 0 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div><span id="round-display"></span> | <span id="score-display"></span></div>
-            <button class="btn btn-sub" style="padding: 6px 12px; font-size: 13px; margin: 0; box-shadow: none;" onclick="resetToTitle()">🔄 設定に戻る</button>
-        </div>
+    <div id="game-info" class="hidden header-info">
+        <div style="font-size: 14px; font-weight: bold;"><span id="round-display"></span> | <span id="score-display"></span></div>
+        <button class="btn btn-sub" style="width: auto; padding: 6px 15px; font-size: 12px; margin: 0;" onclick="resetToTitle()">🔄 設定戻る</button>
     </div>
 
-    <div id="message">設定を選んでスタート！</div>
+    <div id="message" class="hidden"></div>
 
     <div id="palace-map" class="hidden"></div>
-    <div id="memorize-controls" class="bottom-controls hidden">
-        <button class="btn" onclick="startInterferencePhase()">覚えた！（脳トレ計算へ）</button>
-    </div>
 
-    <div id="interference-panel" class="hidden">
-        <h3>🔢 短期記憶をリセット！</h3>
-        <p style="font-size:14px; color:#666;">記憶を深く定着させるための計算です</p>
-        <div id="calc-question" style="font-size: 36px; font-weight: bold; margin: 10px 0;"></div>
-        <input type="number" id="calc-input" pattern="\d*">
-        <br>
-        <button class="btn btn-sub" onclick="checkInterference()">回答してクイズへ</button>
-    </div>
+    <div class="content-flex">
+        <div id="memorize-controls" class="hidden">
+            <p class="story-hint">※「場所・物・動き」で物語を作ると覚えやすくなります！</p>
+            <button class="btn" onclick="startInterferencePhase()">覚えた！（脳トレ計算へ）</button>
+        </div>
 
-    <div id="quiz-area" class="hidden">
-        <div id="timer-container" class="hidden"><div id="timer-bar"></div></div>
-        <div id="question-text" style="font-size: 20px; font-weight: bold; color: var(--secondary); margin-bottom: 15px;"></div>
-        <div id="answer-zone"></div>
-        <button id="next-q-btn" class="btn hidden" style="margin-top:20px;" onclick="generateQuestion()">次の質問へ</button>
-        <button id="next-round-btn" class="btn hidden" style="margin-top:20px;" onclick="startMemorizePhase()">次のラウンドへ</button>
-    </div>
+        <div id="interference-panel" class="hidden">
+            <div id="calc-question" style="font-size: 36px; font-weight: bold; color: var(--secondary); margin-bottom: 10px;"></div>
+            <input type="number" id="calc-input" pattern="\d*" style="width: 150px; text-align: center; font-size: 28px; padding: 10px; border: 2px solid var(--secondary); border-radius: 15px;">
+            <button class="btn btn-sub" style="margin-top: 15px;" onclick="checkInterference()">回答してクイズへ</button>
+        </div>
 
-    <div id="result-area" class="hidden">
-        <h2>🎉 結果発表</h2>
-        <div id="final-result" style="font-size: 26px; font-weight: bold; margin: 20px; color: var(--primary);"></div>
-        <button class="btn" onclick="resetToTitle()">タイトルに戻る</button>
+        <div id="quiz-area" class="hidden">
+            <div id="timer-container" class="hidden"><div id="timer-bar"></div></div>
+            <div id="question-text" style="font-size: 16px; font-weight: bold; color: var(--secondary); margin-bottom: 10px;"></div>
+            <div id="answer-zone"></div>
+            <button id="next-q-btn" class="btn hidden" onclick="generateQuestion()">次の質問へ</button>
+            <button id="next-round-btn" class="btn hidden" onclick="startMemorizePhase()">次のラウンドへ</button>
+        </div>
+
+        <div id="result-area" class="hidden">
+            <div id="final-result" style="font-size: 28px; font-weight: bold; color: var(--primary);"></div>
+            <button class="btn" style="margin-top: 25px;" onclick="resetToTitle()">タイトルに戻る</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const menuItems = ['🍜','🥟','🍚','🍺','🥗','🍦','🥢','🥩','🍣','🍤','🍱','🍛','🍵','🍶','🍔','🍟','🍕','🍝','🥪','🍰','☕','🍳','🥓','🍞','🍮'];
+    const menuItems = ['🍜','🥟','🍚','🍺','🥗','🍦','🥢','🥩','🍣','🍤','🍱','🍛','🍵','🍶','🍔','🍟','🍕','🍝','🥪','🍰','☕','🍳','🥓','🍞','🍮','🍎','🍊','🍓','🍇','🍈','🍌','🍍','🍑','🍒','🥝','🥦','🥕','🌽','🍅','🍆','🥔','🍠','🍄','🥬','🥑','🌰'];
     const palaceLocations = ["入口", "カウンター左", "カウンター右", "1番テーブル", "2番テーブル", "3番テーブル", "レジ", "厨房", "出前バイク"];
-    const actionsBase = ["が踊っている", "が爆発している", "が凍っている", "が歌っている", "が溶けている", "が回転している", "が光っている"];
-    const actionsHard = ["が巨大化している", "が空中浮遊中", "が分裂している", "を猫が狙っている", "が喋っている"];
-    const allActions = [...actionsBase, ...actionsHard];
+    const allActions = ["が踊っている", "が爆発している", "が凍っている", "が歌っている", "が溶けている", "が回転している", "が光っている", "が巨大化している", "が空中浮遊中", "が分裂している", "を猫が狙っている", "が喋っている"];
+    const actionClassMap = { "が踊っている": "anim-dance", "が爆発している": "anim-explode", "が凍っている": "anim-freeze", "が歌っている": "anim-sing", "が溶けている": "anim-melt", "が回転している": "anim-spin", "が光っている": "anim-glow", "が巨大化している": "anim-giant", "が空中浮遊中": "anim-float", "が分裂している": "anim-split", "を猫が狙っている": "anim-scared", "が喋っている": "anim-talk" };
 
-    // アクションとCSSアニメーションクラスの紐付け
-    const actionClassMap = {
-        "が踊っている": "anim-dance", "が爆発している": "anim-explode", "が凍っている": "anim-freeze",
-        "が歌っている": "anim-sing", "が溶けている": "anim-melt", "が回転している": "anim-spin",
-        "が光っている": "anim-glow", "が巨大化している": "anim-giant", "が空中浮遊中": "anim-float",
-        "が分裂している": "anim-split", "を猫が狙っている": "anim-scared", "が喋っている": "anim-talk"
-    };
+    const diffSettings = { lv1: { locs: 3, qs: 3, hasAction: false }, lv2: { locs: 4, qs: 5, hasAction: false }, lv3: { locs: 5, qs: 7, hasAction: true }, lv4: { locs: 6, qs: 10, hasAction: true }, lv5: { locs: 7, qs: 12, hasAction: true }, lv6: { locs: 8, qs: 15, hasAction: true }, lv7: { locs: 9, qs: 20, hasAction: true } };
 
-    const diffSettings = {
-        lv1: { locs: 3, qs: 3, hasAction: false, hardAction: false },
-        lv2: { locs: 4, qs: 5, hasAction: false, hardAction: false },
-        lv3: { locs: 5, qs: 7, hasAction: true, hardAction: false },
-        lv4: { locs: 6, qs: 10, hasAction: true, hardAction: false },
-        lv5: { locs: 7, qs: 12, hasAction: true, hardAction: true },
-        lv6: { locs: 8, qs: 15, hasAction: true, hardAction: true },
-        lv7: { locs: 9, qs: 20, hasAction: true, hardAction: true }
-    };
-
-    let gameState = {
-        setting: null, useTimer: true, useAnim: true, round: 0, maxRounds: 3,
-        correctCount: 0, totalAsked: 0, currentMap: [], currentQCount: 0,
-        interferenceAns: 0, currentCorrectAnswers: [], selectedAnswers: []
-    };
-
+    let gameState = { setting: null, useTimer: true, useAnim: true, round: 0, maxRounds: 3, correctCount: 0, totalAsked: 0, currentMap: [], currentQCount: 0, interferenceAns: 0, currentCorrectAnswers: [], selectedAnswers: [] };
     let timerInterval = null;
-    const timeLimit = 15;
 
-    // カスタム設定の表示切替
-    function toggleCustomSettings() {
-        if (document.getElementById('diff-select').value === 'custom') {
-            document.getElementById('custom-settings').classList.remove('hidden');
-        } else {
-            document.getElementById('custom-settings').classList.add('hidden');
-        }
-    }
+    function toggleCustomSettings() { document.getElementById('custom-settings').classList.toggle('hidden', document.getElementById('diff-select').value !== 'custom'); }
 
-    // 設定に戻る（リセット処理）
     function resetToTitle() {
         clearInterval(timerInterval);
-        document.getElementById('quiz-area').classList.add('hidden');
-        document.getElementById('game-info').classList.add('hidden');
-        document.getElementById('palace-map').classList.add('hidden');
-        document.getElementById('memorize-controls').classList.add('hidden');
-        document.getElementById('interference-panel').classList.add('hidden');
-        document.getElementById('result-area').classList.add('hidden');
+        document.querySelectorAll('.game-container > div, .content-flex > div').forEach(el => el.classList.add('hidden'));
         document.getElementById('setup-area').classList.remove('hidden');
-        document.getElementById('message').innerText = "設定を選んでスタート！";
+        document.getElementById('message').classList.add('hidden');
         document.body.style.backgroundColor = "var(--bg)";
-        
-        gameState.round = 0;
-        gameState.correctCount = 0;
-        gameState.totalAsked = 0;
+        gameState.round = 0; gameState.correctCount = 0; gameState.totalAsked = 0;
     }
 
     function initGame() {
         const diffKey = document.getElementById('diff-select').value;
-        if (diffKey === 'custom') {
-            const actionType = document.getElementById('custom-action').value;
-            gameState.setting = {
-                locs: Math.max(1, Math.min(9, parseInt(document.getElementById('custom-locs').value) || 5)),
-                qs: Math.max(1, parseInt(document.getElementById('custom-qs').value) || 5),
-                hasAction: actionType !== 'none',
-                hardAction: actionType === 'hard'
-            };
-        } else {
-            gameState.setting = diffSettings[diffKey];
-        }
-        
+        gameState.setting = diffKey === 'custom' ? { locs: parseInt(document.getElementById('custom-locs').value), qs: parseInt(document.getElementById('custom-qs').value), hasAction: document.getElementById('custom-action').value !== 'none' } : diffSettings[diffKey];
         gameState.useTimer = document.getElementById('timer-select').value === 'on';
         gameState.useAnim = document.getElementById('anim-select').value === 'on';
-        
         document.getElementById('setup-area').classList.add('hidden');
         document.getElementById('game-info').classList.remove('hidden');
+        document.getElementById('message').classList.remove('hidden');
         startMemorizePhase();
     }
 
     function startMemorizePhase() {
         gameState.round++;
         if (gameState.round > gameState.maxRounds) return showResult();
-        
-        gameState.currentQCount = 0;
-        gameState.currentMap = [];
-        
+        gameState.currentQCount = 0; gameState.currentMap = [];
         const mapEl = document.getElementById('palace-map');
-        mapEl.innerHTML = '';
-        mapEl.classList.remove('hidden');
+        mapEl.innerHTML = ''; mapEl.classList.remove('hidden');
         document.getElementById('memorize-controls').classList.remove('hidden');
         document.getElementById('quiz-area').classList.add('hidden');
-        document.getElementById('message').innerText = gameState.setting.hasAction ? "【記憶】場所・物・動きをセットで！" : "【記憶】場所と物をリンクさせて！";
+        document.getElementById('message').innerText = "物と動きを場所とリンクさせて記憶！";
 
         let locIndices = [...Array(palaceLocations.length).keys()].sort(() => Math.random() - 0.5);
-        let availActions = gameState.setting.hardAction ? allActions : actionsBase;
+        let shuffledItems = [...menuItems].sort(() => Math.random() - 0.5);
+        let shuffledActions = [...allActions].sort(() => Math.random() - 0.5);
 
         for (let i = 0; i < gameState.setting.locs; i++) {
             let lIdx = locIndices[i];
-            let item = menuItems[Math.floor(Math.random() * menuItems.length)];
-            let action = availActions[Math.floor(Math.random() * availActions.length)];
-            
+            let item = shuffledItems[i]; // ユニーク
+            let action = shuffledActions[i % shuffledActions.length]; // 極力ユニーク
             gameState.currentMap.push({ idx: lIdx, name: palaceLocations[lIdx], item: item, action: action });
-
             const node = document.createElement('div');
             node.className = `loc-node pos-${lIdx}`;
-            
-            let iconClasses = "loc-icon";
-            if (gameState.setting.hasAction && gameState.useAnim && actionClassMap[action]) {
-                iconClasses += ` ${actionClassMap[action]}`;
-            }
-
-            let html = `<div class="loc-label">${palaceLocations[lIdx]}</div><div class="${iconClasses}">${item}</div>`;
-            if (gameState.setting.hasAction) {
-                html += `<div class="loc-action">${action}</div>`;
-            }
-            node.innerHTML = html;
+            let iconClasses = `loc-icon ${gameState.setting.hasAction && gameState.useAnim ? actionClassMap[action] || '' : ''}`;
+            node.innerHTML = `<div class="loc-label">${palaceLocations[lIdx]}</div><div class="${iconClasses}">${item}</div>${gameState.setting.hasAction ? `<div class="loc-action">${action}</div>` : ''}`;
             mapEl.appendChild(node);
         }
         updateDisplay();
@@ -422,50 +370,35 @@
         document.getElementById('palace-map').classList.add('hidden');
         document.getElementById('memorize-controls').classList.add('hidden');
         document.getElementById('interference-panel').classList.remove('hidden');
-        
-        const n1 = Math.floor(Math.random() * 50 + 10);
-        const n2 = Math.floor(Math.random() * 50 + 10);
+        const n1 = Math.floor(Math.random() * 40 + 10), n2 = Math.floor(Math.random() * 40 + 10);
         gameState.interferenceAns = n1 + n2;
         document.getElementById('calc-question').innerText = `${n1} + ${n2} = ?`;
         document.getElementById('calc-input').value = '';
     }
 
     function checkInterference() {
-        document.getElementById('interference-panel').classList.add('hidden');
-        document.getElementById('quiz-area').classList.remove('hidden');
-        generateQuestion();
+        if (parseInt(document.getElementById('calc-input').value) === gameState.interferenceAns) {
+            document.getElementById('interference-panel').classList.add('hidden');
+            document.getElementById('quiz-area').classList.remove('hidden');
+            generateQuestion();
+        } else alert("計算ミス！やり直し！");
     }
 
     function generateQuestion() {
-        gameState.currentQCount++;
-        gameState.totalAsked++;
-        gameState.selectedAnswers = []; // 回答のリセット
+        gameState.currentQCount++; gameState.totalAsked++; gameState.selectedAnswers = [];
         updateDisplay();
-        
         if (gameState.currentQCount > gameState.setting.qs) {
             document.getElementById('next-q-btn').classList.add('hidden');
             document.getElementById('next-round-btn').classList.remove('hidden');
-            document.getElementById('timer-container').classList.add('hidden');
             document.getElementById('message').innerText = "ラウンド終了！";
             return;
         }
-
-        const qText = document.getElementById('question-text');
-        const ansZone = document.getElementById('answer-zone');
-        ansZone.innerHTML = '';
-        document.getElementById('next-q-btn').classList.add('hidden');
-        document.getElementById('message').innerText = gameState.useTimer ? "素早く答えて！" : "じっくり思い出して！";
-
-        if (gameState.useTimer) {
-            document.getElementById('timer-container').classList.remove('hidden');
-            startTimer();
-        } else {
-            document.getElementById('timer-container').classList.add('hidden');
-        }
-
+        const qText = document.getElementById('question-text'), ansZone = document.getElementById('answer-zone');
+        ansZone.innerHTML = ''; document.getElementById('next-q-btn').classList.add('hidden');
+        if (gameState.useTimer) { document.getElementById('timer-container').classList.remove('hidden'); startTimer(); }
+        
         const target = gameState.currentMap[Math.floor(Math.random() * gameState.currentMap.length)];
-        let qTypeMax = gameState.setting.hasAction ? 4 : 2;
-        const qType = Math.floor(Math.random() * qTypeMax); 
+        const qType = Math.floor(Math.random() * (gameState.setting.hasAction ? 4 : 2)); 
 
         if(qType === 0) {
             qText.innerText = `「${target.name}」にあったものは？`;
@@ -473,134 +406,78 @@
             createEmojiKB(ansZone);
         } else if(qType === 1) {
             gameState.currentCorrectAnswers = gameState.currentMap.filter(m => m.item === target.item).map(m => m.name);
-            let multiText = gameState.currentCorrectAnswers.length > 1 ? " (すべて選んで！)" : "";
-            qText.innerText = `「${target.item}」はどこにあった？${multiText}`;
+            qText.innerText = `「${target.item}」はどこにあった？`;
             createChoices(ansZone, palaceLocations, gameState.currentCorrectAnswers);
         } else if(qType === 2) {
-            qText.innerText = `「${target.name}」の「${target.item}」はどうなっていた？`;
+            qText.innerText = `「${target.name}」の動きは？`;
             gameState.currentCorrectAnswers = [target.action];
             createChoices(ansZone, allActions, gameState.currentCorrectAnswers);
         } else {
             gameState.currentCorrectAnswers = gameState.currentMap.filter(m => m.action === target.action).map(m => m.name);
-            let multiText = gameState.currentCorrectAnswers.length > 1 ? " (すべて選んで！)" : "";
-            qText.innerText = `「${target.action}」のはどこ？${multiText}`;
+            qText.innerText = `「${target.action}」場所は？`;
             createChoices(ansZone, palaceLocations, gameState.currentCorrectAnswers);
         }
     }
 
     function startTimer() {
-        let timeLeft = timeLimit;
-        const bar = document.getElementById('timer-bar');
-        bar.style.width = "100%";
-        bar.style.backgroundColor = "#4caf50";
-        
+        let timeLeft = 15; const bar = document.getElementById('timer-bar');
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            const pct = (timeLeft / timeLimit) * 100;
-            bar.style.width = `${Math.max(0, pct)}%`;
-            if (pct < 30) bar.style.backgroundColor = "#d32f2f"; 
-
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                checkAnswer(null); // 時間切れ
-            }
+            timeLeft -= 0.1; bar.style.width = `${(timeLeft/15)*100}%`;
+            if (timeLeft <= 0) { clearInterval(timerInterval); checkAnswer(null); }
         }, 100);
     }
 
     function createEmojiKB(container) {
-        const div = document.createElement('div');
-        div.className = 'emoji-keyboard';
-        menuItems.forEach(e => {
-            const b = document.createElement('button');
-            b.className = 'emoji-btn'; b.innerText = e;
-            b.onclick = () => checkAnswer(e);
-            div.appendChild(b);
+        const div = document.createElement('div'); div.className = 'emoji-keyboard';
+        let presentItems = gameState.currentMap.map(m => m.item);
+        let displayItems = [...presentItems, ...menuItems.filter(i => !presentItems.includes(i)).sort(() => Math.random() - 0.5)].slice(0, 25).sort(() => Math.random() - 0.5);
+        displayItems.forEach(e => {
+            const b = document.createElement('button'); b.className = 'emoji-btn'; b.innerText = e;
+            b.onclick = () => checkAnswer(e); div.appendChild(b);
         });
         container.appendChild(div);
     }
 
-    // 複数正解をダミーに混ぜ込む
     function createChoices(container, list, correctAnswers) {
-        let dummies = list.filter(item => !correctAnswers.includes(item));
-        dummies = dummies.sort(() => Math.random() - 0.5).slice(0, Math.max(1, 4 - correctAnswers.length));
-        let items = [...new Set([...correctAnswers, ...dummies])].sort(() => Math.random() - 0.5);
-
+        let dummies = list.filter(item => !correctAnswers.includes(item)).sort(() => Math.random() - 0.5).slice(0, 4 - correctAnswers.length);
+        let items = [...correctAnswers, ...dummies].sort(() => Math.random() - 0.5);
         items.forEach(t => {
-            const b = document.createElement('button');
-            b.className = 'btn btn-sub'; 
-            b.style.width = "calc(50% - 16px)"; 
-            b.style.margin = "6px"; 
-            b.style.fontSize = "16px";
-            b.style.padding = "12px 10px";
-            b.innerText = t;
-            b.onclick = () => checkAnswer(t);
-            container.appendChild(b);
+            const b = document.createElement('button'); b.className = 'btn btn-sub'; b.style.width = "46%"; b.style.margin = "2%"; b.style.fontSize = "14px"; b.innerText = t;
+            b.onclick = () => checkAnswer(t); container.appendChild(b);
         });
     }
 
-    // 複数正解の判定処理
     function checkAnswer(val) {
-        if (val === null) {
-            finishQuestion(false, "⏳ 時間切れ！");
-            return;
-        }
-
+        if (val === null) return finishQuestion(false, "⌛ 時間切れ！");
         if (gameState.currentCorrectAnswers.includes(val)) {
             if (!gameState.selectedAnswers.includes(val)) {
                 gameState.selectedAnswers.push(val);
-                
-                // 押したボタンを緑色にして無効化
-                const buttons = Array.from(document.getElementById('answer-zone').querySelectorAll('button'));
-                const btn = buttons.find(b => b.innerText === val);
-                if(btn) {
-                    btn.disabled = true;
-                    btn.style.backgroundColor = "#4caf50"; 
-                }
-                
-                if (gameState.selectedAnswers.length === gameState.currentCorrectAnswers.length) {
-                    finishQuestion(true, "⭕ 正解！");
-                } else {
-                    document.getElementById('message').innerText = `良いぞ！あと ${gameState.currentCorrectAnswers.length - gameState.selectedAnswers.length} つ！`;
-                }
+                const btn = Array.from(document.querySelectorAll('#answer-zone button')).find(b => b.innerText === val);
+                if(btn) btn.style.backgroundColor = "#4caf50";
+                if (gameState.selectedAnswers.length === gameState.currentCorrectAnswers.length) finishQuestion(true, "⭕ 正解！");
             }
-        } else {
-            finishQuestion(false, "❌ 不正解！");
-        }
+        } else finishQuestion(false, "❌ 不正解！");
     }
 
-    function finishQuestion(isCorrect, msgTitle) {
-        clearInterval(timerInterval);
-        document.getElementById('timer-container').classList.add('hidden');
-
-        // 正解の文字列を「〇〇と〇〇」のように連結
-        const correctStr = gameState.currentCorrectAnswers.join(" と ");
-
-        if (isCorrect) {
-            gameState.correctCount++;
-            document.getElementById('message').innerText = msgTitle;
-            document.body.style.backgroundColor = "#e8f5e9";
-        } else {
-            document.getElementById('message').innerText = `${msgTitle}(正解: ${correctStr})`;
-            document.body.style.backgroundColor = "#ffebee";
-        }
-
-        Array.from(document.getElementById('answer-zone').querySelectorAll('button')).forEach(btn => btn.disabled = true);
+    function finishQuestion(isCorrect, msg) {
+        clearInterval(timerInterval); document.getElementById('timer-container').classList.add('hidden');
+        if (isCorrect) { gameState.correctCount++; document.body.style.backgroundColor = "#e8f5e9"; }
+        else { document.body.style.backgroundColor = "#ffebee"; msg += ` (正解: ${gameState.currentCorrectAnswers.join(",")})`; }
+        document.getElementById('message').innerText = msg;
+        document.getElementById('answer-zone').innerHTML = '';
         document.getElementById('next-q-btn').classList.remove('hidden');
-        updateDisplay();
     }
 
     function updateDisplay() {
-        document.getElementById('round-display').innerText = `ラウンド: ${gameState.round}/3`;
-        document.getElementById('score-display').innerText = `スコア: ${gameState.correctCount}/${gameState.totalAsked}`;
+        document.getElementById('round-display').innerText = `Round: ${gameState.round}/3`;
+        document.getElementById('score-display').innerText = `Score: ${gameState.correctCount}/${gameState.totalAsked}`;
     }
 
     function showResult() {
         document.getElementById('quiz-area').classList.add('hidden');
-        document.getElementById('game-info').classList.add('hidden');
         document.getElementById('result-area').classList.remove('hidden');
-        document.getElementById('message').innerText = "トレーニング完了！";
-        document.getElementById('final-result').innerText = `正解数: ${gameState.correctCount} / ${gameState.totalAsked}`;
+        document.getElementById('final-result').innerHTML = `🎉 終了！<br><span style="font-size:32px;">${gameState.correctCount} / ${gameState.totalAsked}</span>`;
     }
 </script>
 </body>
