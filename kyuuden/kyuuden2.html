@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>記憶の宮殿 究極3D v17.2 - 松乃木飯店</title>
+    <style>
+        :root {
+            --primary: #8e0000;
+            --gold: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            --gold-solid: #d4af37;
+            --bg: #1a1a1a;
+            --panel: #fffaf0;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            margin: 0; padding: 0;
+            height: 100dvh; width: 100vw;
+            overflow: hidden;
+            font-family: 'Hiragino Mincho ProN', serif;
+            background-color: var(--bg);
+        }
+
+        .game-container {
+            width: 100%; height: 100dvh;
+            max-width: 500px; margin: 0 auto;
+            background: var(--panel);
+            display: flex; flex-direction: column;
+            position: relative;
+            border: 4px solid var(--gold-solid);
+            border-image: var(--gold) 1;
+        }
+
+        /* ヘッダーデザイン（戻るボタン配置のため調整） */
+        h1 {
+            background: linear-gradient(to right, #600, #b00, #600);
+            color: #fff; text-shadow: 2px 2px 2px #000;
+            margin: 0; padding: 12px;
+            font-size: 1.3rem; text-align: center;
+            border-bottom: 3px solid var(--gold-solid);
+            position: relative; /* 戻るボタンの基準値 */
+        }
+
+        /* 戻るボタン追加 */
+        .back-btn {
+            display: none; /* 初期は非表示 */
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #333;
+            color: #fff;
+            border: 1px solid var(--gold-solid);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .screen { display: none; flex: 1; flex-direction: column; padding: 15px; overflow: hidden; position: relative; }
+        .active { display: flex; }
+
+        /* メニュー・カード */
+        .menu-card {
+            background: #fff; border: 2px solid var(--primary);
+            padding: 20px; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            width: 100%; max-height: 90%; overflow-y: auto;
+        }
+
+        /* 3Dマップエリア */
+        #palace-map {
+            flex: 1; background: #222; border-radius: 10px;
+            position: relative; overflow: hidden;
+            perspective: 1200px;
+            background-image: 
+                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 40px 40px;
+        }
+
+        /* アニメーション付きアイコン（ドラッグ対応のため pointer-events 削除、touch-action 追加） */
+        .item-icon {
+            position: absolute; font-size: 45px;
+            user-select: none; touch-action: none; cursor: grab;
+            filter: drop-shadow(0 15px 10px rgba(0,0,0,0.5));
+            transform-style: preserve-3d;
+        }
+        .item-icon:active { cursor: grabbing; }
+        
+        .loc-label {
+            position: absolute; bottom: -20px; left: 50%;
+            transform: translateX(-50%); font-size: 11px;
+            background: rgba(142, 0, 0, 0.9); color: #fff;
+            padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+            border: 1px solid var(--gold-solid);
+            pointer-events: none; /* ラベルはタッチ判定から外す */
+        }
+
+        /* アクション・アニメーション */
+        .anim-dance { animation: dance 2s infinite ease-in-out; }
+        .anim-float { animation: float 3s infinite ease-in-out; }
+        .anim-spin { animation: spin 4s infinite linear; }
+        .anim-pulse { animation: pulse 1.5s infinite ease-in-out; }
+        .anim-shake { animation: shake 0.5s infinite; }
+
+        @keyframes dance { 0%, 100% { transform: rotate(-15deg) translateZ(30px); } 50% { transform: rotate(15deg) translateY(-20px) translateZ(60px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0) translateZ(20px); } 50% { transform: translateY(-30px) translateZ(80px); } }
+        @keyframes spin { from { transform: rotateY(0) translateZ(40px); } to { transform: rotateY(360deg) translateZ(40px); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1) translateZ(20px); } 50% { transform: scale(1.3) translateZ(50px); } }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px) rotate(-5deg); } 75% { transform: translateX(5px) rotate(5deg); } }
+
+        /* ボタン・UI */
+        .btn {
+            background: var(--gold); border: none; color: #300;
+            padding: 14px 20px; font-size: 1.1rem; font-weight: bold;
+            border-radius: 8px; cursor: pointer; margin: 8px 0;
+            box-shadow: 0 5px 0 #860; width: 100%; transition: 0.1s;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #860; }
+        .btn-sub { background: #eee; box-shadow: 0 4px 0 #999; color: #333; margin-top: 5px; font-size: 0.9rem; }
+
+        select, input {
+            width: 100%; padding: 12px; margin: 10px 0;
+            border-radius: 8px; border: 2px solid #ccc; font-size: 1rem;
+        }
+
+        .calc-q { font-size: 2.5rem; color: var(--primary); font-weight: bold; margin: 20px 0; }
+        #timer-box { font-size: 1.2rem; font-weight: bold; color: var(--primary); text-align: right; }
+
+        /* クイズ選択肢 */
+        .quiz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>
+        <button id="back-to-title-btn" class="back-btn" onclick="resetToTitle()">◀ 戻る</button>
+        記憶の宮殿 究極3D v17.2
+    </h1>
+
+    <div id="screen-title" class="screen active">
+        <div class="menu-card">
+            <h2 style="color:var(--primary); text-align:center;">修行の設定</h2>
+            
+            <label>難易度（品数）</label>
+            <select id="diff-select">
+                <option value="0">【入門】並盛 (3品)</option>
+                <option value="1" selected>【初級】中盛 (5品)</option>
+                <option value="2">【中級】大盛 (8品)</option>
+                <option value="3">【上級】特盛 (12品)</option>
+                <option value="4">【超級】極 (15品)</option>
+                <option value="5">【伝説】松乃木 (20品)</option>
+                <option value="6">【神】究極 (25品)</option>
+            </select>
+
+            <label>演出・タイマー</label>
+            <button id="toggle-anim" class="btn btn-sub" onclick="toggleSetting('anim')">アニメーション: ON</button>
+            <button id="toggle-timer" class="btn btn-sub" onclick="toggleSetting('timer')">制限時間: あり</button>
+
+            <button class="btn" style="margin-top:20px; font-size:1.4rem;" onclick="startGame()">修行を開始する</button>
+        </div>
+    </div>
+
+    <div id="screen-memorize" class="screen">
+        <div id="timer-box">残り: --秒</div>
+        <div id="palace-map"></div>
+        <button class="btn" onclick="goToInterference()">覚えた！（精神統一へ）</button>
+    </div>
+
+    <div id="screen-interference" class="screen">
+        <div class="menu-card" style="text-align:center;">
+            <h3>精神統一（暗算3問）</h3>
+            <div id="calc-display" class="calc-q"></div>
+            <input type="number" id="calc-input" pattern="\d*" placeholder="答えを入力">
+            <button class="btn" onclick="checkCalc()">回答する</button>
+        </div>
+    </div>
+
+    <div id="screen-quiz-intro" class="screen">
+        <div class="menu-card" style="text-align:center;">
+            <h2 style="color:var(--primary)">準備完了</h2>
+            <p>全ての場所と料理、動きを思い出してください。</p>
+            <button id="start-quiz-btn" class="btn" style="font-size:1.5rem;" onclick="startQuiz()">問題を始める</button>
+        </div>
+    </div>
+
+    <div id="screen-quiz" class="screen">
+        <div class="menu-card" style="text-align:center;">
+            <div id="quiz-q-num" style="color:#666; font-size:0.9rem;"></div>
+            <h2 id="quiz-loc-name" style="color:var(--primary); margin:10px 0;"></h2>
+            <p id="quiz-instruction">に、何がありましたか？</p>
+            <div id="quiz-choices" class="quiz-grid"></div>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <div class="menu-card" style="text-align:center;">
+            <h2 id="result-msg"></h2>
+            <div id="result-score" style="font-size:2rem; margin:20px 0;"></div>
+            <button class="btn" onclick="location.reload()">もう一度修行する</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- データ定義 ---
+    const MENU_ITEMS = ['🍜','🥟','🍚','🍤','🍥','🥠','🍵','🥢','🏮','🥘','🥡','🍣','🍱','🍦','🍺','🍶'];
+    const LOCATIONS = [
+        "入口の招き猫", "レジカウンター", "円卓大", "円卓小", "厨房の隙間", 
+        "窓際の角席", "掲示板の前", "トイレのドア", "奥の座敷", "カウンター左端",
+        "ビールサーバー横", "駐車場側窓", "冷蔵庫の前", "出前箱の上", "天井の提灯"
+    ];
+    const ACTIONS = [
+        {txt: "が踊っている", cls: "anim-dance"},
+        {txt: "が浮いている", cls: "anim-float"},
+        {txt: "が回っている", cls: "anim-spin"},
+        {txt: "が爆発しそう", cls: "anim-pulse"},
+        {txt: "が震えている", cls: "anim-shake"}
+    ];
+    const DIFF_CONFIG = [3, 5, 8, 12, 15, 20, 25];
+
+    let state = {
+        anim: true,
+        timer: true,
+        diffIdx: 1,
+        data: [],
+        currentQ: 0,
+        score: 0,
+        calcCount: 0,
+        timerVal: 0
+    };
+
+    let timerInterval;
+
+    // --- システム関数 ---
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function toggleSetting(type) {
+        if(type === 'anim') {
+            state.anim = !state.anim;
+            document.getElementById('toggle-anim').innerText = `アニメーション: ${state.anim ? 'ON' : 'OFF'}`;
+        } else {
+            state.timer = !state.timer;
+            document.getElementById('toggle-timer').innerText = `制限時間: ${state.timer ? 'あり' : 'なし'}`;
+        }
+    }
+
+    // ★いつでも設定に戻る機能
+    function resetToTitle() {
+        clearInterval(timerInterval);
+        document.getElementById('back-to-title-btn').style.display = 'none';
+        document.getElementById('palace-map').innerHTML = ''; // マップをクリア
+        showScreen('screen-title');
+    }
+
+    // --- ゲームロジック ---
+    function startGame() {
+        // 設定画面以外では戻るボタンを表示
+        document.getElementById('back-to-title-btn').style.display = 'block';
+
+        state.diffIdx = parseInt(document.getElementById('diff-select').value);
+        const count = DIFF_CONFIG[state.diffIdx];
+        
+        state.data = [];
+        let shuffledLocs = [...LOCATIONS].sort(() => Math.random() - 0.5);
+        while(shuffledLocs.length < count) shuffledLocs = [...shuffledLocs, ...shuffledLocs.map(l => l + "(奥)")];
+
+        for(let i=0; i<count; i++) {
+            state.data.push({
+                loc: shuffledLocs[i],
+                item: MENU_ITEMS[Math.floor(Math.random() * MENU_ITEMS.length)],
+                action: ACTIONS[Math.floor(Math.random() * ACTIONS.length)]
+            });
+        }
+
+        showScreen('screen-memorize');
+        renderPalace();
+
+        if(state.timer) {
+            let time = Math.max(10, count * 3);
+            startTimer(time, goToInterference);
+        } else {
+            document.getElementById('timer-box').innerText = "制限時間: なし";
+        }
+    }
+
+    function renderPalace() {
+        const map = document.getElementById('palace-map');
+        map.innerHTML = '';
+        const positions = [];
+        const minDist = 76; // 半径2cm以上離す
+
+        state.data.forEach(d => {
+            const el = document.createElement('div');
+            el.className = 'item-icon';
+            if(state.anim) el.classList.add(d.action.cls);
+            
+            el.innerHTML = `${d.item}<div class="loc-label">${d.loc}</div>`;
+
+            let pos = {x:0, y:0};
+            let safe = false, attempts = 0;
+            while(!safe && attempts < 150) {
+                pos.x = Math.random() * (map.clientWidth - 100) + 50;
+                pos.y = Math.random() * (map.clientHeight - 100) + 50;
+                safe = positions.every(p => Math.sqrt((pos.x-p.x)**2 + (pos.y-p.y)**2) >= minDist);
+                attempts++;
+            }
+            positions.push(pos);
+            el.style.left = `${pos.x}px`;
+            el.style.top = `${pos.y}px`;
+            map.appendChild(el);
+        });
+    }
+
+    // ★ドラッグ＆ドロップ（指で動かせる機能）の実装
+    const mapEl = document.getElementById('palace-map');
+    let draggedItem = null;
+    let offsetX = 0, offsetY = 0;
+
+    mapEl.addEventListener('mousedown', startDrag);
+    mapEl.addEventListener('touchstart', startDrag, {passive: false});
+
+    function startDrag(e) {
+        draggedItem = e.target.closest('.item-icon');
+        if (!draggedItem) return;
+
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+        const rect = draggedItem.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+
+        // 触ったアイコンを最前面にする
+        document.querySelectorAll('.item-icon').forEach(el => el.style.zIndex = 1);
+        draggedItem.style.zIndex = 100;
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+    }
+
+    function dragMove(e) {
+        if (!draggedItem) return;
+        e.preventDefault(); // ドラッグ中の画面スクロールを防止
+
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+        const mapRect = mapEl.getBoundingClientRect();
+        let newX = clientX - mapRect.left - offsetX;
+        let newY = clientY - mapRect.top - offsetY;
+
+        // マップ領域からハミ出さないように制限
+        newX = Math.max(0, Math.min(newX, mapEl.clientWidth - draggedItem.offsetWidth));
+        newY = Math.max(0, Math.min(newY, mapEl.clientHeight - draggedItem.offsetHeight));
+
+        draggedItem.style.left = newX + 'px';
+        draggedItem.style.top = newY + 'px';
+    }
+
+    function endDrag() {
+        draggedItem = null;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchend', endDrag);
+    }
+
+    function startTimer(sec, onEnd) {
+        state.timerVal = sec;
+        const box = document.getElementById('timer-box');
+        box.innerText = `残り: ${state.timerVal}秒`;
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            state.timerVal--;
+            box.innerText = `残り: ${state.timerVal}秒`;
+            if(state.timerVal <= 0) {
+                clearInterval(timerInterval);
+                onEnd();
+            }
+        }, 1000);
+    }
+
+    // --- フェーズ遷移 ---
+    function goToInterference() {
+        clearInterval(timerInterval);
+        state.calcCount = 0;
+        showScreen('screen-interference');
+        nextCalc();
+    }
+
+    function nextCalc() {
+        const a = Math.floor(Math.random() * 20) + 10;
+        const b = Math.floor(Math.random() * 20) + 10;
+        state.calcAns = a + b;
+        document.getElementById('calc-display').innerText = `${a} + ${b} = ?`;
+        document.getElementById('calc-input').value = '';
+        document.getElementById('calc-input').focus();
+    }
+
+    function checkCalc() {
+        const input = parseInt(document.getElementById('calc-input').value);
+        if(input === state.calcAns) {
+            state.calcCount++;
+            if(state.calcCount >= 3) {
+                showScreen('screen-quiz-intro');
+            } else {
+                nextCalc();
+            }
+        } else {
+            alert("修行が足りません！落ち着いて計算を。");
+        }
+    }
+
+    // --- クイズフェーズ ---
+    function startQuiz() {
+        state.currentQ = 0;
+        state.score = 0;
+        showScreen('screen-quiz');
+        renderQuiz();
+    }
+
+    function renderQuiz() {
+        const q = state.data[state.currentQ];
+        document.getElementById('quiz-q-num').innerText = `${state.currentQ + 1} / ${state.data.length} 問目`;
+        document.getElementById('quiz-loc-name').innerText = `「${q.loc}」`;
+        
+        const choicesDiv = document.getElementById('quiz-choices');
+        choicesDiv.innerHTML = '';
+
+        let choices = [`${q.item}${q.action.txt}`];
+        while(choices.length < 4) {
+            let randItem = MENU_ITEMS[Math.floor(Math.random() * MENU_ITEMS.length)];
+            let randAct = ACTIONS[Math.floor(Math.random() * ACTIONS.length)].txt;
+            let c = `${randItem}${randAct}`;
+            if(!choices.includes(c)) choices.push(c);
+        }
+        choices.sort(() => Math.random() - 0.5);
+
+        choices.forEach(c => {
+            const b = document.createElement('button');
+            b.className = 'btn';
+            b.style.fontSize = '1.2rem';
+            b.innerText = c;
+            b.onclick = () => handleQuizAns(c === `${q.item}${q.action.txt}`);
+            choicesDiv.appendChild(b);
+        });
+    }
+
+    function handleQuizAns(isCorrect) {
+        if(isCorrect) state.score++;
+        state.currentQ++;
+        if(state.currentQ < state.data.length) {
+            renderQuiz();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        showScreen('screen-result');
+        const scoreBox = document.getElementById('result-score');
+        const msgBox = document.getElementById('result-msg');
+        
+        scoreBox.innerText = `${state.data.length}問中 ${state.score}問 正解！`;
+        
+        const rate = state.score / state.data.length;
+        if(rate === 1) msgBox.innerText = "【究極】免許皆伝です！";
+        else if(rate >= 0.7) msgBox.innerText = "【合格】素晴らしい記憶力！";
+        else if(rate >= 0.4) msgBox.innerText = "【並】もう少し頑張りましょう。";
+        else msgBox.innerText = "【修行不足】再挑戦を！";
+    }
+</script>
+
+</body>
+</html>
