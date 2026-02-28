@@ -60,7 +60,7 @@
 
         .cv-black { background-color: #000 !important; }
         .cv-white { background-color: #ffffff !important; }
-        .cv-blue { background-color: #001f3f !important; }
+        .cv-blue { background-color: #0000FF !important; }
 
         .dot {
             position: absolute;
@@ -145,8 +145,8 @@
             <label>表示エリア色</label>
             <select id="bgColorSelect" onchange="changeCanvasBg()">
                 <option value="cv-black" selected>黒</option>
-                <option value="cv-white">白</option>
                 <option value="cv-blue">青</option>
+                <option value="cv-white">白</option>
             </select>
         </div>
         <div class="input-group">
@@ -198,7 +198,14 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') drawDots();
+            if (e.key === 'Enter') {
+                const max = parseInt(document.getElementById("maxDots").value);
+                if (max > 10 && isWaitingAnswer && currentInput !== "") {
+                    confirmAnswer();
+                } else {
+                    drawDots();
+                }
+            }
             if (!isWaitingAnswer) return;
             if (e.key >= '0' && e.key <= '9') {
                 const max = parseInt(document.getElementById("maxDots").value);
@@ -225,21 +232,19 @@
             
             createAnswerUI(minDots, maxDots);
 
-            // 玉のサイズ調整
             let dotSize = 55;
             if (correctCount > 10) dotSize = 40;
             if (correctCount > 30) dotSize = 25;
             if (correctCount > 60) dotSize = 15;
 
-            const gap = 4; // 1mm ≒ 4px (一般的なディスプレイ基準)
+            const gap = 4; 
             const padding = 10;
             const placedDots = [];
 
             for (let i = 0; i < correctCount; i++) {
                 let x, y, overlap;
                 let attempts = 0;
-                // 配置試行回数を増やして重なりを回避しやすくする
-                const maxAttempts = 300;
+                const maxAttempts = 500;
 
                 do {
                     overlap = false;
@@ -248,7 +253,6 @@
                     
                     for (const dot of placedDots) {
                         const dist = Math.sqrt((dot.x - x) ** 2 + (dot.y - y) ** 2);
-                        // 玉のサイズ(半径の合計) + 指定された間隔(1mm) 以下の場合は重なりとみなす
                         if (dist < (dotSize + gap)) { 
                             overlap = true; 
                             break; 
@@ -267,6 +271,7 @@
             }
 
             isWaitingAnswer = true;
+
             if (flashTime < 10) {
                 setTimeout(() => {
                     const dots = document.querySelectorAll(".dot");
@@ -331,25 +336,30 @@
 
         function checkAnswer(selected) {
             if (!isWaitingAnswer) return;
+            
             const msg = document.getElementById("msg");
             if (selected === correctCount) {
+                // 正解なら即座に次へ進む
                 combo++;
-                msg.textContent = "正解！";
-                msg.style.color = "#00FF7F";
                 document.getElementById("stats").textContent = `Combo: ${combo}`;
                 isWaitingAnswer = false;
-                setTimeout(drawDots, 800);
+                drawDots(); 
             } else {
+                // 不正解ならComboリセットしてメッセージ表示、入力待機継続
                 combo = 0;
-                msg.textContent = `正解は ${correctCount}`;
+                msg.textContent = `残念。正解は ${correctCount}`;
                 msg.style.color = "#FF4500";
                 document.getElementById("stats").textContent = `Combo: 0`;
-                isWaitingAnswer = false;
+                currentInput = ""; // 入力フィールドのみリセットして再入力を促す
+                if (document.getElementById("displayFieldValue")) {
+                    document.getElementById("displayFieldValue").textContent = "-";
+                }
             }
         }
 
         function resetGame() {
             combo = 0;
+            currentInput = "";
             document.getElementById("stats").textContent = `Combo: 0`;
             document.getElementById("canvas").innerHTML = "";
             document.getElementById("msg").textContent = "リセットしました";
