@@ -44,18 +44,24 @@
         label { font-size: 0.7rem; color: #ADD8E6; margin-bottom: 2px; }
         input, select { width: 90%; background: #222; border: 1px solid #444; color: white; padding: 3px; border-radius: 5px; text-align: center; }
 
+        /* キャンバス（ドッツ表示エリア） */
         #canvas {
             position: relative;
             width: 100%;
             max-width: 400px;
-            height: 35vh;
+            height: 35vh; /* 通常時の高さ */
             border: 2px solid #66FFFF;
             box-shadow: 0 0 15px rgba(102, 255, 255, 0.3);
             margin-bottom: 5px;
             overflow: hidden;
             border-radius: 10px;
             background-color: #000;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, height 0.3s ease-in-out; /* 高さと色の変化を滑らかに */
+        }
+
+        /* 設定非表示時の拡大スタイル */
+        #canvas.expanded {
+            height: 55vh; /* 設定エリアが消える分、大きく表示 */
         }
 
         .cv-black { background-color: #000 !important; }
@@ -152,6 +158,7 @@
         <div class="input-group">
             <label>表示時間</label>
             <select id="flashTime">
+                <option value="0.05">0.05 (超神速)</option>
                 <option value="0.1">0.1 (神速)</option>
                 <option value="0.3">0.3 (超難問)</option>
                 <option value="0.5" selected>0.5 (推奨)</option>
@@ -193,8 +200,12 @@
             canvas.className = theme;
         }
 
+        // 設定の切り替えとキャンバスサイズの連動
         function toggleSettings() {
-            document.getElementById('settingsArea').classList.toggle('hidden');
+            const settings = document.getElementById('settingsArea');
+            const canvas = document.getElementById('canvas');
+            settings.classList.toggle('hidden');
+            canvas.classList.toggle('expanded');
         }
 
         window.addEventListener('keydown', (e) => {
@@ -339,18 +350,16 @@
             
             const msg = document.getElementById("msg");
             if (selected === correctCount) {
-                // 正解なら即座に次へ進む
                 combo++;
                 document.getElementById("stats").textContent = `Combo: ${combo}`;
                 isWaitingAnswer = false;
                 drawDots(); 
             } else {
-                // 不正解ならComboリセットしてメッセージ表示、入力待機継続
                 combo = 0;
                 msg.textContent = `残念。正解は ${correctCount}`;
                 msg.style.color = "#FF4500";
                 document.getElementById("stats").textContent = `Combo: 0`;
-                currentInput = ""; // 入力フィールドのみリセットして再入力を促す
+                currentInput = ""; 
                 if (document.getElementById("displayFieldValue")) {
                     document.getElementById("displayFieldValue").textContent = "-";
                 }
