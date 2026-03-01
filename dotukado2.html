@@ -89,7 +89,6 @@
             transform-style: preserve-3d;
         }
 
-        /* 比較モード用のセンターライン */
         #comparison-line {
             position: absolute;
             left: 50%;
@@ -225,7 +224,7 @@
                 </select>
             </div>
             <div class="setup-group">
-                <label>大小比較モード (左右どちらが多いか)</label>
+                <label>大小比較モード (左右差1～2個)</label>
                 <select id="compareMode">
                     <option value="off" selected>OFF</option>
                     <option value="on">ON (左右比較)</option>
@@ -395,7 +394,7 @@
             document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "1");
             const msg = document.getElementById("msg");
             msg.style.color = "#00FFFF";
-            msg.textContent = config.compare ? `正解: ${correctCount}` : `正解: ${correctCount}`;
+            msg.textContent = `正解を表示中...`;
             setTimeout(generateNewProblem, 300); 
         }
 
@@ -424,14 +423,17 @@
             }
             canvas.style.backgroundColor = currentBg;
 
-            // 数値決定ロジック
+            // 数値決定ロジック：左右差を1〜2に限定
             let currentDotsToShow;
             if (config.compare) {
                 let left = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
                 let right;
-                do {
-                    right = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
-                } while (left === right);
+                let diffs = [-2, -1, 1, 2].filter(d => (left + d) >= config.minDots && (left + d) <= config.maxDots);
+                if (diffs.length === 0) {
+                    right = left + 1 <= config.maxDots ? left + 1 : left - 1;
+                } else {
+                    right = left + diffs[Math.floor(Math.random() * diffs.length)];
+                }
                 currentDotsToShow = { left, right };
             } else {
                 currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
@@ -445,7 +447,7 @@
                     isWaitingAnswer = false;
                 } else {
                     correctCount = lastShownCount;
-                    targetInfo.textContent = config.compare ? "【N-Back：1つ前はどっちが多い？】" : "【N-Back：1つ前を答えろ】";
+                    targetInfo.textContent = config.compare ? "【N-Back：1つ前はどっちが多かった？】" : "【N-Back：1つ前を答えろ】";
                     isWaitingAnswer = true;
                 }
                 lastShownCount = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
@@ -474,18 +476,20 @@
                 canvas.appendChild(stroopDiv);
             }
 
-            // ドッツ描画
-            const padding = 20;
-            const gap = 4;
+            // ドッツ描画（重なり防止ロジック強化）
+            const padding = 15;
+            const gap = 2; // 最小隙間
             
             const drawSet = (count, xOffset, width) => {
                 let dotSize;
+                const areaFactor = count > 50 ? 0.8 : 1.0; 
                 if (config.sizeMode === 'dynamic') {
-                    const maxSize = 80; const minSize = 12;
-                    dotSize = count <= 1 ? maxSize : (count >= 100 ? minSize : maxSize - (count - 1) * (68 / 99));
+                    const maxSize = 60; const minSize = 10;
+                    dotSize = count <= 1 ? maxSize : (count >= 100 ? minSize : maxSize - (count - 1) * (50 / 99));
                 } else {
-                    dotSize = count > 30 ? 25 : (count > 10 ? 40 : 55);
+                    dotSize = count > 30 ? 20 : (count > 10 ? 35 : 50);
                 }
+                dotSize *= areaFactor;
 
                 const localPlaced = [];
                 for (let i = 0; i < count; i++) {
@@ -495,12 +499,17 @@
                         x = xOffset + Math.random() * (width - dotSize - padding * 2) + padding;
                         y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
                         z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
+                        
+                        // 重なり判定：中心距離が半径の和+gapより小さいか
                         for (const dot of localPlaced) {
-                            if (Math.sqrt((dot.x - x)**2 + (dot.y - y)**2) < (dotSize + gap)) { overlap = true; break; }
+                            const dist = Math.sqrt((dot.x - x)**2 + (dot.y - y)**2);
+                            if (dist < (dotSize + gap)) { overlap = true; break; }
                         }
                         attempts++;
-                    } while (overlap && attempts < 800);
+                    } while (overlap && attempts < 1000);
                     
+                    if (attempts >= 1000) continue; // 配置限界
+
                     localPlaced.push({x, y, z});
                     const dot = document.createElement("div");
                     dot.className = "dot";
@@ -516,24 +525,23 @@
             };
 
             if (config.compare) {
-                drawSet(currentDotsToShow.left, 0, canvas.clientWidth / 2);
-                drawSet(currentDotsToShow.right, canvas.clientWidth / 2, canvas.clientWidth / 2);
+                const mid = canvas.clientWidth / 2;
+                drawSet(currentDotsToShow.left, 0, mid);
+                drawSet(currentDotsToShow.right, mid, mid);
             } else {
                 drawSet(currentDotsToShow, 0, canvas.clientWidth);
             }
 
-            // フラッシュ＆残像消去・定着ロジック
+            // フラッシュ＆残像消去・定着
             if (config.flashTime < 10) {
                 setTimeout(() => {
                     document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "0");
-                    
                     if (config.afterimage) {
-                        // 残像定着：一瞬白くする
                         canvas.style.backgroundColor = "#FFF";
                         setTimeout(() => {
                             canvas.style.backgroundColor = currentBg;
                             applyMask(mask);
-                        }, 100); // 0.1秒の白フラッシュ
+                        }, 100);
                     } else {
                         applyMask(mask);
                     }
@@ -608,7 +616,7 @@
                 updateStats(); generateNewProblem(); 
             } else {
                 combo = 0; updateStats();
-                msg.textContent = `正解は ${correctCount}`; 
+                msg.textContent = config.compare ? `ハズレ！` : `正解は ${correctCount}`; 
                 msg.style.color = "#FF4500";
                 currentInput = ""; 
                 if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
