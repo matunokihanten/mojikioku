@@ -110,6 +110,7 @@
             color: #ADD8E6;
             height: 1.2rem;
             text-align: center;
+            font-weight: bold;
         }
 
         #answerArea {
@@ -183,6 +184,13 @@
                 </select>
             </div>
             <div class="setup-group">
+                <label>N-Back (1つ前を回答)</label>
+                <select id="nBackMode">
+                    <option value="off" selected>OFF (通常の回答)</option>
+                    <option value="on">ON (1つ前の数を回答)</option>
+                </select>
+            </div>
+            <div class="setup-group">
                 <label>次元設定</label>
                 <select id="dimensionMode">
                     <option value="2d" selected>2D (平面)</option>
@@ -242,6 +250,7 @@
 
     <script>
         let correctCount = 0;
+        let lastShownCount = null; // N-Back用：直前に表示された数
         let combo = 0;
         let isWaitingAnswer = false;
         let isTransitioning = false; 
@@ -251,6 +260,7 @@
         function startTraining() {
             config = {
                 mode: document.getElementById('gameMode').value,
+                nBack: document.getElementById('nBackMode').value === 'on',
                 dimension: document.getElementById('dimensionMode').value,
                 flashTime: parseFloat(document.getElementById('flashTime').value),
                 minDots: parseInt(document.getElementById('minDots').value),
@@ -264,6 +274,7 @@
             document.getElementById('game-screen').classList.remove('hidden');
             
             combo = 0;
+            lastShownCount = null; // リセット
             updateStats();
             generateNewProblem();
         }
@@ -310,9 +321,9 @@
         function generateNewProblem() {
             isTransitioning = false;
             const canvas = document.getElementById("canvas");
+            const targetInfo = document.getElementById("target-info");
             canvas.innerHTML = "";
             document.getElementById("msg").textContent = ""; 
-            document.getElementById("target-info").textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
             currentInput = "";
             
             let currentBg = "#000";
@@ -325,19 +336,41 @@
             }
             canvas.style.backgroundColor = currentBg;
 
-            // 玉の数を決定
-            let totalToPlace = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
-            correctCount = totalToPlace;
+            // 今回表示する玉の数
+            let currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+
+            // --- N-Back ロジック ---
+            if (config.nBack) {
+                if (lastShownCount === null) {
+                    // 初回：表示するだけで回答は求めない
+                    correctCount = null;
+                    targetInfo.textContent = "【1回目：数を覚えて「次へ」】";
+                    isWaitingAnswer = false;
+                } else {
+                    // 2回目以降：前回表示した数が正解になる
+                    correctCount = lastShownCount;
+                    targetInfo.textContent = "【N-Back：1つ前の数を答えろ】";
+                    isWaitingAnswer = true;
+                }
+                lastShownCount = currentDotsToShow; // 今回の数を記憶
+            } else {
+                // 通常モード
+                correctCount = currentDotsToShow;
+                targetInfo.textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
+                isWaitingAnswer = true;
+            }
+            // -----------------------
 
             createAnswerUI();
 
             let dotSize;
+            const displayCount = currentDotsToShow; // 画面に描画する数
             if (config.sizeMode === 'dynamic') {
                 const maxSize = 80;
                 const minSize = 12;
-                dotSize = totalToPlace <= 1 ? maxSize : (totalToPlace >= 100 ? minSize : maxSize - (totalToPlace - 1) * (68 / 99));
+                dotSize = displayCount <= 1 ? maxSize : (displayCount >= 100 ? minSize : maxSize - (displayCount - 1) * (68 / 99));
             } else {
-                dotSize = totalToPlace > 30 ? 25 : (totalToPlace > 10 ? 40 : 55);
+                dotSize = displayCount > 30 ? 25 : (displayCount > 10 ? 40 : 55);
             }
 
             const gap = 4;
@@ -345,7 +378,7 @@
             const placedDots = [];
 
             if (config.layoutPattern === 'random') {
-                for (let i = 0; i < totalToPlace; i++) {
+                for (let i = 0; i < displayCount; i++) {
                     let x, y, z, overlap, attempts = 0;
                     do {
                         overlap = false;
@@ -360,11 +393,11 @@
                     placedDots.push({x, y, z});
                 }
             } else {
-                const cols = Math.ceil(Math.sqrt(totalToPlace));
-                const rows = Math.ceil(totalToPlace / cols);
+                const cols = Math.ceil(Math.sqrt(displayCount));
+                const rows = Math.ceil(displayCount / cols);
                 const cellW = (canvas.clientWidth - padding * 2) / cols;
                 const cellH = (canvas.clientHeight - padding * 2) / rows;
-                for (let i = 0; i < totalToPlace; i++) {
+                for (let i = 0; i < displayCount; i++) {
                     const r = Math.floor(i / cols);
                     const c = i % cols;
                     placedDots.push({
@@ -380,21 +413,18 @@
                 dot.className = "dot";
                 let depthScale = config.dimension === '3d' ? 1 + (pos.z / 400) : 1;
                 let brightness = config.dimension === '3d' ? 0.6 + ((pos.z + 200) / 400) * 0.4 : 1;
-                
                 dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
                 dot.style.left = `${pos.x}px`;
                 dot.style.top = `${pos.y}px`;
-                
                 let h = baseColorH;
                 dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${h},100%,${50*brightness+20}%), hsl(${h},100%,${50*brightness}%), hsl(${h},100%,${50*brightness-20}%))`;
                 if (config.dimension === '3d') dot.style.transform = `translateZ(${pos.z}px)`;
                 canvas.appendChild(dot);
             });
 
-            isWaitingAnswer = true;
             if (config.flashTime < 10) {
                 setTimeout(() => {
-                    if (isWaitingAnswer) document.querySelectorAll(".dot").forEach(d => d.style.opacity = "0");
+                    document.querySelectorAll(".dot").forEach(d => d.style.opacity = "0");
                 }, config.flashTime * 1000);
             }
         }
@@ -402,6 +432,10 @@
         function createAnswerUI() {
             const container = document.getElementById("answerArea");
             container.innerHTML = "";
+            
+            // N-Backの初回などで回答が不要な場合はUIを表示しない
+            if (!isWaitingAnswer) return;
+
             const buttonCount = config.maxDots - config.minDots + 1;
 
             if (buttonCount >= 11) {
@@ -437,22 +471,16 @@
             if (selected === correctCount) {
                 if (msg.textContent === "") combo++; 
                 
-                // --- レベルアップモードの処理 ---
                 if (config.mode === 'levelup' && combo > 0 && combo % 10 === 0) {
                     config.minDots++;
                     config.maxDots++;
                     document.getElementById('minDots').value = config.minDots;
                     document.getElementById('maxDots').value = config.maxDots;
-                    
                     msg.textContent = "LEVEL UP! 玉の範囲増加！";
                     msg.style.color = "#00FF00";
-                    setTimeout(() => {
-                        updateStats();
-                        generateNewProblem(); 
-                    }, 800);
+                    setTimeout(() => { updateStats(); generateNewProblem(); }, 800);
                     return;
                 }
-                // -----------------------------
 
                 updateStats();
                 generateNewProblem(); 
