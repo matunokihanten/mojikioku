@@ -3,9 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>右脳覚醒：ドッツトレーニング Pro MAX</title>
+    <title>右脳覚醒：ドッツトレーニング Pro MAX</title><!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>右脳覚醒：ドッツトレーニング Pro MAX 3D</title>
     <style>
         * { box-sizing: border-box; touch-action: manipulation; }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh;
+            margin: 0;
+            padding: 5px;
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            background: #000;
+            color: #E0E0E0;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        .hidden { display: none !important; }
+
+        #setup-screen {
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .setup-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #333;
+        }
+        .setup-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .setup-group label {
+            font-size: 0.85rem;
+            color: #ADD8E6;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .setup-group select, .setup-group input {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        #game-screen {
+            justify-content: space-between;
+        }
+
+        #stats {
+            font-size: 1rem;
+            color: #00FFFF;
+            padding: 5px 0;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+
+        #canvas {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            flex: 1;
+            min-height: 150px;
+            border: 2px solid #66FFFF;
+            box-shadow: 0 0 15px rgba(102, 255, 255, 0.2);
+            margin: 5px 0;
+            overflow: hidden;
+            border-radius: 10px;
+            transition: background-color 0.2s;
+            perspective: 800px;
+            transform-style: preserve-3d;
+        }
+
+        .dot {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+            transition: opacity 0.1s ease-out;
+        }
+
+        #msg {
+            min-height: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 2px 0;
+            color: #FFD700;
+        }
+
+        #target-info {
+            font-size: 0.9rem;
+            color: #ADD8E6;
+            height: 1.2rem;
+            text-align: center;
+        }
+
+        #answerArea {
+            width: 100%;
+            max-width: 400px;
+            display: grid;
+            gap: 4px;
+            margin-bottom: 5px;
+        }
+
+        .grid-small { grid-template-columns: repeat(5, 1fr); }
+        .grid-keypad { grid-template-columns: repeat(3, 1fr); }
+
+        .btn-ans {
+            height: 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(102, 255, 255, 0.1);
+            color: #E0E0E0;
+            border: 1px solid #66FFFF;
+            border-radius: 8px;
+        }
+        .btn-ans:active { background: #66FFFF; color: #000; }
+
+        #displayFieldValue {
+            grid-column: span 3;
+            background: #000;
+            color: #00FFFF;
+            font-size: 1.4rem;
+            text-align: center;
+            border: 1px solid #66FFFF;
+            border-radius: 8px;
+            margin-bottom: 2px;
+            height: 38px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            padding: 5px 0 10px 0;
+        }
+
+        .btn-main {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        #startBtn { background: #00d2ff; color: #000; }
+        #backToSetup { background: #444; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen" class="screen">
+        <h2 style="color:#00FFFF; margin: 10px 0;">脳トレ設定 Pro 3D</h2>
+        <div class="setup-card">
+            <div class="setup-group">
+                <label>モード選択</label>
+                <select id="gameMode">
+                    <option value="normal" selected>通常 (そのまま答える)</option>
+                    <option value="calc">演算 (＋1した数を答える)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>次元設定</label>
+                <select id="dimensionMode">
+                    <option value="2d" selected>2D (平面)</option>
+                    <option value="3d">3D (立体空間)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>表示時間 (秒)</label>
+                <select id="flashTime">
+                    <option value="0.05">0.05 (超神速)</option>
+                    <option value="0.1">0.1 (神速)</option>
+                    <option value="0.3">0.3 (超難問)</option>
+                    <option value="0.5" selected>0.5 (推奨)</option>
+                    <option value="999">消さない</option>
+                </select>
+            </div>
+            <div class="setup-group" style="flex-direction: row; gap: 10px;">
+                <div style="flex:1;"><label>最小玉数</label><input type="number" id="minDots" value="1" min="1"></div>
+                <div style="flex:1;"><label>最大玉数</label><input type="number" id="maxDots" value="10" min="1"></div>
+            </div>
+            <div class="setup-group">
+                <label>玉のサイズ調整</label>
+                <select id="sizeMode">
+                    <option value="dynamic" selected>可変 (1〜100個で自動縮小)</option>
+                    <option value="fixed">固定 (段階調整)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>カラーノイズ</label>
+                <select id="colorNoise">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (ランダム配色)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>配置パターン</label>
+                <select id="layoutPattern">
+                    <option value="random" selected>ランダム配置</option>
+                    <option value="grid">整列配置（グリッド）</option>
+                </select>
+            </div>
+            <button id="startBtn" class="btn-main" onclick="startTraining()" style="margin-top:10px; width:100%;">トレーニング開始</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div id="stats">Combo: 0</div>
+        <div id="target-info"></div>
+        <div id="canvas" onclick="drawDotsNext()"></div>
+        <div id="msg"></div>
+        <div id="answerArea"></div>
+        <div class="controls">
+            <button id="backToSetup" class="btn-main" onclick="showSetup()">設定に戻る</button>
+            <button id="nextBtn" class="btn-main" style="background:#00d2ff; color:#000;" onclick="drawDotsNext()">次へ (Enter)</button>
+        </div>
+    </div>
+
+    <script>
+        let correctCount = 0;
+        let combo = 0;
+        let isWaitingAnswer = false;
+        let isTransitioning = false; 
+        let currentInput = "";
+        let config = {};
+
+        function startTraining() {
+            config = {
+                mode: document.getElementById('gameMode').value,
+                dimension: document.getElementById('dimensionMode').value,
+                flashTime: parseFloat(document.getElementById('flashTime').value),
+                minDots: parseInt(document.getElementById('minDots').value),
+                maxDots: parseInt(document.getElementById('maxDots').value),
+                sizeMode: document.getElementById('sizeMode').value,
+                autoLevelUp: true,
+                colorNoise: document.getElementById('colorNoise').value === 'on',
+                layoutPattern: document.getElementById('layoutPattern').value
+            };
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            combo = 0;
+            updateStats();
+            generateNewProblem();
+        }
+
+        function showSetup() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            isWaitingAnswer = false;
+            isTransitioning = false;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('game-screen').classList.contains('hidden')) return;
+            if (e.key === 'Enter') drawDotsNext();
+            if (!isWaitingAnswer || isTransitioning) return;
+            if (e.key >= '0' && e.key <= '9') {
+                const maxAns = config.mode === 'calc' ? config.maxDots + 1 : config.maxDots;
+                const buttonCount = maxAns - config.minDots + 1;
+                if (buttonCount <= 10) checkAnswer(parseInt(e.key)); else addNumber(e.key);
+            }
+            if (e.key === 'Backspace') backspace();
+        });
+
+        function drawDotsNext() {
+            if (isTransitioning) return;
+            if (isWaitingAnswer) {
+                revealAnswerAndNext();
+            } else {
+                generateNewProblem();
+            }
+        }
+
+        function revealAnswerAndNext() {
+            isTransitioning = true;
+            isWaitingAnswer = false;
+            document.querySelectorAll(".dot").forEach(d => d.style.opacity = "1");
+            const msg = document.getElementById("msg");
+            msg.style.color = "#00FFFF";
+            msg.textContent = `正解: ${correctCount}`;
+            setTimeout(generateNewProblem, 300); 
+        }
+
+        function generateNewProblem() {
+            isTransitioning = false;
+            const canvas = document.getElementById("canvas");
+            canvas.innerHTML = "";
+            document.getElementById("msg").textContent = ""; 
+            document.getElementById("target-info").textContent = config.mode === 'calc' ? "【玉の数 ＋ 1】を答えよ" : "";
+            currentInput = "";
+            
+            let currentBg = "#000";
+            let baseColorH = 0; 
+
+            if (config.colorNoise) {
+                const colors = ["#000", "#000033", "#1a001a", "#001a00"];
+                currentBg = colors[Math.floor(Math.random() * colors.length)];
+                baseColorH = Math.floor(Math.random() * 360);
+            }
+            canvas.style.backgroundColor = currentBg;
+
+            let totalToPlace = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+            
+            if (config.mode === 'calc') {
+                correctCount = totalToPlace + 1;
+            } else {
+                correctCount = totalToPlace;
+            }
+
+            createAnswerUI();
+
+            let dotSize;
+            if (config.sizeMode === 'dynamic') {
+                const maxSize = 80;
+                const minSize = 12;
+                dotSize = totalToPlace <= 1 ? maxSize : (totalToPlace >= 100 ? minSize : maxSize - (totalToPlace - 1) * (68 / 99));
+            } else {
+                dotSize = totalToPlace > 30 ? 25 : (totalToPlace > 10 ? 40 : 55);
+            }
+
+            const gap = 4;
+            const padding = 20;
+            const placedDots = [];
+
+            if (config.layoutPattern === 'random') {
+                for (let i = 0; i < totalToPlace; i++) {
+                    let x, y, z, overlap, attempts = 0;
+                    do {
+                        overlap = false;
+                        x = Math.random() * (canvas.clientWidth - dotSize - padding * 2) + padding;
+                        y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
+                        z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
+                        for (const dot of placedDots) {
+                            if (Math.sqrt((dot.x - x)**2 + (dot.y - y)**2) < (dotSize + gap)) { overlap = true; break; }
+                        }
+                        attempts++;
+                    } while (overlap && attempts < 800);
+                    placedDots.push({x, y, z});
+                }
+            } else {
+                const cols = Math.ceil(Math.sqrt(totalToPlace));
+                const rows = Math.ceil(totalToPlace / cols);
+                const cellW = (canvas.clientWidth - padding * 2) / cols;
+                const cellH = (canvas.clientHeight - padding * 2) / rows;
+                for (let i = 0; i < totalToPlace; i++) {
+                    const r = Math.floor(i / cols);
+                    const c = i % cols;
+                    placedDots.push({
+                        x: padding + (c * cellW) + (cellW - dotSize) / 2,
+                        y: padding + (r * cellH) + (cellH - dotSize) / 2,
+                        z: config.dimension === '3d' ? (i % 3) * 100 - 100 : 0
+                    });
+                }
+            }
+
+            placedDots.forEach((pos) => {
+                const dot = document.createElement("div");
+                dot.className = "dot";
+                let depthScale = config.dimension === '3d' ? 1 + (pos.z / 400) : 1;
+                let brightness = config.dimension === '3d' ? 0.6 + ((pos.z + 200) / 400) * 0.4 : 1;
+                
+                dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
+                dot.style.left = `${pos.x}px`;
+                dot.style.top = `${pos.y}px`;
+                
+                let h = baseColorH;
+                dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${h},100%,${50*brightness+20}%), hsl(${h},100%,${50*brightness}%), hsl(${h},100%,${50*brightness-20}%))`;
+                if (config.dimension === '3d') dot.style.transform = `translateZ(${pos.z}px)`;
+                canvas.appendChild(dot);
+            });
+
+            isWaitingAnswer = true;
+            if (config.flashTime < 10) {
+                setTimeout(() => {
+                    if (isWaitingAnswer) document.querySelectorAll(".dot").forEach(d => d.style.opacity = "0");
+                }, config.flashTime * 1000);
+            }
+        }
+
+        function createAnswerUI() {
+            const container = document.getElementById("answerArea");
+            container.innerHTML = "";
+            const maxAns = config.mode === 'calc' ? config.maxDots + 1 : config.maxDots;
+            const buttonCount = maxAns - config.minDots + 1;
+
+            if (buttonCount >= 11) {
+                container.className = "grid-keypad";
+                const display = document.createElement("div"); display.id = "displayFieldValue"; display.textContent = "-";
+                container.appendChild(display);
+                for (let i = 1; i <= 9; i++) container.appendChild(createKey(i, () => addNumber(i)));
+                container.appendChild(createKey("C", backspace)); container.appendChild(createKey(0, () => addNumber(0)));
+                const okBtn = createKey("決定", confirmAnswer); okBtn.style.background = "#00d2ff"; okBtn.style.color = "#000"; container.appendChild(okBtn);
+            } else {
+                container.className = "grid-small";
+                for (let i = config.minDots; i <= maxAns; i++) container.appendChild(createKey(i, () => checkAnswer(i)));
+            }
+        }
+
+        function createKey(text, action) {
+            const btn = document.createElement("button"); btn.className = "btn-ans"; btn.textContent = text; btn.onclick = action; return btn;
+        }
+
+        function addNumber(num) {
+            if (!isWaitingAnswer || isTransitioning) return;
+            currentInput += num.toString();
+            document.getElementById("displayFieldValue").textContent = currentInput;
+            if (currentInput.length >= correctCount.toString().length) setTimeout(confirmAnswer, 50); 
+        }
+
+        function backspace() { currentInput = currentInput.slice(0, -1); document.getElementById("displayFieldValue").textContent = currentInput || "-"; }
+        function confirmAnswer() { if (currentInput === "") return; checkAnswer(parseInt(currentInput)); }
+
+        function checkAnswer(selected) {
+            if (!isWaitingAnswer || isTransitioning) return;
+            const msg = document.getElementById("msg");
+            if (selected === correctCount) {
+                // 正解時：コンボ加算条件をチェックして遷移
+                if (msg.textContent === "") combo++; // 既に間違えてメッセージが出ていたら加算しない
+                updateStats();
+                generateNewProblem(); 
+            } else {
+                // 不正解時：コンボリセット、正解表示。isWaitingAnswerは維持して再入力を受け付ける
+                combo = 0; 
+                updateStats();
+                msg.textContent = `正解は ${correctCount}`; 
+                msg.style.color = "#FF4500";
+                currentInput = ""; // 入力をクリアして再入力を促す
+                if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
+            }
+        }
+        function updateStats() { document.getElementById("stats").textContent = `Combo: ${combo}`; }
+    </script>
+</body>
+</html>ipulation; }
         body {
             display: flex;
             flex-direction: column;
