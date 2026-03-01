@@ -84,9 +84,21 @@
             margin: 5px 0;
             overflow: hidden;
             border-radius: 10px;
-            transition: background-color 0.2s;
+            transition: background-color 0.1s;
             perspective: 800px;
             transform-style: preserve-3d;
+        }
+
+        /* 比較モード用のセンターライン */
+        #comparison-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(102, 255, 255, 0.3);
+            display: none;
+            z-index: 1;
         }
 
         .dot {
@@ -111,7 +123,6 @@
             transition: opacity 0.1s ease-out;
         }
 
-        /* 視覚的マスキング用レイヤー */
         #mask {
             position: absolute;
             top: 0;
@@ -151,6 +162,7 @@
 
         .grid-small { grid-template-columns: repeat(5, 1fr); }
         .grid-keypad { grid-template-columns: repeat(3, 1fr); }
+        .grid-compare { grid-template-columns: 1fr 1fr; }
 
         .btn-ans {
             height: 40px;
@@ -162,6 +174,7 @@
             border-radius: 8px;
         }
         .btn-ans:active { background: #66FFFF; color: #000; }
+        .btn-large { height: 60px; font-size: 1.5rem; }
 
         #displayFieldValue {
             grid-column: span 3;
@@ -209,6 +222,20 @@
                 <select id="gameMode">
                     <option value="normal" selected>通常 (固定難易度)</option>
                     <option value="levelup">レベルアップ (10連勝で玉数増加)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>大小比較モード (左右どちらが多いか)</label>
+                <select id="compareMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (左右比較)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>残像定着トレーニング (消去後に白フラッシュ)</label>
+                <select id="afterimageMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (残像を誘発)</option>
                 </select>
             </div>
             <div class="setup-group">
@@ -282,6 +309,7 @@
         <div id="stats">Combo: 0</div>
         <div id="target-info"></div>
         <div id="canvas" onclick="drawDotsNext()">
+            <div id="comparison-line"></div>
             <div id="mask"></div>
         </div>
         <div id="msg"></div>
@@ -304,6 +332,8 @@
         function startTraining() {
             config = {
                 mode: document.getElementById('gameMode').value,
+                compare: document.getElementById('compareMode').value === 'on',
+                afterimage: document.getElementById('afterimageMode').value === 'on',
                 nBack: document.getElementById('nBackMode').value === 'on',
                 stroop: document.getElementById('stroopMode').value === 'on',
                 visualMask: document.getElementById('visualMaskMode').value === 'on',
@@ -337,8 +367,13 @@
             if (e.key === 'Enter') drawDotsNext();
             if (!isWaitingAnswer || isTransitioning) return;
             
-            const buttonCount = config.maxDots - config.minDots + 1;
+            if (config.compare) {
+                if (e.key === 'ArrowLeft') checkAnswer('LEFT');
+                if (e.key === 'ArrowRight') checkAnswer('RIGHT');
+                return;
+            }
 
+            const buttonCount = config.maxDots - config.minDots + 1;
             if (e.key >= '0' && e.key <= '9') {
                 if (buttonCount <= 10) checkAnswer(parseInt(e.key)); else addNumber(e.key);
             }
@@ -360,7 +395,7 @@
             document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "1");
             const msg = document.getElementById("msg");
             msg.style.color = "#00FFFF";
-            msg.textContent = `正解: ${correctCount}`;
+            msg.textContent = config.compare ? `正解: ${correctCount}` : `正解: ${correctCount}`;
             setTimeout(generateNewProblem, 300); 
         }
 
@@ -369,18 +404,19 @@
             const canvas = document.getElementById("canvas");
             const targetInfo = document.getElementById("target-info");
             const mask = document.getElementById("mask");
+            const compLine = document.getElementById("comparison-line");
             
-            // 既存のドッツとノイズを消去（マスクレイヤーは残す）
             const dots = canvas.querySelectorAll('.dot, #stroop-noise');
             dots.forEach(d => d.remove());
             mask.style.display = "none";
+            compLine.style.display = config.compare ? "block" : "none";
             
             document.getElementById("msg").textContent = ""; 
             currentInput = "";
-            
+            canvas.style.backgroundColor = "#000";
+
             let currentBg = "#000";
             let baseColorH = 0; 
-
             if (config.colorNoise) {
                 const colors = ["#000", "#000033", "#1a001a", "#001a00"];
                 currentBg = colors[Math.floor(Math.random() * colors.length)];
@@ -388,8 +424,20 @@
             }
             canvas.style.backgroundColor = currentBg;
 
-            let currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+            // 数値決定ロジック
+            let currentDotsToShow;
+            if (config.compare) {
+                let left = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+                let right;
+                do {
+                    right = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+                } while (left === right);
+                currentDotsToShow = { left, right };
+            } else {
+                currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+            }
 
+            // 正解と表示テキストの決定
             if (config.nBack) {
                 if (lastShownCount === null) {
                     correctCount = null;
@@ -397,19 +445,25 @@
                     isWaitingAnswer = false;
                 } else {
                     correctCount = lastShownCount;
-                    targetInfo.textContent = "【N-Back：1つ前を答えろ】";
+                    targetInfo.textContent = config.compare ? "【N-Back：1つ前はどっちが多い？】" : "【N-Back：1つ前を答えろ】";
                     isWaitingAnswer = true;
                 }
-                lastShownCount = currentDotsToShow;
+                lastShownCount = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
             } else {
-                correctCount = currentDotsToShow;
-                targetInfo.textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
+                if (config.compare) {
+                    correctCount = currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT';
+                    targetInfo.textContent = "【大小比較：どちらが多い？】";
+                } else {
+                    correctCount = currentDotsToShow;
+                    targetInfo.textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
+                }
                 isWaitingAnswer = true;
             }
 
             createAnswerUI();
 
-            if (config.stroop) {
+            // ストループノイズ
+            if (config.stroop && !config.compare) {
                 const stroopDiv = document.createElement("div");
                 stroopDiv.id = "stroop-noise";
                 let noiseVal;
@@ -420,79 +474,77 @@
                 canvas.appendChild(stroopDiv);
             }
 
-            let dotSize;
-            const displayCount = currentDotsToShow;
-            if (config.sizeMode === 'dynamic') {
-                const maxSize = 80;
-                const minSize = 12;
-                dotSize = displayCount <= 1 ? maxSize : (displayCount >= 100 ? minSize : maxSize - (displayCount - 1) * (68 / 99));
-            } else {
-                dotSize = displayCount > 30 ? 25 : (displayCount > 10 ? 40 : 55);
-            }
-
-            const gap = 4;
+            // ドッツ描画
             const padding = 20;
-            const placedDots = [];
+            const gap = 4;
+            
+            const drawSet = (count, xOffset, width) => {
+                let dotSize;
+                if (config.sizeMode === 'dynamic') {
+                    const maxSize = 80; const minSize = 12;
+                    dotSize = count <= 1 ? maxSize : (count >= 100 ? minSize : maxSize - (count - 1) * (68 / 99));
+                } else {
+                    dotSize = count > 30 ? 25 : (count > 10 ? 40 : 55);
+                }
 
-            if (config.layoutPattern === 'random') {
-                for (let i = 0; i < displayCount; i++) {
+                const localPlaced = [];
+                for (let i = 0; i < count; i++) {
                     let x, y, z, overlap, attempts = 0;
                     do {
                         overlap = false;
-                        x = Math.random() * (canvas.clientWidth - dotSize - padding * 2) + padding;
+                        x = xOffset + Math.random() * (width - dotSize - padding * 2) + padding;
                         y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
                         z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
-                        for (const dot of placedDots) {
+                        for (const dot of localPlaced) {
                             if (Math.sqrt((dot.x - x)**2 + (dot.y - y)**2) < (dotSize + gap)) { overlap = true; break; }
                         }
                         attempts++;
                     } while (overlap && attempts < 800);
-                    placedDots.push({x, y, z});
+                    
+                    localPlaced.push({x, y, z});
+                    const dot = document.createElement("div");
+                    dot.className = "dot";
+                    let depthScale = config.dimension === '3d' ? 1 + (z / 400) : 1;
+                    let brightness = config.dimension === '3d' ? 0.6 + ((z + 200) / 400) * 0.4 : 1;
+                    dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
+                    dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+                    let h = baseColorH;
+                    dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${h},100%,${50*brightness+20}%), hsl(${h},100%,${50*brightness}%), hsl(${h},100%,${50*brightness-20}%))`;
+                    if (config.dimension === '3d') dot.style.transform = `translateZ(${z}px)`;
+                    canvas.appendChild(dot);
                 }
+            };
+
+            if (config.compare) {
+                drawSet(currentDotsToShow.left, 0, canvas.clientWidth / 2);
+                drawSet(currentDotsToShow.right, canvas.clientWidth / 2, canvas.clientWidth / 2);
             } else {
-                const cols = Math.ceil(Math.sqrt(displayCount));
-                const rows = Math.ceil(displayCount / cols);
-                const cellW = (canvas.clientWidth - padding * 2) / cols;
-                const cellH = (canvas.clientHeight - padding * 2) / rows;
-                for (let i = 0; i < displayCount; i++) {
-                    const r = Math.floor(i / cols);
-                    const c = i % cols;
-                    placedDots.push({
-                        x: padding + (c * cellW) + (cellW - dotSize) / 2,
-                        y: padding + (r * cellH) + (cellH - dotSize) / 2,
-                        z: config.dimension === '3d' ? (i % 3) * 100 - 100 : 0
-                    });
-                }
+                drawSet(currentDotsToShow, 0, canvas.clientWidth);
             }
 
-            placedDots.forEach((pos) => {
-                const dot = document.createElement("div");
-                dot.className = "dot";
-                let depthScale = config.dimension === '3d' ? 1 + (pos.z / 400) : 1;
-                let brightness = config.dimension === '3d' ? 0.6 + ((pos.z + 200) / 400) * 0.4 : 1;
-                dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
-                dot.style.left = `${pos.x}px`;
-                dot.style.top = `${pos.y}px`;
-                let h = baseColorH;
-                dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${h},100%,${50*brightness+20}%), hsl(${h},100%,${50*brightness}%), hsl(${h},100%,${50*brightness-20}%))`;
-                if (config.dimension === '3d') dot.style.transform = `translateZ(${pos.z}px)`;
-                canvas.appendChild(dot);
-            });
-
-            // 消去ロジック（マスキング含む）
+            // フラッシュ＆残像消去・定着ロジック
             if (config.flashTime < 10) {
                 setTimeout(() => {
                     document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "0");
                     
-                    if (config.visualMask) {
-                        // マスクを表示
-                        mask.style.display = "block";
-                        // 0.15秒後にマスクを隠す（残像を完全に消去する時間）
+                    if (config.afterimage) {
+                        // 残像定着：一瞬白くする
+                        canvas.style.backgroundColor = "#FFF";
                         setTimeout(() => {
-                            mask.style.display = "none";
-                        }, 150);
+                            canvas.style.backgroundColor = currentBg;
+                            applyMask(mask);
+                        }, 100); // 0.1秒の白フラッシュ
+                    } else {
+                        applyMask(mask);
                     }
                 }, config.flashTime * 1000);
+            }
+        }
+
+        function applyMask(maskElement) {
+            if (config.visualMask) {
+                maskElement.style.display = "block";
+                setTimeout(() => { maskElement.style.display = "none"; }, 150);
             }
         }
 
@@ -501,8 +553,18 @@
             container.innerHTML = "";
             if (!isWaitingAnswer) return;
 
-            const buttonCount = config.maxDots - config.minDots + 1;
+            if (config.compare) {
+                container.className = "grid-compare";
+                const btnL = createKey("LEFT (←)", () => checkAnswer('LEFT'));
+                btnL.classList.add("btn-large");
+                const btnR = createKey("RIGHT (→)", () => checkAnswer('RIGHT'));
+                btnR.classList.add("btn-large");
+                container.appendChild(btnL);
+                container.appendChild(btnR);
+                return;
+            }
 
+            const buttonCount = config.maxDots - config.minDots + 1;
             if (buttonCount >= 11) {
                 container.className = "grid-keypad";
                 const display = document.createElement("div"); display.id = "displayFieldValue"; display.textContent = "-";
@@ -535,23 +597,17 @@
             const msg = document.getElementById("msg");
             if (selected === correctCount) {
                 if (msg.textContent === "") combo++; 
-                
                 if (config.mode === 'levelup' && combo > 0 && combo % 10 === 0) {
-                    config.minDots++;
-                    config.maxDots++;
+                    config.minDots++; config.maxDots++;
                     document.getElementById('minDots').value = config.minDots;
                     document.getElementById('maxDots').value = config.maxDots;
-                    msg.textContent = "LEVEL UP! 玉の範囲増加！";
-                    msg.style.color = "#00FF00";
+                    msg.textContent = "LEVEL UP!"; msg.style.color = "#00FF00";
                     setTimeout(() => { updateStats(); generateNewProblem(); }, 800);
                     return;
                 }
-
-                updateStats();
-                generateNewProblem(); 
+                updateStats(); generateNewProblem(); 
             } else {
-                combo = 0; 
-                updateStats();
+                combo = 0; updateStats();
                 msg.textContent = `正解は ${correctCount}`; 
                 msg.style.color = "#FF4500";
                 currentInput = ""; 
