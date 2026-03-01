@@ -94,6 +94,34 @@
             border-radius: 50%;
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
             transition: opacity 0.1s ease-out;
+            z-index: 10;
+        }
+
+        #stroop-noise {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 150px;
+            font-weight: 900;
+            color: rgba(255, 0, 0, 0.5);
+            z-index: 5;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            transition: opacity 0.1s ease-out;
+        }
+
+        /* 視覚的マスキング用レイヤー */
+        #mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px;
+            z-index: 100;
+            display: none;
+            pointer-events: none;
         }
 
         #msg {
@@ -191,6 +219,20 @@
                 </select>
             </div>
             <div class="setup-group">
+                <label>ストループ・ノイズ (邪魔な数字)</label>
+                <select id="stroopMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (誤った数字を表示)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>視覚的マスキング (残像消去)</label>
+                <select id="visualMaskMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (消去ノイズを表示)</option>
+                </select>
+            </div>
+            <div class="setup-group">
                 <label>次元設定</label>
                 <select id="dimensionMode">
                     <option value="2d" selected>2D (平面)</option>
@@ -239,7 +281,9 @@
     <div id="game-screen" class="screen hidden">
         <div id="stats">Combo: 0</div>
         <div id="target-info"></div>
-        <div id="canvas" onclick="drawDotsNext()"></div>
+        <div id="canvas" onclick="drawDotsNext()">
+            <div id="mask"></div>
+        </div>
         <div id="msg"></div>
         <div id="answerArea"></div>
         <div class="controls">
@@ -250,7 +294,7 @@
 
     <script>
         let correctCount = 0;
-        let lastShownCount = null; // N-Back用：直前に表示された数
+        let lastShownCount = null; 
         let combo = 0;
         let isWaitingAnswer = false;
         let isTransitioning = false; 
@@ -261,6 +305,8 @@
             config = {
                 mode: document.getElementById('gameMode').value,
                 nBack: document.getElementById('nBackMode').value === 'on',
+                stroop: document.getElementById('stroopMode').value === 'on',
+                visualMask: document.getElementById('visualMaskMode').value === 'on',
                 dimension: document.getElementById('dimensionMode').value,
                 flashTime: parseFloat(document.getElementById('flashTime').value),
                 minDots: parseInt(document.getElementById('minDots').value),
@@ -274,7 +320,7 @@
             document.getElementById('game-screen').classList.remove('hidden');
             
             combo = 0;
-            lastShownCount = null; // リセット
+            lastShownCount = null;
             updateStats();
             generateNewProblem();
         }
@@ -311,7 +357,7 @@
         function revealAnswerAndNext() {
             isTransitioning = true;
             isWaitingAnswer = false;
-            document.querySelectorAll(".dot").forEach(d => d.style.opacity = "1");
+            document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "1");
             const msg = document.getElementById("msg");
             msg.style.color = "#00FFFF";
             msg.textContent = `正解: ${correctCount}`;
@@ -322,7 +368,13 @@
             isTransitioning = false;
             const canvas = document.getElementById("canvas");
             const targetInfo = document.getElementById("target-info");
-            canvas.innerHTML = "";
+            const mask = document.getElementById("mask");
+            
+            // 既存のドッツとノイズを消去（マスクレイヤーは残す）
+            const dots = canvas.querySelectorAll('.dot, #stroop-noise');
+            dots.forEach(d => d.remove());
+            mask.style.display = "none";
+            
             document.getElementById("msg").textContent = ""; 
             currentInput = "";
             
@@ -336,35 +388,40 @@
             }
             canvas.style.backgroundColor = currentBg;
 
-            // 今回表示する玉の数
             let currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
 
-            // --- N-Back ロジック ---
             if (config.nBack) {
                 if (lastShownCount === null) {
-                    // 初回：表示するだけで回答は求めない
                     correctCount = null;
-                    targetInfo.textContent = "【1回目：数を覚えて「次へ」】";
+                    targetInfo.textContent = "【記憶フェーズ：次へ】";
                     isWaitingAnswer = false;
                 } else {
-                    // 2回目以降：前回表示した数が正解になる
                     correctCount = lastShownCount;
-                    targetInfo.textContent = "【N-Back：1つ前の数を答えろ】";
+                    targetInfo.textContent = "【N-Back：1つ前を答えろ】";
                     isWaitingAnswer = true;
                 }
-                lastShownCount = currentDotsToShow; // 今回の数を記憶
+                lastShownCount = currentDotsToShow;
             } else {
-                // 通常モード
                 correctCount = currentDotsToShow;
                 targetInfo.textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
                 isWaitingAnswer = true;
             }
-            // -----------------------
 
             createAnswerUI();
 
+            if (config.stroop) {
+                const stroopDiv = document.createElement("div");
+                stroopDiv.id = "stroop-noise";
+                let noiseVal;
+                do {
+                    noiseVal = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+                } while (noiseVal === currentDotsToShow);
+                stroopDiv.textContent = noiseVal;
+                canvas.appendChild(stroopDiv);
+            }
+
             let dotSize;
-            const displayCount = currentDotsToShow; // 画面に描画する数
+            const displayCount = currentDotsToShow;
             if (config.sizeMode === 'dynamic') {
                 const maxSize = 80;
                 const minSize = 12;
@@ -422,9 +479,19 @@
                 canvas.appendChild(dot);
             });
 
+            // 消去ロジック（マスキング含む）
             if (config.flashTime < 10) {
                 setTimeout(() => {
-                    document.querySelectorAll(".dot").forEach(d => d.style.opacity = "0");
+                    document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "0");
+                    
+                    if (config.visualMask) {
+                        // マスクを表示
+                        mask.style.display = "block";
+                        // 0.15秒後にマスクを隠す（残像を完全に消去する時間）
+                        setTimeout(() => {
+                            mask.style.display = "none";
+                        }, 150);
+                    }
                 }, config.flashTime * 1000);
             }
         }
@@ -432,8 +499,6 @@
         function createAnswerUI() {
             const container = document.getElementById("answerArea");
             container.innerHTML = "";
-            
-            // N-Backの初回などで回答が不要な場合はUIを表示しない
             if (!isWaitingAnswer) return;
 
             const buttonCount = config.maxDots - config.minDots + 1;
