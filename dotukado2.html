@@ -178,8 +178,8 @@
             <div class="setup-group">
                 <label>モード選択</label>
                 <select id="gameMode">
-                    <option value="normal" selected>通常 (そのまま答える)</option>
-                    <option value="calc">演算 (＋1した数を答える)</option>
+                    <option value="normal" selected>通常 (固定難易度)</option>
+                    <option value="levelup">レベルアップ (10連勝で玉数増加)</option>
                 </select>
             </div>
             <div class="setup-group">
@@ -256,7 +256,6 @@
                 minDots: parseInt(document.getElementById('minDots').value),
                 maxDots: parseInt(document.getElementById('maxDots').value),
                 sizeMode: document.getElementById('sizeMode').value,
-                autoLevelUp: true,
                 colorNoise: document.getElementById('colorNoise').value === 'on',
                 layoutPattern: document.getElementById('layoutPattern').value
             };
@@ -280,9 +279,10 @@
             if (document.getElementById('game-screen').classList.contains('hidden')) return;
             if (e.key === 'Enter') drawDotsNext();
             if (!isWaitingAnswer || isTransitioning) return;
+            
+            const buttonCount = config.maxDots - config.minDots + 1;
+
             if (e.key >= '0' && e.key <= '9') {
-                const maxAns = config.mode === 'calc' ? config.maxDots + 1 : config.maxDots;
-                const buttonCount = maxAns - config.minDots + 1;
                 if (buttonCount <= 10) checkAnswer(parseInt(e.key)); else addNumber(e.key);
             }
             if (e.key === 'Backspace') backspace();
@@ -312,7 +312,7 @@
             const canvas = document.getElementById("canvas");
             canvas.innerHTML = "";
             document.getElementById("msg").textContent = ""; 
-            document.getElementById("target-info").textContent = config.mode === 'calc' ? "【玉の数 ＋ 1】を答えよ" : "";
+            document.getElementById("target-info").textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
             currentInput = "";
             
             let currentBg = "#000";
@@ -325,13 +325,9 @@
             }
             canvas.style.backgroundColor = currentBg;
 
+            // 玉の数を決定
             let totalToPlace = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
-            
-            if (config.mode === 'calc') {
-                correctCount = totalToPlace + 1;
-            } else {
-                correctCount = totalToPlace;
-            }
+            correctCount = totalToPlace;
 
             createAnswerUI();
 
@@ -406,8 +402,7 @@
         function createAnswerUI() {
             const container = document.getElementById("answerArea");
             container.innerHTML = "";
-            const maxAns = config.mode === 'calc' ? config.maxDots + 1 : config.maxDots;
-            const buttonCount = maxAns - config.minDots + 1;
+            const buttonCount = config.maxDots - config.minDots + 1;
 
             if (buttonCount >= 11) {
                 container.className = "grid-keypad";
@@ -418,7 +413,7 @@
                 const okBtn = createKey("決定", confirmAnswer); okBtn.style.background = "#00d2ff"; okBtn.style.color = "#000"; container.appendChild(okBtn);
             } else {
                 container.className = "grid-small";
-                for (let i = config.minDots; i <= maxAns; i++) container.appendChild(createKey(i, () => checkAnswer(i)));
+                for (let i = config.minDots; i <= config.maxDots; i++) container.appendChild(createKey(i, () => checkAnswer(i)));
             }
         }
 
@@ -440,17 +435,33 @@
             if (!isWaitingAnswer || isTransitioning) return;
             const msg = document.getElementById("msg");
             if (selected === correctCount) {
-                // 正解時：コンボ加算条件をチェックして遷移
-                if (msg.textContent === "") combo++; // 既に間違えてメッセージが出ていたら加算しない
+                if (msg.textContent === "") combo++; 
+                
+                // --- レベルアップモードの処理 ---
+                if (config.mode === 'levelup' && combo > 0 && combo % 10 === 0) {
+                    config.minDots++;
+                    config.maxDots++;
+                    document.getElementById('minDots').value = config.minDots;
+                    document.getElementById('maxDots').value = config.maxDots;
+                    
+                    msg.textContent = "LEVEL UP! 玉の範囲増加！";
+                    msg.style.color = "#00FF00";
+                    setTimeout(() => {
+                        updateStats();
+                        generateNewProblem(); 
+                    }, 800);
+                    return;
+                }
+                // -----------------------------
+
                 updateStats();
                 generateNewProblem(); 
             } else {
-                // 不正解時：コンボリセット、正解表示。isWaitingAnswerは維持して再入力を受け付ける
                 combo = 0; 
                 updateStats();
                 msg.textContent = `正解は ${correctCount}`; 
                 msg.style.color = "#FF4500";
-                currentInput = ""; // 入力をクリアして再入力を促す
+                currentInput = ""; 
                 if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
             }
         }
