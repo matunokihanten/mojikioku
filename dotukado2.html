@@ -3,108 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>右脳覚醒：ドッツトレーニング Pro MAX 3D Ultimate</title>
+    <title>右脳覚醒：ドッツトレーニング Pro MAX 3D</title>
     <style>
         * { box-sizing: border-box; touch-action: manipulation; }
         body {
-            display: flex; flex-direction: column; align-items: center;
-            height: 100dvh; margin: 0; padding: 5px;
-            font-family: sans-serif; background: #000; color: #E0E0E0; overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh;
+            margin: 0;
+            padding: 5px;
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            background: #000;
+            color: #E0E0E0;
+            overflow: hidden;
         }
-        .screen { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
         .hidden { display: none !important; }
 
-        /* 設定画面レイアウト調整 */
-        #setup-screen { overflow: hidden; padding: 2px; justify-content: center; }
-        .setup-card {
-            background: rgba(255, 255, 255, 0.05); padding: 8px;
-            border-radius: 10px; width: 100%; max-width: 400px; border: 1px solid #333;
+        #setup-screen {
+            overflow-y: auto;
+            padding: 10px;
         }
-        .setup-group { margin-bottom: 4px; display: flex; flex-direction: column; }
-        .setup-group label { font-size: 0.7rem; color: #ADD8E6; font-weight: bold; margin-bottom: 1px; }
+        .setup-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #333;
+        }
+        .setup-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .setup-group label {
+            font-size: 0.85rem;
+            color: #ADD8E6;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
         .setup-group select, .setup-group input {
-            background: #222; border: 1px solid #444; color: #fff;
-            padding: 3px; border-radius: 4px; font-size: 0.85rem; width: 100%;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        #game-screen {
+            justify-content: space-between;
+        }
+
+        #stats {
+            font-size: 1rem;
+            color: #00FFFF;
+            padding: 5px 0;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
         }
 
         #canvas {
-            position: relative; width: 100%; max-width: 400px; flex: 1;
-            border: 2px solid #66FFFF; margin: 5px 0; overflow: hidden;
-            border-radius: 10px; perspective: 800px; transform-style: preserve-3d;
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            flex: 1;
+            min-height: 150px;
+            border: 2px solid #66FFFF;
+            box-shadow: 0 0 15px rgba(102, 255, 255, 0.2);
+            margin: 5px 0;
+            overflow: hidden;
+            border-radius: 10px;
+            transition: background-color 0.1s;
+            perspective: 800px;
+            transform-style: preserve-3d;
         }
 
-        /* 注視点（十字） */
-        #fixation-point {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 20px; height: 20px; color: #FF4500; font-size: 24px;
-            display: none; align-items: center; justify-content: center; z-index: 100;
+        #comparison-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(102, 255, 255, 0.3);
+            display: none;
+            z-index: 1;
         }
 
-        /* 確率共鳴ノイズ */
-        #stochastic-noise {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
-            pointer-events: none; display: none; z-index: 1;
+        .dot {
+            position: absolute;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+            transition: opacity 0.1s ease-out;
+            z-index: 10;
         }
 
-        .dot { position: absolute; border-radius: 50%; transition: opacity 0.1s; z-index: 10; }
+        /* ガボールパッチ用のスタイル */
         .gabor {
+            background-size: 100% 100%;
+            /* マスクで周囲をぼかす（ガウス分布の近似） */
             -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
             mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 70%);
+            box-shadow: none !important;
         }
 
-        #comparison-line { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(102,255,255,0.2); display: none; }
-        #mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-conic-gradient(#fff 0 25%, #000 0 50%) 50% / 20px 20px; z-index: 100; display: none; }
-        #stats { font-size: 0.9rem; color: #00FFFF; font-weight: bold; }
-        #msg { min-height: 1.2rem; font-size: 1rem; font-weight: bold; text-align: center; color: #FFD700; }
-        #target-info { font-size: 0.8rem; color: #ADD8E6; height: 1rem; }
+        #stroop-noise {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 150px;
+            font-weight: 900;
+            color: rgba(255, 0, 0, 0.5);
+            z-index: 5;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            transition: opacity 0.1s ease-out;
+        }
 
-        #answerArea { width: 100%; max-width: 400px; display: grid; gap: 3px; margin-bottom: 5px; }
+        #mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px;
+            z-index: 100;
+            display: none;
+            pointer-events: none;
+        }
+
+        #msg {
+            min-height: 1.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 2px 0;
+            color: #FFD700;
+        }
+
+        #target-info {
+            font-size: 0.9rem;
+            color: #ADD8E6;
+            height: 1.2rem;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #answerArea {
+            width: 100%;
+            max-width: 400px;
+            display: grid;
+            gap: 4px;
+            margin-bottom: 5px;
+        }
+
         .grid-small { grid-template-columns: repeat(5, 1fr); }
         .grid-keypad { grid-template-columns: repeat(3, 1fr); }
         .grid-compare { grid-template-columns: 1fr 1fr; }
-        .btn-ans { height: 35px; font-size: 1rem; background: rgba(102,255,255,0.1); color: #E0E0E0; border: 1px solid #66FFFF; border-radius: 5px; }
-        .btn-large { height: 50px; }
-        #displayFieldValue { grid-column: span 3; background: #000; color: #00FFFF; border: 1px solid #66FFFF; height: 30px; display: flex; justify-content: center; align-items: center; }
 
-        .controls { display: flex; gap: 5px; width: 100%; max-width: 400px; padding-bottom: 5px; }
-        .btn-main { flex: 1; padding: 8px; font-size: 0.9rem; font-weight: bold; border: none; border-radius: 15px; }
+        .btn-ans {
+            height: 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(102, 255, 255, 0.1);
+            color: #E0E0E0;
+            border: 1px solid #66FFFF;
+            border-radius: 8px;
+        }
+        .btn-ans:active { background: #66FFFF; color: #000; }
+        .btn-large { height: 60px; font-size: 1.5rem; }
+
+        #displayFieldValue {
+            grid-column: span 3;
+            background: #000;
+            color: #00FFFF;
+            font-size: 1.4rem;
+            text-align: center;
+            border: 1px solid #66FFFF;
+            border-radius: 8px;
+            margin-bottom: 2px;
+            height: 38px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            padding: 5px 0 10px 0;
+        }
+
+        .btn-main {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        #startBtn { background: #00d2ff; color: #000; }
+        #backToSetup { background: #444; color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="setup-screen" class="screen">
-        <h3 style="color:#00FFFF; margin: 2px 0; font-size: 1rem;">脳トレ Ultimate</h3>
+        <h2 style="color:#00FFFF; margin: 10px 0;">脳トレ設定 Pro 3D</h2>
         <div class="setup-card">
-            <div class="setup-group"><label>基本モード / ガボール</label><div style="display:flex; gap:3px;">
-                <select id="gameMode"><option value="normal">通常</option><option value="levelup">レベルUP</option></select>
-                <select id="gaborMode"><option value="off">通常ドッツ</option><option value="on">ガボール</option></select>
-            </div></div>
-            <div class="setup-group"><label>注視点固定 / 確率共鳴(ノイズ)</label><div style="display:flex; gap:3px;">
-                <select id="fixMode"><option value="off">注視点OFF</option><option value="on">注視点ON</option></select>
-                <select id="srMode"><option value="off">ノイズOFF</option><option value="on">ノイズON</option></select>
-            </div></div>
-            <div class="setup-group"><label>大小比較 / 残像定着</label><div style="display:flex; gap:3px;">
-                <select id="compareMode"><option value="off">比較OFF</option><option value="on">比較ON</option></select>
-                <select id="afterimageMode"><option value="off">残像OFF</option><option value="on">残像ON</option></select>
-            </div></div>
-            <div class="setup-group"><label>N-Back / ストループ</label><div style="display:flex; gap:3px;">
-                <select id="nBackMode"><option value="off">N-Back OFF</option><option value="on">N-Back ON</option></select>
-                <select id="stroopMode"><option value="off">ストループOFF</option><option value="on">ストループON</option></select>
-            </div></div>
-            <div class="setup-group"><label>表示時間(秒) / 次元</label><div style="display:flex; gap:3px;">
-                <select id="flashTime"><option value="0.05">0.05</option><option value="0.1">0.1</option><option value="0.5" selected>0.5</option><option value="999">消さない</option></select>
-                <select id="dimensionMode"><option value="2d">2D</option><option value="3d">3D</option></select>
-            </div></div>
-            <div class="setup-group"><label>玉数範囲 (最小〜最大)</label><div style="display:flex; gap:3px;">
-                <input type="number" id="minDots" value="1" min="1">
-                <input type="number" id="maxDots" value="10" min="1">
-            </div></div>
-            <div class="setup-group"><label>サイズ / カラーノイズ</label><div style="display:flex; gap:3px;">
-                <select id="sizeMode"><option value="dynamic">可変</option><option value="fixed">固定</option></select>
-                <select id="colorNoise"><option value="off">カラーOFF</option><option value="on">カラーON</option></select>
-            </div></div>
-            <button class="btn-main" onclick="startTraining()" style="background:#00d2ff; color:#000; width:100%; margin-top:3px;">開始</button>
+            <div class="setup-group">
+                <label>モード選択</label>
+                <select id="gameMode">
+                    <option value="normal" selected>通常 (固定難易度)</option>
+                    <option value="levelup">レベルアップ (10連勝で玉数増加)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>ガボール・パッチ (脳への直接刺激)</label>
+                <select id="gaborMode">
+                    <option value="off" selected>OFF (通常のドッツ)</option>
+                    <option value="on">ON (縞模様のボケた円)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>大小比較モード (左右差1～2個)</label>
+                <select id="compareMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (左右比較)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>残像定着トレーニング (消去後に白フラッシュ)</label>
+                <select id="afterimageMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (残像を誘発)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>N-Back (1つ前を回答)</label>
+                <select id="nBackMode">
+                    <option value="off" selected>OFF (通常の回答)</option>
+                    <option value="on">ON (1つ前の数を回答)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>ストループ・ノイズ (邪魔な数字)</label>
+                <select id="stroopMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (誤った数字を表示)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>視覚的マスキング (残像消去)</label>
+                <select id="visualMaskMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (消去ノイズを表示)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>次元設定</label>
+                <select id="dimensionMode">
+                    <option value="2d" selected>2D (平面)</option>
+                    <option value="3d">3D (立体空間)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>表示時間 (秒)</label>
+                <select id="flashTime">
+                    <option value="0.05">0.05 (超神速)</option>
+                    <option value="0.1">0.1 (神速)</option>
+                    <option value="0.3">0.3 (超難問)</option>
+                    <option value="0.5" selected>0.5 (推奨)</option>
+                    <option value="999">消さない</option>
+                </select>
+            </div>
+            <div class="setup-group" style="flex-direction: row; gap: 10px;">
+                <div style="flex:1;"><label>最小玉数</label><input type="number" id="minDots" value="1" min="1"></div>
+                <div style="flex:1;"><label>最大玉数</label><input type="number" id="maxDots" value="10" min="1"></div>
+            </div>
+            <div class="setup-group">
+                <label>玉のサイズ調整</label>
+                <select id="sizeMode">
+                    <option value="dynamic" selected>可変 (1〜100個で自動縮小)</option>
+                    <option value="fixed">固定 (段階調整)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>カラーノイズ</label>
+                <select id="colorNoise">
+                    <option value="off" selected>OFF</option>
+                    <option value="on">ON (ランダム配色)</option>
+                </select>
+            </div>
+            <div class="setup-group">
+                <label>配置パターン</label>
+                <select id="layoutPattern">
+                    <option value="random" selected>ランダム配置</option>
+                    <option value="grid">整列配置（グリッド）</option>
+                </select>
+            </div>
+            <button id="startBtn" class="btn-main" onclick="startTraining()" style="margin-top:10px; width:100%;">トレーニング開始</button>
         </div>
     </div>
 
@@ -112,146 +324,328 @@
         <div id="stats">Combo: 0</div>
         <div id="target-info"></div>
         <div id="canvas" onclick="drawDotsNext()">
-            <div id="fixation-point">+</div>
-            <div id="stochastic-noise"></div>
             <div id="comparison-line"></div>
             <div id="mask"></div>
         </div>
         <div id="msg"></div>
         <div id="answerArea"></div>
         <div class="controls">
-            <button class="btn-main" style="background:#444; color:#fff;" onclick="showSetup()">設定</button>
-            <button class="btn-main" style="background:#00d2ff; color:#000;" onclick="drawDotsNext()">次へ (Enter)</button>
+            <button id="backToSetup" class="btn-main" onclick="showSetup()">設定に戻る</button>
+            <button id="nextBtn" class="btn-main" style="background:#00d2ff; color:#000;" onclick="drawDotsNext()">次へ (Enter)</button>
         </div>
     </div>
 
     <script>
-        let correctCount=0, lastShownCount=null, combo=0, isWaitingAnswer=false, isTransitioning=false, currentInput="", config={};
+        let correctCount = 0;
+        let lastShownCount = null; 
+        let combo = 0;
+        let isWaitingAnswer = false;
+        let isTransitioning = false; 
+        let currentInput = "";
+        let config = {};
 
         function startTraining() {
             config = {
                 mode: document.getElementById('gameMode').value,
                 gabor: document.getElementById('gaborMode').value === 'on',
-                fix: document.getElementById('fixMode').value === 'on',
-                sr: document.getElementById('srMode').value === 'on',
                 compare: document.getElementById('compareMode').value === 'on',
                 afterimage: document.getElementById('afterimageMode').value === 'on',
                 nBack: document.getElementById('nBackMode').value === 'on',
                 stroop: document.getElementById('stroopMode').value === 'on',
+                visualMask: document.getElementById('visualMaskMode').value === 'on',
                 dimension: document.getElementById('dimensionMode').value,
                 flashTime: parseFloat(document.getElementById('flashTime').value),
                 minDots: parseInt(document.getElementById('minDots').value),
                 maxDots: parseInt(document.getElementById('maxDots').value),
                 sizeMode: document.getElementById('sizeMode').value,
-                colorNoise: document.getElementById('colorNoise').value === 'on'
+                colorNoise: document.getElementById('colorNoise').value === 'on',
+                layoutPattern: document.getElementById('layoutPattern').value
             };
+
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('fixation-point').style.display = config.fix ? 'flex' : 'none';
-            document.getElementById('stochastic-noise').style.display = config.sr ? 'block' : 'none';
-            combo=0; lastShownCount=null; updateStats(); generateNewProblem();
+            
+            combo = 0;
+            lastShownCount = null;
+            updateStats();
+            generateNewProblem();
         }
 
-        function showSetup() { document.getElementById('game-screen').classList.add('hidden'); document.getElementById('setup-screen').classList.remove('hidden'); isWaitingAnswer=false; isTransitioning=false; }
+        function showSetup() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            isWaitingAnswer = false;
+            isTransitioning = false;
+        }
 
         window.addEventListener('keydown', (e) => {
-            if(document.getElementById('game-screen').classList.contains('hidden')) return;
-            if(e.key==='Enter') drawDotsNext();
-            if(!isWaitingAnswer || isTransitioning) return;
-            if(config.compare){ if(e.key==='ArrowLeft') checkAnswer('LEFT'); if(e.key==='ArrowRight') checkAnswer('RIGHT'); return; }
-            if(e.key>='0' && e.key<='9'){ if(config.maxDots-config.minDots+1<=10) checkAnswer(parseInt(e.key)); else addNumber(e.key); }
-            if(e.key==='Backspace') backspace();
+            if (document.getElementById('game-screen').classList.contains('hidden')) return;
+            if (e.key === 'Enter') drawDotsNext();
+            if (!isWaitingAnswer || isTransitioning) return;
+            
+            if (config.compare) {
+                if (e.key === 'ArrowLeft') checkAnswer('LEFT');
+                if (e.key === 'ArrowRight') checkAnswer('RIGHT');
+                return;
+            }
+
+            const buttonCount = config.maxDots - config.minDots + 1;
+            if (e.key >= '0' && e.key <= '9') {
+                if (buttonCount <= 10) checkAnswer(parseInt(e.key)); else addNumber(e.key);
+            }
+            if (e.key === 'Backspace') backspace();
         });
 
-        function drawDotsNext() { if(isTransitioning) return; if(isWaitingAnswer) revealAnswerAndNext(); else generateNewProblem(); }
+        function drawDotsNext() {
+            if (isTransitioning) return;
+            if (isWaitingAnswer) {
+                revealAnswerAndNext();
+            } else {
+                generateNewProblem();
+            }
+        }
 
         function revealAnswerAndNext() {
-            isTransitioning=true; isWaitingAnswer=false;
+            isTransitioning = true;
+            isWaitingAnswer = false;
             document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "1");
-            document.getElementById("msg").textContent = "正解表示中...";
-            setTimeout(generateNewProblem, 300);
+            const msg = document.getElementById("msg");
+            msg.style.color = "#00FFFF";
+            msg.textContent = `正解を表示中...`;
+            setTimeout(generateNewProblem, 300); 
         }
 
         function generateNewProblem() {
-            isTransitioning=false; const canvas=document.getElementById("canvas"), targetInfo=document.getElementById("target-info");
-            canvas.querySelectorAll('.dot, #stroop-noise').forEach(d=>d.remove());
-            document.getElementById("mask").style.display="none";
-            document.getElementById("comparison-line").style.display=config.compare?"block":"none";
-            document.getElementById("msg").textContent=""; currentInput="";
-            let baseH = config.colorNoise ? Math.floor(Math.random()*360) : 0;
-            canvas.style.backgroundColor = config.colorNoise ? `hsl(${baseH}, 20%, 5%)` : "#000";
+            isTransitioning = false;
+            const canvas = document.getElementById("canvas");
+            const targetInfo = document.getElementById("target-info");
+            const mask = document.getElementById("mask");
+            const compLine = document.getElementById("comparison-line");
+            
+            const dots = canvas.querySelectorAll('.dot, #stroop-noise');
+            dots.forEach(d => d.remove());
+            mask.style.display = "none";
+            compLine.style.display = config.compare ? "block" : "none";
+            
+            document.getElementById("msg").textContent = ""; 
+            currentInput = "";
+            canvas.style.backgroundColor = "#000";
 
-            let dots;
-            if(config.compare) {
-                let l = Math.floor(Math.random()*(config.maxDots-config.minDots+1))+config.minDots;
-                let diffs = [-2,-1,1,2].filter(d=> (l+d)>=config.minDots && (l+d)<=config.maxDots);
-                let r = diffs.length? l+diffs[Math.floor(Math.random()*diffs.length)] : (l+1<=config.maxDots?l+1:l-1);
-                dots = {left:l, right:r};
-            } else { dots = Math.floor(Math.random()*(config.maxDots-config.minDots+1))+config.minDots; }
-
-            if(config.nBack) {
-                if(lastShownCount===null) { correctCount=null; targetInfo.textContent="【記憶フェーズ】"; isWaitingAnswer=false; }
-                else { correctCount=lastShownCount; targetInfo.textContent="【N-Back回答】"; isWaitingAnswer=true; }
-                lastShownCount = config.compare ? (dots.left > dots.right ? 'LEFT' : 'RIGHT') : dots;
-            } else {
-                correctCount = config.compare ? (dots.left > dots.right ? 'LEFT' : 'RIGHT') : dots;
-                targetInfo.textContent = config.compare ? "【大小比較】" : (config.fix ? "【周辺視：中央を見ろ】" : "");
-                isWaitingAnswer=true;
+            let currentBg = "#000";
+            let baseColorH = 0; 
+            if (config.colorNoise) {
+                const colors = ["#000", "#000033", "#1a001a", "#001a00"];
+                currentBg = colors[Math.floor(Math.random() * colors.length)];
+                baseColorH = Math.floor(Math.random() * 360);
             }
+            canvas.style.backgroundColor = currentBg;
+
+            let currentDotsToShow;
+            if (config.compare) {
+                let left = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+                let right;
+                let diffs = [-2, -1, 1, 2].filter(d => (left + d) >= config.minDots && (left + d) <= config.maxDots);
+                if (diffs.length === 0) {
+                    right = left + 1 <= config.maxDots ? left + 1 : left - 1;
+                } else {
+                    right = left + diffs[Math.floor(Math.random() * diffs.length)];
+                }
+                currentDotsToShow = { left, right };
+            } else {
+                currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+            }
+
+            if (config.nBack) {
+                if (lastShownCount === null) {
+                    correctCount = null;
+                    targetInfo.textContent = "【記憶フェーズ：次へ】";
+                    isWaitingAnswer = false;
+                } else {
+                    correctCount = lastShownCount;
+                    targetInfo.textContent = config.compare ? "【N-Back：1つ前はどっちが多かった？】" : "【N-Back：1つ前を答えろ】";
+                    isWaitingAnswer = true;
+                }
+                lastShownCount = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
+            } else {
+                if (config.compare) {
+                    correctCount = currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT';
+                    targetInfo.textContent = "【大小比較：どちらが多い？】";
+                } else {
+                    correctCount = currentDotsToShow;
+                    targetInfo.textContent = config.mode === 'levelup' ? "【レベルアップ挑戦中】" : "";
+                }
+                isWaitingAnswer = true;
+            }
+
             createAnswerUI();
 
-            const draw = (cnt, off, w) => {
-                let size = config.sizeMode==='dynamic' ? Math.max(10, 60-(cnt-1)*0.5) : 30;
-                let placed = [];
-                for(let i=0; i<cnt; i++) {
-                    let x,y,z,overlap,att=0;
+            if (config.stroop && !config.compare) {
+                const stroopDiv = document.createElement("div");
+                stroopDiv.id = "stroop-noise";
+                let noiseVal;
+                do {
+                    noiseVal = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
+                } while (noiseVal === currentDotsToShow);
+                stroopDiv.textContent = noiseVal;
+                canvas.appendChild(stroopDiv);
+            }
+
+            const padding = 15;
+            const gap = 2; 
+            
+            const drawSet = (count, xOffset, width) => {
+                let dotSize;
+                const areaFactor = count > 50 ? 0.8 : 1.0; 
+                if (config.sizeMode === 'dynamic') {
+                    const maxSize = 60; const minSize = 12;
+                    dotSize = count <= 1 ? maxSize : (count >= 100 ? minSize : maxSize - (count - 1) * (48 / 99));
+                } else {
+                    dotSize = count > 30 ? 20 : (count > 10 ? 35 : 50);
+                }
+                dotSize *= areaFactor;
+
+                const localPlaced = [];
+                for (let i = 0; i < count; i++) {
+                    let x, y, z, overlap, attempts = 0;
                     do {
-                        overlap=false; x=off+Math.random()*(w-size-20)+10; y=Math.random()*(canvas.clientHeight-size-20)+10; z=config.dimension==='3d'?Math.random()*400-200:0;
-                        for(let p of placed) if(Math.sqrt((p.x-x)**2+(p.y-y)**2)<(size+2)) {overlap=true; break;}
-                        att++;
-                    } while(overlap && att<800);
-                    if(att>=800) continue;
-                    placed.push({x,y,z});
-                    let d=document.createElement("div"); d.className="dot"+(config.gabor?" gabor":"");
-                    let b = config.dimension==='3d'? 0.6+((z+200)/400)*0.4 : 1;
-                    d.style.width=d.style.height=`${size*(1+z/400)}px`; d.style.left=`${x}px`; d.style.top=`${y}px`;
-                    if(config.gabor) {
-                        let a=Math.random()*180;
-                        d.style.background=`repeating-linear-gradient(${a}deg, hsl(${baseH},100%,${50*b}%), hsl(${baseH},100%,${50*b}%) 2px, #111 2px, #111 4px)`;
-                    } else { d.style.background=`radial-gradient(circle at 30% 30%, hsl(${baseH},100%,${50*b+20}%), hsl(${baseH},100%,${50*b-20}%))`; }
-                    if(config.dimension==='3d') d.style.transform=`translateZ(${z}px)`;
-                    canvas.appendChild(d);
+                        overlap = false;
+                        x = xOffset + Math.random() * (width - dotSize - padding * 2) + padding;
+                        y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
+                        z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
+                        for (const dot of localPlaced) {
+                            const dist = Math.sqrt((dot.x - x)**2 + (dot.y - y)**2);
+                            if (dist < (dotSize + gap)) { overlap = true; break; }
+                        }
+                        attempts++;
+                    } while (overlap && attempts < 1000);
+                    
+                    if (attempts >= 1000) continue;
+
+                    localPlaced.push({x, y, z});
+                    const dot = document.createElement("div");
+                    dot.className = "dot";
+                    if (config.gabor) dot.classList.add("gabor");
+
+                    let depthScale = config.dimension === '3d' ? 1 + (z / 400) : 1;
+                    let brightness = config.dimension === '3d' ? 0.6 + ((z + 200) / 400) * 0.4 : 1;
+                    
+                    dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
+                    dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+                    
+                    if (config.gabor) {
+                        // ガボールパッチ：ランダムな角度の縞模様
+                        const angle = Math.floor(Math.random() * 180);
+                        const stripeColor = `hsl(${baseColorH}, 100%, ${50 * brightness}%)`;
+                        const bgColor = `hsl(${baseColorH}, 100%, ${10 * brightness}%)`;
+                        dot.style.background = `repeating-linear-gradient(${angle}deg, ${stripeColor}, ${stripeColor} 2px, ${bgColor} 2px, ${bgColor} 4px)`;
+                    } else {
+                        let h = baseColorH;
+                        dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${h},100%,${50*brightness+20}%), hsl(${h},100%,${50*brightness}%), hsl(${h},100%,${50*brightness-20}%))`;
+                    }
+
+                    if (config.dimension === '3d') dot.style.transform = `translateZ(${z}px)`;
+                    canvas.appendChild(dot);
                 }
             };
-            if(config.compare){ draw(dots.left,0,canvas.clientWidth/2); draw(dots.right,canvas.clientWidth/2,canvas.clientWidth/2); }
-            else draw(dots,0,canvas.clientWidth);
 
-            if(config.flashTime<10) setTimeout(() => {
-                canvas.querySelectorAll(".dot").forEach(d=>d.style.opacity="0");
-                if(config.afterimage){ canvas.style.backgroundColor="#FFF"; setTimeout(()=>{ canvas.style.backgroundColor=config.colorNoise?`hsl(${baseH},20%,5%)`:"#000"; },100); }
-            }, config.flashTime*1000);
+            if (config.compare) {
+                const mid = canvas.clientWidth / 2;
+                drawSet(currentDotsToShow.left, 0, mid);
+                drawSet(currentDotsToShow.right, mid, mid);
+            } else {
+                drawSet(currentDotsToShow, 0, canvas.clientWidth);
+            }
+
+            if (config.flashTime < 10) {
+                setTimeout(() => {
+                    document.querySelectorAll(".dot, #stroop-noise").forEach(d => d.style.opacity = "0");
+                    if (config.afterimage) {
+                        canvas.style.backgroundColor = "#FFF";
+                        setTimeout(() => {
+                            canvas.style.backgroundColor = currentBg;
+                            applyMask(mask);
+                        }, 100);
+                    } else {
+                        applyMask(mask);
+                    }
+                }, config.flashTime * 1000);
+            }
+        }
+
+        function applyMask(maskElement) {
+            if (config.visualMask) {
+                maskElement.style.display = "block";
+                setTimeout(() => { maskElement.style.display = "none"; }, 150);
+            }
         }
 
         function createAnswerUI() {
-            const a=document.getElementById("answerArea"); a.innerHTML=""; if(!isWaitingAnswer) return;
-            if(config.compare) { a.className="grid-compare"; a.appendChild(createKey("LEFT (←)",()=>checkAnswer('LEFT'))).classList.add("btn-large"); a.appendChild(createKey("RIGHT (→)",()=>checkAnswer('RIGHT'))).classList.add("btn-large"); return; }
-            if(config.maxDots-config.minDots+1>=11){
-                a.className="grid-keypad"; let d=document.createElement("div"); d.id="displayFieldValue"; d.textContent="-"; a.appendChild(d);
-                for(let i=1;i<=9;i++) a.appendChild(createKey(i,()=>addNumber(i)));
-                a.appendChild(createKey("C",backspace)); a.appendChild(createKey(0,()=>addNumber(0)));
-                let ok=createKey("OK",confirmAnswer); ok.style.background="#00d2ff"; ok.style.color="#000"; a.appendChild(ok);
-            } else { a.className="grid-small"; for(let i=config.minDots;i<=config.maxDots;i++) a.appendChild(createKey(i,()=>checkAnswer(i))); }
+            const container = document.getElementById("answerArea");
+            container.innerHTML = "";
+            if (!isWaitingAnswer) return;
+
+            if (config.compare) {
+                container.className = "grid-compare";
+                const btnL = createKey("LEFT (←)", () => checkAnswer('LEFT'));
+                btnL.classList.add("btn-large");
+                const btnR = createKey("RIGHT (→)", () => checkAnswer('RIGHT'));
+                btnR.classList.add("btn-large");
+                container.appendChild(btnL);
+                container.appendChild(btnR);
+                return;
+            }
+
+            const buttonCount = config.maxDots - config.minDots + 1;
+            if (buttonCount >= 11) {
+                container.className = "grid-keypad";
+                const display = document.createElement("div"); display.id = "displayFieldValue"; display.textContent = "-";
+                container.appendChild(display);
+                for (let i = 1; i <= 9; i++) container.appendChild(createKey(i, () => addNumber(i)));
+                container.appendChild(createKey("C", backspace)); container.appendChild(createKey(0, () => addNumber(0)));
+                const okBtn = createKey("決定", confirmAnswer); okBtn.style.background = "#00d2ff"; okBtn.style.color = "#000"; container.appendChild(okBtn);
+            } else {
+                container.className = "grid-small";
+                for (let i = config.minDots; i <= config.maxDots; i++) container.appendChild(createKey(i, () => checkAnswer(i)));
+            }
         }
-        function createKey(t,fn){ let b=document.createElement("button"); b.className="btn-ans"; b.textContent=t; b.onclick=fn; return b; }
-        function addNumber(n){ if(!isWaitingAnswer||isTransitioning) return; currentInput+=n; document.getElementById("displayFieldValue").textContent=currentInput; if(currentInput.length>=correctCount.toString().length) setTimeout(confirmAnswer,50); }
-        function backspace(){ currentInput=currentInput.slice(0,-1); document.getElementById("displayFieldValue").textContent=currentInput||"-"; }
-        function confirmAnswer(){ if(currentInput==="") return; checkAnswer(parseInt(currentInput)); }
-        function checkAnswer(s){
-            if(!isWaitingAnswer||isTransitioning) return;
-            if(s===correctCount){ combo++; updateStats(); generateNewProblem(); }
-            else { combo=0; updateStats(); document.getElementById("msg").textContent=`正解は ${correctCount}`; document.getElementById("msg").style.color="#FF4500"; }
+
+        function createKey(text, action) {
+            const btn = document.createElement("button"); btn.className = "btn-ans"; btn.textContent = text; btn.onclick = action; return btn;
         }
-        function updateStats(){ document.getElementById("stats").textContent=`Combo: ${combo}`; }
+
+        function addNumber(num) {
+            if (!isWaitingAnswer || isTransitioning) return;
+            currentInput += num.toString();
+            document.getElementById("displayFieldValue").textContent = currentInput;
+            if (currentInput.length >= correctCount.toString().length) setTimeout(confirmAnswer, 50); 
+        }
+
+        function backspace() { currentInput = currentInput.slice(0, -1); document.getElementById("displayFieldValue").textContent = currentInput || "-"; }
+        function confirmAnswer() { if (currentInput === "") return; checkAnswer(parseInt(currentInput)); }
+
+        function checkAnswer(selected) {
+            if (!isWaitingAnswer || isTransitioning) return;
+            const msg = document.getElementById("msg");
+            if (selected === correctCount) {
+                if (msg.textContent === "") combo++; 
+                if (config.mode === 'levelup' && combo > 0 && combo % 10 === 0) {
+                    config.minDots++; config.maxDots++;
+                    document.getElementById('minDots').value = config.minDots;
+                    document.getElementById('maxDots').value = config.maxDots;
+                    msg.textContent = "LEVEL UP!"; msg.style.color = "#00FF00";
+                    setTimeout(() => { updateStats(); generateNewProblem(); }, 800);
+                    return;
+                }
+                updateStats(); generateNewProblem(); 
+            } else {
+                combo = 0; updateStats();
+                msg.textContent = config.compare ? `ハズレ！` : `正解は ${correctCount}`; 
+                msg.style.color = "#FF4500";
+                currentInput = ""; 
+                if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
+            }
+        }
+        function updateStats() { document.getElementById("stats").textContent = `Combo: ${combo}`; }
     </script>
 </body>
 </html>
