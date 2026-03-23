@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>究極の20種アニメーション・マインドツール</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* キャンバスエリア */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 10px;
+    }
+    canvas {
+      display: block;
+      background: #000;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+
+    /* 設定ツールバー */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 95%;
+      max-width: 900px;
+      padding: 10px 20px;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    .vol-control { display: flex; align-items: center; gap: 10px; }
+    input[type=range] { cursor: pointer; }
+
+    /* コントロールパネル */
+    .panel {
+      width: 95%;
+      max-width: 900px;
+      margin: 15px 0;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-sizing: border-box;
+    }
+
+    .category-section { margin-bottom: 25px; }
+    .category-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #00d4ff;
+      margin-bottom: 12px;
+      text-align: left;
+      border-left: 4px solid #00d4ff;
+      padding-left: 10px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    button {
+      padding: 12px 5px;
+      font-size: 12px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-2px); }
+    button.active { background: #007bff; font-weight: bold; box-shadow: 0 0 15px rgba(0,123,255,0.4); }
+
+    /* カテゴリーごとのアクティブ色 */
+    .cat-active button.active { background: #ff4757; }
+    .cat-relax button.active { background: #2ed573; }
+    .cat-mind button.active { background: #1e90ff; }
+    .cat-special button.active { background: #ffa502; }
+
+    .full-screen-btn {
+      background: #444;
+      padding: 5px 15px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="canvas-container" id="canvasBox">
+    <canvas id="canvas" width="800" height="500"></canvas>
+  </div>
+
+  <div class="toolbar">
+    <div class="vol-control">
+      <span>🔈 音量</span>
+      <input type="range" id="volRange" min="0" max="1" step="0.1" value="0.5">
+    </div>
+    <button class="full-screen-btn" onclick="toggleFullScreen()">📺 全画面表示</button>
+  </div>
+
+  <div class="panel">
+    <div class="category-section cat-active">
+      <div class="category-title">活動・エネルギーアップ</div>
+      <div class="button-grid">
+        <button onclick="setMode('wakeUp', this)">☀️ 目が覚める</button>
+        <button onclick="setMode('energyBoost', this)">🔥 エネルギーUP</button>
+        <button onclick="setMode('concentration', this)">🎯 集中</button>
+        <button onclick="setMode('courage', this)">🛡️ 勇気</button>
+        <button onclick="setMode('brainActivation', this)">🧠 脳活性化</button>
+      </div>
+    </div>
+
+    <div class="category-section cat-relax">
+      <div class="category-title">休息・リラックス</div>
+      <div class="button-grid">
+        <button onclick="setMode('calm', this)">🌊 落ち着く</button>
+        <button onclick="setMode('relax', this)">🍃 リラックス</button>
+        <button onclick="setMode('meditation', this)">🧘 瞑想</button>
+        <button onclick="setMode('coolDown', this)">❄️ クールダウン</button>
+        <button onclick="setMode('balance', this)">⚖️ バランス</button>
+      </div>
+    </div>
+
+    <div class="category-section cat-mind">
+      <div class="category-title">メンタル・集中</div>
+      <div class="button-grid">
+        <button onclick="setMode('selfSuggestion', this)">💭 自己暗示</button>
+        <button onclick="setMode('happy', this)">😊 幸せ</button>
+        <button onclick="setMode('gratitude', this)">🙏 感謝</button>
+        <button onclick="setMode('selfDiscovery', this)">🔍 自己発見</button>
+        <button onclick="setMode('focus', this)">👁️ フォーカス</button>
+      </div>
+    </div>
+
+    <div class="category-section cat-special">
+      <div class="category-title">クリエイティブ・特殊演出</div>
+      <div class="button-grid">
+        <button onclick="setMode('creativity', this)">🎨 創造性</button>
+        <button onclick="setMode('sparkle', this)">✨ スパークル</button>
+        <button onclick="setMode('chakra', this)">🌈 チャクラ調整</button>
+        <button onclick="setMode('inspiration', this)">💡 発想力</button>
+        <button onclick="setMode('party', this)">🎉 パーティー</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const volRange = document.getElementById('volRange');
+    let currentMode = "wakeUp";
+    let modeStartTime = performance.now();
+    let globalVolume = 0.5;
+
+    // 音源設定
+    const sounds = {};
+    const modes = [
+      "wakeUp", "calm", "meditation", "selfSuggestion", "concentration",
+      "energyBoost", "relax", "happy", "creativity", "courage", "gratitude",
+      "sparkle", "chakra", "inspiration", "party", "coolDown", 
+      "selfDiscovery", "balance", "focus", "brainActivation"
+    ];
+    modes.forEach(m => {
+      sounds[m] = new Audio(`sounds/${m}.mp3`);
+      sounds[m].loop = true; // ループ再生を有効化
+    });
+
+    // 音量スライダーのイベント
+    volRange.addEventListener('input', (e) => {
+      globalVolume = e.target.value;
+      if (sounds[currentMode]) {
+        sounds[currentMode].volume = globalVolume;
+      }
+    });
+
+    function setMode(mode, btnElement) {
+      currentMode = mode;
+      modeStartTime = performance.now();
+      
+      document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      if(btnElement) btnElement.classList.add('active');
+
+      for (let key in sounds) {
+        sounds[key].pause();
+        sounds[key].currentTime = 0;
+      }
+      if (sounds[mode]) {
+        sounds[mode].volume = globalVolume;
+        sounds[mode].play().catch(() => {});
+      }
+    }
+
+    function toggleFullScreen() {
+      const el = document.getElementById('canvasBox');
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(err => {
+          alert(`エラー: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // アニメーションループ（元の20種類のロジックを完全維持）
+    function animate(timestamp) {
+      const elapsed = timestamp - modeStartTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // --- 元のアニメーションロジックを実行 ---
+      renderLegacyAnimation(currentMode, elapsed);
+
+      requestAnimationFrame(animate);
+    }
+
+    function renderLegacyAnimation(mode, elapsed) {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      switch(mode) {
+        case "wakeUp":
+          ctx.fillStyle = "cyan"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 100) < 50) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "red"; ctx.fill();
+          }
+          ctx.strokeStyle = "rgba(255,255,255,0.3)";
+          for(let i = 0; i < 16; i++) {
+            const angle = i * (Math.PI/8) + (elapsed/200);
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + 200 * Math.cos(angle), cy + 200 * Math.sin(angle)); ctx.stroke();
+          }
+          break;
+        case "calm":
+          ctx.fillStyle = "rgba(173,216,230,0.8)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 1000) < 500) {
+            ctx.save(); ctx.filter = "blur(4px)";
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "blue"; ctx.fill(); ctx.restore();
+          }
+          break;
+        case "meditation":
+          ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(128, 0, 128, ${0.5 + 0.5 * Math.sin(Math.PI * elapsed / 1000)})`;
+          ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, cy, 80 + (elapsed/10)%50, 0, Math.PI*2);
+          ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.stroke();
+          break;
+        case "selfSuggestion":
+          ctx.fillStyle = "#444"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 1000) < 500) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI*2); ctx.fillStyle = "magenta"; ctx.fill();
+          }
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(elapsed/1000);
+          ctx.beginPath(); ctx.arc(0, 0, (Math.max(canvas.width, canvas.height)/1.5) * (1 - (elapsed % 3000) / 3000), 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fill(); ctx.restore();
+          ctx.font = "36px sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "center";
+          ctx.fillText("あなたは素晴らしい！", cx, cy + 10);
+          break;
+        case "concentration":
+          ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 200) < 100) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2); ctx.fillStyle = "lime"; ctx.fill();
+          }
+          ctx.beginPath(); ctx.arc(cx, cy, 100 + 15 * Math.sin(elapsed / 80), 0, Math.PI * 2);
+          ctx.strokeStyle = "white"; ctx.lineWidth = 5; ctx.stroke();
+          break;
+        case "energyBoost":
+          ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 66) < 33) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2); ctx.fillStyle = "yellow"; ctx.fill();
+          }
+          for(let i = 0; i < 20; i++) {
+            ctx.fillStyle = "white"; ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+          }
+          break;
+        case "relax":
+          let gradR = ctx.createRadialGradient(cx, cy, 50, cx, cy, 300);
+          gradR.addColorStop(0, "#a0d6a0"); gradR.addColorStop(1, "#70a070");
+          ctx.fillStyle = gradR; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 1000) < 500) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2); ctx.fillStyle = "green"; ctx.fill();
+          }
+          break;
+        case "happy":
+          ctx.fillStyle = "lightpink"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if ((elapsed % 333) < 166) {
+            ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2); ctx.fillStyle = "hotpink"; ctx.fill();
+          }
+          for(let i = 0; i < 5; i++) {
+            ctx.font = "20px serif"; ctx.fillText("🌸", Math.random()*canvas.width, Math.random()*canvas.height);
+          }
+          break;
+        case "creativity":
+          ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = `hsl(${(elapsed/10)%360},80%,50%)`;
+          ctx.beginPath();
+          for(let i = 0; i < 360; i += 10) {
+            let r = 80 + 40 * Math.sin((i * Math.PI / 180) + elapsed/200);
+            ctx.lineTo(cx + r * Math.cos(i * Math.PI / 180), cy + r * Math.sin(i * Math.PI / 180));
+          }
+          ctx.stroke();
+          break;
+        case "courage":
+          ctx.fillStyle = "#400"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const shk = 5 * Math.sin(elapsed / 10);
+          ctx.save(); ctx.translate(shk, shk);
+          ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+          ctx.fillStyle = "crimson"; ctx.fill(); ctx.restore();
+          break;
+        case "gratitude":
+          ctx.fillStyle = "#f0e6fa"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.font = "30px sans-serif"; ctx.fillStyle = "black"; ctx.textAlign = "center";
+          ctx.fillText("ありがとう", cx, cy + 10 + Math.sin(elapsed/500)*5);
+          break;
+        case "sparkle":
+          ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          for (let i = 0; i < 30; i++) {
+            ctx.fillStyle = `rgba(255,255,255,${Math.random()})`;
+            ctx.beginPath(); ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 2, 0, Math.PI*2); ctx.fill();
+          }
+          break;
+        case "chakra":
+          ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+          colors.forEach((c, i) => {
+            const a = (i / 7) * 2 * Math.PI + elapsed/2000;
+            ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx + 150 * Math.cos(a), cy + 150 * Math.sin(a), 30, 0, Math.PI*2); ctx.fill();
+          });
+          break;
+        case "inspiration":
+          ctx.fillStyle = "orange"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          for(let i = 0; i < 20; i++){
+            let a = i * (Math.PI/10) + elapsed/300;
+            ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.beginPath();
+            ctx.moveTo(cx, cy); ctx.lineTo(cx + 400 * Math.cos(a), cy + 400 * Math.sin(a)); ctx.stroke();
+          }
+          break;
+        case "party":
+          ctx.fillStyle = (elapsed % 100 < 50) ? "#222" : "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          for(let i = 0; i < 20; i++){
+            ctx.fillStyle = `hsl(${Math.random()*360},80%,60%)`;
+            ctx.beginPath(); ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, 3, 0, Math.PI*2); ctx.fill();
+          }
+          break;
+        case "coolDown":
+          ctx.fillStyle = "#001a33"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = "cyan"; ctx.beginPath();
+          ctx.arc(cx, cy, 150 + 10 * Math.sin(elapsed/300), 0, Math.PI*2); ctx.stroke();
+          break;
+        case "selfDiscovery":
+          ctx.fillStyle = "#111"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const rSD = 80 + (elapsed % 1500 / 1500) * 200;
+          ctx.strokeStyle = `rgba(255,255,255,${1 - (elapsed%1500/1500)})`;
+          ctx.beginPath(); ctx.arc(cx, cy, rSD, 0, Math.PI*2); ctx.stroke();
+          break;
+        case "balance":
+          ctx.fillStyle = "#222"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = "yellow"; ctx.beginPath();
+          ctx.arc(cx, cy, 100 + 15 * Math.sin(elapsed/150), 0, Math.PI*2); ctx.stroke();
+          break;
+        case "focus":
+          let gradF = ctx.createRadialGradient(cx, cy, 10, cx, cy, 300);
+          gradF.addColorStop(0, "white"); gradF.addColorStop(1, "black");
+          ctx.fillStyle = gradF; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          break;
+        case "brainActivation":
+          ctx.fillStyle = (elapsed % 40 < 20) ? "#fff" : "#000";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          break;
+        default:
+          ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    requestAnimationFrame(animate);
+    document.querySelector('button').classList.add('active');
+  </script>
+</body>
+</html>
