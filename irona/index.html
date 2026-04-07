@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Color PRO</title>
+    <style>
+        /* 全体のデザイン設定 */
+        body {
+            margin: 0;
+            background-color: #1a1a2e; /* 濃い紺色 */
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 { font-size: 1.5rem; letter-spacing: 2px; color: #4ecca3; }
+
+        /* スコアとタイマー */
+        .stats { font-size: 1.2rem; margin-bottom: 20px; }
+        #timer { color: #e94560; font-weight: bold; }
+
+        /* メインの問題表示 */
+        #question {
+            font-size: 100px;
+            font-weight: 900;
+            margin: 30px 0;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        /* ボタンのレイアウト */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        button {
+            border: none;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        button:active { transform: scale(0.95); }
+
+        /* ボタンの色定義 */
+        .btn-red { background: #ff4d4d; color: white; }
+        .btn-blue { background: #00d2ff; color: white; }
+        .btn-green { background: #2ecc71; color: white; }
+        .btn-yellow { background: #f1c40f; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>BRAIN COLOR <span style="color: #e94560;">PRO</span></h1>
+    
+    <div class="stats">
+        SCORE: <span id="score">0</span> | TIME: <span id="timer">10.0</span>s
+    </div>
+    
+    <div id="question">START</div>
+
+    <div class="btn-grid">
+        <button class="btn-red" onclick="checkAnswer('red')">赤</button>
+        <button class="btn-blue" onclick="checkAnswer('blue')">青</button>
+        <button class="btn-green" onclick="checkAnswer('green')">緑</button>
+        <button class="btn-yellow" onclick="checkAnswer('yellow')">黄</button>
+    </div>
+
+    <script>
+        const words = ["あか", "あお", "みどり", "きいろ"];
+        const colors = ["red", "blue", "green", "yellow"];
+        
+        let score = 0;
+        let timeLeft = 10.0;
+        let correctColor = "";
+        let gameActive = false;
+        let timerInterval;
+
+        function startGame() {
+            score = 0;
+            timeLeft = 10.0;
+            gameActive = true;
+            document.getElementById("score").innerText = score;
+            nextQuestion();
+            
+            // 0.1秒ごとにタイマーを更新
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                document.getElementById("timer").innerText = timeLeft.toFixed(1);
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 100);
+        }
+
+        function nextQuestion() {
+            const randomWordIdx = Math.floor(Math.random() * words.length);
+            const randomColorIdx = Math.floor(Math.random() * colors.length);
+            
+            const qElement = document.getElementById("question");
+            qElement.innerText = words[randomWordIdx];
+            qElement.style.color = getHexColor(colors[randomColorIdx]);
+            
+            correctColor = colors[randomColorIdx];
+            
+            // 正解するたびに少しだけ時間を回復させる（難易度調整）
+            if(score > 0) timeLeft += 0.5;
+        }
+
+        // CSSの色名だと地味なので、綺麗な色コードを返す
+        function getHexColor(colorName) {
+            const hexMap = {
+                red: "#ff4d4d",
+                blue: "#00d2ff",
+                green: "#2ecc71",
+                yellow: "#f1c40f"
+            };
+            return hexMap[colorName];
+        }
+
+        function checkAnswer(clickedColor) {
+            if (!gameActive) {
+                startGame();
+                return;
+            }
+
+            if (clickedColor === correctColor) {
+                score++;
+                document.getElementById("score").innerText = score;
+                nextQuestion();
+            } else {
+                timeLeft -= 1.5; // 間違えるとペナルティで時間が減る
+                document.getElementById("question").style.transform = "translateX(10px)";
+                setTimeout(() => {
+                    document.getElementById("question").style.transform = "translateX(0)";
+                }, 100);
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            document.getElementById("question").innerText = "FINISH!";
+            document.getElementById("question").style.color = "#ffffff";
+            alert("終了！あなたのスコアは " + score + " です。");
+        }
+    </script>
+</body>
+</html>
