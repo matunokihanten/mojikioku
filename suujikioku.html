@@ -2,266 +2,387 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>数字記憶ゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>瞬間記憶トレーニング Pro</title>
   <style>
-    body {
-      font-family: sans-serif;
+    :root {
+      --bg-color: #f8f9fa;
+      --text-color: #212529;
+      --primary: #007bff;
+      --success: #28a745;
+      --error: #dc3545;
+      --key-bg: #e9ecef;
+    }
+
+    /* 全体レイアウト：スクロールを完全に禁止 */
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      user-select: none;
+    }
+
+    /* 設定画面 */
+    #setupScreen {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 0;
+      justify-content: center;
+      height: 100%;
       padding: 20px;
     }
-    /* コントロール用領域：桁数、表示時間、スタート・終了ボタン */
-    #controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
+
+    .setting-card {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 350px;
+      text-align: center;
+    }
+
+    .setting-group {
       margin-bottom: 20px;
     }
-    #controls input {
-      width: 80px;
-      padding: 5px;
+
+    .setting-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 0.9em;
+      color: #666;
     }
-    #controls button {
-      padding: 5px 10px;
-    }
-    /* ゲーム全体を囲むコンテナ */
-    #gameContainer {
-      width: 300px;
-      border: 1px solid #ccc;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    /* 覚える数字（問題）の表示エリア */
-    #problemDisplay {
-      font-size: 2em;
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.2em;
+      border: 2px solid #ddd;
+      border-radius: 10px;
       text-align: center;
-      margin-bottom: 10px;
-      height: 40px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      border: 1px solid #ccc;
-      padding: 5px;
+      outline: none;
     }
-    /* ユーザーの入力（回答）フィールド */
-    #inputContainer {
-      margin-bottom: 10px;
-    }
-    #userInput {
-      width: 100%;
-      height: 40px;
-      font-size: 1.5em;
-      text-align: right;
-      padding: 5px;
-      box-sizing: border-box;
-      pointer-events: none; /* キーボタンからのみ入力 */
-    }
-    /* 電卓風キーパッド */
-    #keypad {
-      width: 100%;
-    }
-    .keypad-row {
+
+    .mode-selector {
       display: flex;
-      margin-bottom: 5px;
+      gap: 10px;
+      margin-bottom: 25px;
     }
-    .keypad-row button {
+
+    .mode-btn {
       flex: 1;
       padding: 10px;
-      font-size: 1.2em;
-      margin-right: 5px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.85em;
     }
-    .keypad-row button:last-child {
-      margin-right: 0;
+
+    .mode-btn.active {
+      border-color: var(--primary);
+      background-color: #e7f1ff;
+      color: var(--primary);
     }
-    .full-width {
+
+    .btn-start {
       width: 100%;
-      padding: 10px;
-      font-size: 1.2em;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 1.3em;
+      font-weight: bold;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+      touch-action: manipulation;
     }
-    /* disable状態のボタン */
-    button:disabled {
-      background-color: #ddd;
-      color: #999;
+
+    /* ゲーム画面 */
+    #gameScreen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
     }
+
+    /* 問題表示エリア */
+    #displayArea {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background-color 0.2s;
+      padding: 0 10px; /* 横のはみ出し防止 */
+    }
+
+    #statusInfo {
+      position: absolute;
+      top: 15px;
+      font-size: 0.9em;
+      color: #888;
+      font-weight: bold;
+    }
+
+    #mainDisplay {
+      font-size: 4.5em; /* 初期値、JSで可変 */
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-align: center;
+      width: 100%;
+      word-wrap: break-word;
+      line-height: 1.2;
+    }
+
+    /* キーパッドエリア */
+    #keypadArea {
+      padding: 15px;
+      background: white;
+      border-top: 1px solid #eee;
+      height: 45%;
+    }
+
+    #keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 12px;
+      height: 100%;
+    }
+
+    #keypad button {
+      border: none;
+      border-radius: 15px;
+      background-color: var(--key-bg);
+      font-size: 1.8em;
+      font-weight: bold;
+      color: var(--text-color);
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.05s, transform 0.05s;
+    }
+
+    #keypad button:active {
+      background-color: #ced4da;
+      transform: scale(0.95);
+    }
+
+    .btn-del { color: var(--error) !important; font-size: 1.4em !important; }
+    .btn-end { font-size: 1em !important; color: #666; }
+
+    /* アニメーション */
+    .bg-correct { background-color: #d4edda !important; }
+    .bg-error { background-color: #f8d7da !important; }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    .shake { animation: shake 0.3s ease-in-out; }
   </style>
 </head>
 <body>
-  <!-- 設定用コントロール -->
-  <div id="controls">
-    <label>桁数:
-      <input type="number" id="digits" value="6" min="1">
-    </label>
-    <label>表示時間(秒):
-      <input type="number" id="displayTime" value="3" min="1">
-    </label>
-    <button id="startBtn">スタート</button>
-    <button id="endBtn">終了</button>
-  </div>
-  
-  <!-- ゲーム全体の領域 -->
-  <div id="gameContainer">
-    <!-- 覚える数字（問題）を表示 -->
-    <div id="problemDisplay"></div>
-    
-    <!-- ユーザーの回答を表示する入力フィールド -->
-    <div id="inputContainer">
-      <input type="text" id="userInput" readonly placeholder="回答はこっちに表示">
-    </div>
-    
-    <!-- 電卓風キーパッド -->
-    <div id="keypad">
-      <div class="keypad-row">
-        <button data-value="7">7</button>
-        <button data-value="8">8</button>
-        <button data-value="9">9</button>
+
+  <div id="setupScreen">
+    <div class="setting-card">
+      <h2 style="margin-top: 0;">瞬間記憶トレ</h2>
+      
+      <div class="setting-group">
+        <label>モード選択</label>
+        <div class="mode-selector">
+          <button class="mode-btn active" id="modeSurvival">レベルアップ</button>
+          <button class="mode-btn" id="modeFixed">桁数固定</button>
+        </div>
       </div>
-      <div class="keypad-row">
-        <button data-value="4">4</button>
-        <button data-value="5">5</button>
-        <button data-value="6">6</button>
+
+      <div class="setting-group">
+        <label>開始時の桁数</label>
+        <input type="number" id="inputDigits" value="4" min="1" max="20">
       </div>
-      <div class="keypad-row">
-        <button data-value="1">1</button>
-        <button data-value="2">2</button>
-        <button data-value="3">3</button>
+
+      <div class="setting-group">
+        <label>表示時間 (秒)</label>
+        <input type="number" id="inputTime" value="2.0" min="0.1" step="0.1">
       </div>
-      <div class="keypad-row">
-        <button data-action="clear">C</button>
-        <button data-value="0">0</button>
-        <button data-action="delete">←</button>
-      </div>
-      <div class="keypad-row">
-        <button data-action="submit" class="full-width">確定</button>
-      </div>
+
+      <button class="btn-start" id="btnStart">スタート</button>
     </div>
   </div>
-  
+
+  <div id="gameScreen">
+    <div id="displayArea">
+      <div id="statusInfo">
+        <span id="labelMode">レベルアップ</span> : <span id="labelDigits">4</span>桁
+      </div>
+      <div id="mainDisplay">準備...</div>
+    </div>
+    
+    <div id="keypadArea">
+      <div id="keypad">
+        <button data-num="7">7</button>
+        <button data-num="8">8</button>
+        <button data-num="9">9</button>
+        <button data-num="4">4</button>
+        <button data-num="5">5</button>
+        <button data-num="6">6</button>
+        <button data-num="1">1</button>
+        <button data-num="2">2</button>
+        <button data-num="3">3</button>
+        <button class="btn-end" id="btnEnd">終了</button>
+        <button data-num="0">0</button>
+        <button class="btn-del" id="btnDel">←</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let currentCorrectNumber = "";
-    let gameRunning = false;
-    let problemTimeout;
-    
-    // 指定された桁数のランダムな数字を生成する関数
-    function generateRandomNumber(digits) {
-      const min = Math.pow(10, digits - 1);
-      const max = Math.pow(10, digits) - 1;
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+    let config = {
+      digits: 4,
+      time: 2000,
+      mode: 'survival' 
+    };
+
+    let state = {
+      target: "",
+      input: "",
+      isAcceptingInput: false
+    };
+
+    const setupScreen = document.getElementById('setupScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const mainDisplay = document.getElementById('mainDisplay');
+    const labelDigits = document.getElementById('labelDigits');
+    const labelMode = document.getElementById('labelMode');
+    const displayArea = document.getElementById('displayArea');
+
+    // 桁数に応じてフォントサイズを調整する関数
+    function adjustFontSize(length) {
+      // 基本は4.5em、6桁を超えたら徐々に小さくする（最小1.5em）
+      let size = 4.5;
+      if (length > 6) {
+        size = Math.max(1.5, 4.5 * (7 / length));
+      }
+      mainDisplay.style.fontSize = size + "rem";
     }
-    
-    // キーパッド内のすべてのボタンを無効化する
-    function disableKeypad() {
-      const buttons = document.querySelectorAll("#keypad button");
-      buttons.forEach(button => {
-        button.disabled = true;
-      });
+
+    // モード切り替え
+    document.getElementById('modeSurvival').onclick = () => setMode('survival');
+    document.getElementById('modeFixed').onclick = () => setMode('fixed');
+
+    function setMode(m) {
+      config.mode = m;
+      document.getElementById('modeSurvival').classList.toggle('active', m === 'survival');
+      document.getElementById('modeFixed').classList.toggle('active', m === 'fixed');
+      labelMode.textContent = m === 'survival' ? "レベルアップ" : "桁数固定";
     }
-    
-    // キーパッド内のすべてのボタンの無効化を解除する
-    function enableKeypad() {
-      const buttons = document.querySelectorAll("#keypad button");
-      buttons.forEach(button => {
-        button.disabled = false;
-      });
-    }
-    
-    // 次の問題へ進む（回答入力前の処理）  
-    // ・ユーザー回答フィールドのクリア  
-    // ・問題の生成と表示（指定秒後に問題を隠し、キーパッドを有効化）
-    function nextProblem() {
-      // 回答フィールドをクリア
-      document.getElementById("userInput").value = "";
-      
-      // キーパッド操作を無効化
-      disableKeypad();
-      
-      // 設定値を取得
-      const digits = parseInt(document.getElementById("digits").value, 10);
-      const displayTime = parseInt(document.getElementById("displayTime").value, 10);
-      
-      // ランダムな数字を生成して保存
-      currentCorrectNumber = generateRandomNumber(digits).toString();
-      
-      // 問題を表示
-      const problemDisplay = document.getElementById("problemDisplay");
-      problemDisplay.textContent = currentCorrectNumber;
-      
-      // 指定秒数後（ミリ秒に変換）に問題を消去し、キーパッドを操作可能にする
-      clearTimeout(problemTimeout);
-      problemTimeout = setTimeout(() => {
-        problemDisplay.textContent = "";
-        enableKeypad();
-      }, displayTime * 1000);
-    }
-    
+
     // ゲーム開始
-    function startGame() {
-      if (!gameRunning) {
-        gameRunning = true;
-        // ゲーム中は設定入力（桁数、表示時間、スタートボタン）を無効化
-        document.getElementById("digits").disabled = true;
-        document.getElementById("displayTime").disabled = true;
-        document.getElementById("startBtn").disabled = true;
-        nextProblem();
-      }
-    }
-    
+    document.getElementById('btnStart').onclick = () => {
+      config.digits = parseInt(document.getElementById('inputDigits').value) || 4;
+      config.time = (parseFloat(document.getElementById('inputTime').value) || 2.0) * 1000;
+      
+      setupScreen.style.display = 'none';
+      gameScreen.style.display = 'flex';
+      nextRound();
+    };
+
     // ゲーム終了
-    function endGame() {
-      gameRunning = false;
-      clearTimeout(problemTimeout);
-      // 設定入力を再び有効化
-      document.getElementById("digits").disabled = false;
-      document.getElementById("displayTime").disabled = false;
-      document.getElementById("startBtn").disabled = false;
-      // 問題・回答フィールドをクリアし、キーパッドを無効化
-      document.getElementById("problemDisplay").textContent = "";
-      document.getElementById("userInput").value = "";
-      disableKeypad();
-      alert("ゲームを終了しました。");
+    document.getElementById('btnEnd').onclick = () => {
+      setupScreen.style.display = 'flex';
+      gameScreen.style.display = 'none';
+    };
+
+    function nextRound() {
+      state.input = "";
+      state.isAcceptingInput = false;
+      labelDigits.textContent = config.digits;
+      adjustFontSize(config.digits);
+      
+      mainDisplay.textContent = "＋";
+      
+      setTimeout(() => {
+        // ランダム数字生成
+        state.target = "";
+        for(let i=0; i<config.digits; i++) {
+          state.target += Math.floor(Math.random() * 10).toString();
+        }
+        mainDisplay.textContent = state.target;
+        
+        setTimeout(() => {
+          renderInput();
+          state.isAcceptingInput = true;
+        }, config.time);
+      }, 800);
     }
-    
-    // 電卓風キーパッドのクリックイベント設定
-    document.getElementById("keypad").addEventListener("click", function(e) {
-      if (e.target.tagName !== "BUTTON" || e.target.disabled) return;
-      const userInput = document.getElementById("userInput");
-      // 数字ボタンが押された場合
-      if (e.target.hasAttribute("data-value")) {
-        userInput.value += e.target.getAttribute("data-value");
+
+    function renderInput() {
+      let dots = "";
+      for(let i=0; i<config.digits; i++) {
+        dots += (i < state.input.length) ? state.input[i] : "_";
       }
-      // アクションボタンの場合
-      else if (e.target.hasAttribute("data-action")) {
-        const action = e.target.getAttribute("data-action");
-        if (action === "clear") {
-          userInput.value = "";
-        } else if (action === "delete") {
-          userInput.value = userInput.value.slice(0, -1);
+      mainDisplay.textContent = dots;
+    }
+
+    // キーパッド処理
+    document.querySelectorAll('#keypad button[data-num]').forEach(btn => {
+      btn.onclick = () => {
+        if(!state.isAcceptingInput) return;
+        if(state.input.length < config.digits) {
+          state.input += btn.dataset.num;
+          renderInput();
+          if(state.input.length === config.digits) checkAnswer();
         }
-        // 「確定」ボタン：回答確定時の処理
-        else if (action === "submit") {
-          const userAnswer = userInput.value;
-          let message = "あなたの答え: " + userAnswer + "\n正解: " + currentCorrectNumber;
-          if (userAnswer === currentCorrectNumber) {
-            message = "正解！\n" + message;
-          } else {
-            message = "不正解。\n" + message;
-          }
-          alert(message);
-          // 正誤に関わらず次の問題へ進む
-          if (gameRunning) nextProblem();
-        }
-      }
+      };
     });
-    
-    // スタート・終了ボタンのイベント設定
-    document.getElementById("startBtn").addEventListener("click", startGame);
-    document.getElementById("endBtn").addEventListener("click", endGame);
-    
-    // 初期状態ではキーパッドを無効化しておく
-    disableKeypad();
+
+    document.getElementById('btnDel').onclick = () => {
+      if(!state.isAcceptingInput) return;
+      state.input = state.input.slice(0, -1);
+      renderInput();
+    };
+
+    function checkAnswer() {
+      state.isAcceptingInput = false;
+      
+      if(state.input === state.target) {
+        displayArea.classList.add('bg-correct');
+        mainDisplay.textContent = "OK!";
+        if(config.mode === 'survival') config.digits++;
+        
+        setTimeout(() => {
+          displayArea.classList.remove('bg-correct');
+          nextRound();
+        }, 600);
+      } else {
+        displayArea.classList.add('bg-error', 'shake');
+        adjustFontSize(Math.max(config.digits, 8)); // 不正解時は少し小さめにして表示
+        mainDisplay.innerHTML = `<small style="font-size:0.4em; display:block; color:#666; margin-bottom:5px;">正解は</small>${state.target}`;
+        
+        setTimeout(() => {
+          displayArea.classList.remove('bg-error', 'shake');
+          if(config.mode === 'survival') {
+            config.digits = parseInt(document.getElementById('inputDigits').value) || 4;
+          }
+          nextRound();
+        }, 2000);
+      }
+    }
   </script>
 </body>
 </html>
