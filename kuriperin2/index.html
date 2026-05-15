@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>クリペリン検査 Professional Edition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* 全体設定 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      padding: 30px;
+      overflow: hidden;
+    }
+
+    .header { text-align: center; margin-bottom: 25px; }
+    .header h1 { color: #2c5364; font-size: 2em; margin-bottom: 5px; font-weight: 800; }
+    .header p { color: #666; font-size: 0.95em; }
+
+    /* ステータスバー */
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #f1f5f9;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+    .status-item span { display: block; font-size: 0.85em; color: #64748b; margin-bottom: 4px; font-weight: bold; }
+    .status-item strong { font-size: 1.4em; color: #0f2027; font-family: 'Roboto Mono', monospace; }
+    .timer-display { color: #e11d48 !important; }
+
+    /* テストエリア */
+    .test-area { min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .display-input-pair-container { width: 100%; }
+
+    .line-row-wrapper { margin-bottom: 20px; }
+    .line-display-row {
+      display: flex; justify-content: center; gap: 12px;
+      font-family: 'Roboto Mono', monospace; font-size: 2.2em; font-weight: bold;
+      margin-bottom: 15px; color: #1e293b;
+    }
+    .input-grid-row { display: flex; justify-content: center; gap: 12px; }
+
+    .line-number { width: 45px; text-align: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .highlight-number { color: #ea580c; transform: scale(1.25); text-shadow: 0 4px 12px rgba(234,88,12,0.3); }
+
+    .input-box {
+      width: 45px; height: 45px; border: 3px solid #cbd5e1; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3em; font-weight: bold; background: #fff; transition: all 0.2s;
+      font-family: 'Roboto Mono', monospace;
+    }
+    .input-box.current { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.2); transform: translateY(-2px); }
+    .input-box.correct { background: #10b981; color: white; border-color: #059669; animation: pop 0.3s ease; }
+    .input-box.incorrect { background: #ef4444; color: white; border-color: #b91c1c; animation: shake 0.3s ease; }
+
+    @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    /* キーパッド */
+    .number-pad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      max-width: 320px; margin: 30px auto 20px;
+    }
+    .num-btn {
+      padding: 18px; font-size: 1.5em; border: none; background: #f8fafc;
+      border-radius: 12px; cursor: pointer; transition: all 0.15s;
+      font-family: 'Roboto Mono', monospace; font-weight: bold; color: #334155;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .num-btn:hover { background: #e2e8f0; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+    .num-btn:active { background: #cbd5e1; transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .num-btn.action { background: #e2e8f0; font-size: 1.2em; }
+
+    /* コントロール */
+    .controls { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+    .btn {
+      padding: 14px 30px; border: none; border-radius: 50px;
+      font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 1.1em;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .btn-primary { background: #0f2027; color: white; }
+    .btn-primary:hover { background: #203a43; transform: translateY(-2px); }
+    .btn-danger { background: #e11d48; color: white; }
+    .btn-danger:hover { background: #be123c; transform: translateY(-2px); }
+    .btn-secondary { background: #94a3b8; color: white; }
+    .btn-secondary:hover { background: #64748b; transform: translateY(-2px); }
+
+    /* 統計・分析 */
+    .analysis-panel { margin-top: 40px; border-top: 2px dashed #cbd5e1; padding-top: 30px; }
+    .analysis-panel h3 { text-align: center; color: #0f2027; margin-bottom: 20px; font-size: 1.5em; }
+    .chart-container { position: relative; height: 350px; width: 100%; margin-top: 25px; background: #f8fafc; border-radius: 15px; padding: 15px; }
+    .trait-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .trait-card { background: white; padding: 20px; border-radius: 12px; border-left: 6px solid #203a43; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .trait-card strong { display: block; color: #475569; margin-bottom: 8px; font-size: 1.1em; }
+    .trait-card p { color: #0f2027; font-size: 1.3em; font-weight: bold; }
+
+    .hidden { display: none !important; }
+
+    /* モバイル最適化 */
+    @media (max-width: 768px) {
+      .line-display-row { gap: 8px; font-size: 1.8em; flex-wrap: wrap; }
+      .input-grid-row { gap: 8px; flex-wrap: wrap; }
+      .line-number { width: 32px; }
+      .input-box { width: 36px; height: 36px; font-size: 1.1em; }
+      .container { padding: 20px 15px; }
+      .number-pad { gap: 8px; }
+      .num-btn { padding: 12px; font-size: 1.3em; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🧠 クリペリン検査 Pro</h1>
+    <p>正確さと作業曲線を測定する高精度システム</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item"><span>進捗</span><strong id="lineCount">0 / 15</strong></div>
+    <div class="status-item"><span>残り時間</span><strong id="timerDisplay" class="timer-display">00:00</strong></div>
+    <div class="status-item"><span>正答率</span><strong id="accuracyDisplay">0.0%</strong></div>
+  </div>
+
+  <div class="test-area" id="testArea">
+    <div id="displayInputPairContainer" class="display-input-pair-container">
+      <p style="text-align:center; color:#64748b; font-size: 1.2em;">「検査開始」ボタンを押してスタートしてください</p>
+    </div>
+  </div>
+
+  <div id="inputSection" class="hidden">
+    <div class="number-pad">
+      <button class="num-btn" onclick="app.input(1)">1</button>
+      <button class="num-btn" onclick="app.input(2)">2</button>
+      <button class="num-btn" onclick="app.input(3)">3</button>
+      <button class="num-btn" onclick="app.input(4)">4</button>
+      <button class="num-btn" onclick="app.input(5)">5</button>
+      <button class="num-btn" onclick="app.input(6)">6</button>
+      <button class="num-btn" onclick="app.input(7)">7</button>
+      <button class="num-btn" onclick="app.input(8)">8</button>
+      <button class="num-btn" onclick="app.input(9)">9</button>
+      <button class="num-btn action" onclick="app.input('back')">←</button>
+      <button class="num-btn" onclick="app.input(0)">0</button>
+      <button class="num-btn action" onclick="app.input('next')">→</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn" class="btn btn-primary" onclick="app.start()">検査開始</button>
+    <button id="stopBtn" class="btn btn-danger hidden" onclick="app.stopEarly()">途中終了</button>
+    <button id="resetBtn" class="btn btn-secondary" onclick="app.reset()">リセット</button>
+  </div>
+
+  <div id="resultArea" class="analysis-panel hidden">
+    <h3>📊 分析レポート</h3>
+    <div class="trait-grid" id="traitGrid"></div>
+    <div class="chart-container">
+      <canvas id="performanceChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+class KraepelinApp {
+  constructor() {
+    this.totalLines = 15;
+    this.questionsPerLine = 10;
+    this.timePerLine = 60; // 1行60秒
+    this.chart = null;
+    
+    // キーボード入力イベントの設定
+    document.addEventListener('keydown', this.handleKeyInput.bind(this));
+    
+    this.reset();
+  }
+
+  // キーボードイベントの処理
+  handleKeyInput(e) {
+    if (!this.isActive) return;
+    
+    // デフォルトのスクロールなどを防ぐ（矢印やバックスペースの場合）
+    if (['Backspace', 'ArrowRight', 'Enter'].includes(e.key)) {
+      e.preventDefault();
+    }
+
+    if (e.key >= '0' && e.key <= '9') {
+      this.input(parseInt(e.key));
+    } else if (e.key === 'Backspace') {
+      this.input('back');
+    } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+      this.input('next');
+    }
+  }
+
+  reset() {
+    this.currentLine = 0;
+    this.currentIndex = 0;
+    this.currentNumbers = [];
+    this.answers = [];
+    this.isActive = false;
+    clearInterval(this.timer);
+    this.remainingTime = 0;
+    this.scores = [];
+    this.durations = [];
+
+    // UIの初期化
+    document.getElementById('resultArea').classList.add('hidden');
+    document.getElementById('inputSection').classList.add('hidden');
+    document.getElementById('startBtn').classList.remove('hidden');
+    document.getElementById('stopBtn').classList.add('hidden');
+    document.getElementById('timerDisplay').textContent = "00:00";
+    
+    this.renderMessage("「検査開始」ボタンを押してスタートしてください");
+    this.updateStats();
+  }
+
+  start() {
+    this.isActive = true;
+    this.currentLine = 0;
+    this.scores = [];
+    this.durations = [];
+    
+    // UIの切り替え
+    document.getElementById('inputSection').classList.remove('hidden');
+    document.getElementById('startBtn').classList.add('hidden');
+    document.getElementById('stopBtn').classList.remove('hidden');
+    document.getElementById('resultArea').classList.add('hidden');
+    
+    this.nextLine();
+  }
+
+  // 途中終了機能
+  stopEarly() {
+    if (!this.isActive) return;
+    this.isActive = false;
+    clearInterval(this.timer);
+    
+    // 現在の行のデータを記録してから終了
+    this.recordCurrentLineData();
+    
+    document.getElementById('inputSection').classList.add('hidden');
+    document.getElementById('stopBtn').classList.add('hidden');
+    document.getElementById('startBtn').classList.remove('hidden');
+    
+    this.renderMessage("検査を途中で終了しました。");
+    this.showResults();
+  }
+
+  nextLine() {
+    if (this.currentLine >= this.totalLines) {
+      this.finishTest();
+      return;
+    }
+    this.currentLine++;
+    this.currentIndex = 0;
+    this.generateNumbers();
+    this.answers = new Array(this.questionsPerLine).fill(null);
+    this.renderTest();
+    this.startTimer();
+    this.updateStats();
+  }
+
+  generateNumbers() {
+    this.currentNumbers = Array.from({length: this.questionsPerLine + 1}, () => Math.floor(Math.random() * 9) + 1);
+  }
+
+  startTimer() {
+    clearInterval(this.timer);
+    this.remainingTime = this.timePerLine;
+    this.updateTimerDisplay();
+    this.timer = setInterval(() => {
+      this.remainingTime--;
+      this.updateTimerDisplay();
+      if (this.remainingTime <= 0) {
+        this.recordCurrentLineData();
+        this.nextLine();
+      }
+    }, 1000);
+  }
+
+  updateTimerDisplay() {
+    const m = Math.floor(this.remainingTime / 60);
+    const s = this.remainingTime % 60;
+    document.getElementById('timerDisplay').textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+
+  input(val) {
+    if (!this.isActive) return;
+
+    if (val === 'back') {
+      if (this.currentIndex > 0) this.currentIndex--;
+    } else if (val === 'next') {
+      if (this.currentIndex < this.questionsPerLine - 1) this.currentIndex++;
+    } else {
+      this.answers[this.currentIndex] = val;
+      if (this.currentIndex < this.questionsPerLine - 1) {
+        this.currentIndex++;
+      } else {
+        // 最後のマスを入力したら自動で記録して次へ
+        this.recordCurrentLineData();
+        this.nextLine();
+        return;
+      }
+    }
+    this.renderTest();
+    this.updateStats();
+  }
+
+  updateStats() {
+    let currentCorrect = 0;
+    let answeredCount = 0;
+
+    // 現在の行の正答計算
+    this.answers.forEach((ans, i) => {
+      if (ans !== null && ans !== undefined) {
+        answeredCount++;
+        const expected = (this.currentNumbers[i] + this.currentNumbers[i+1]) % 10;
+        if (ans === expected) currentCorrect++;
+      }
+    });
+
+    const pastCorrect = this.scores.reduce((a, b) => a + b, 0);
+    const totalAnswered = (this.scores.length * this.questionsPerLine) + answeredCount;
+    const totalCorrect = pastCorrect + currentCorrect;
+
+    const accuracy = totalAnswered > 0 ? ((totalCorrect / totalAnswered) * 100).toFixed(1) : "0.0";
+
+    document.getElementById('lineCount').textContent = `${this.currentLine} / ${this.totalLines}`;
+    document.getElementById('accuracyDisplay').textContent = `${accuracy}%`;
+  }
+
+  // 現在の行のデータを配列に保存するメソッド（共通化）
+  recordCurrentLineData() {
+    let lineCorrect = 0;
+    this.answers.forEach((ans, i) => {
+      if (ans !== null) {
+        const expected = (this.currentNumbers[i] + this.currentNumbers[i+1]) % 10;
+        if (ans === expected) lineCorrect++;
+      }
+    });
+    this.scores.push(lineCorrect);
+    this.durations.push(this.timePerLine - this.remainingTime);
+  }
+
+  finishTest() {
+    this.isActive = false;
+    clearInterval(this.timer);
+    
+    document.getElementById('inputSection').classList.add('hidden');
+    document.getElementById('stopBtn').classList.add('hidden');
+    document.getElementById('startBtn').classList.remove('hidden');
+    
+    this.renderMessage("全工程が完了しました！");
+    this.showResults();
+  }
+
+  renderTest() {
+    const container = document.getElementById('displayInputPairContainer');
+    container.innerHTML = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'line-row-wrapper';
+
+    const numRow = document.createElement('div');
+    numRow.className = 'line-display-row';
+    this.currentNumbers.forEach((num, i) => {
+      const span = document.createElement('span');
+      span.className = 'line-number';
+      // 入力対象の2つの数字をハイライト
+      if (i === this.currentIndex || i === this.currentIndex + 1) {
+        span.classList.add('highlight-number');
+      }
+      span.textContent = num;
+      numRow.appendChild(span);
+    });
+
+    const inputRow = document.createElement('div');
+    inputRow.className = 'input-grid-row';
+    this.answers.forEach((ans, i) => {
+      const box = document.createElement('div');
+      box.className = 'input-box';
+      if (i === this.currentIndex) box.classList.add('current');
+      
+      if (ans !== null && ans !== undefined) {
+        box.textContent = ans;
+        const expected = (this.currentNumbers[i] + this.currentNumbers[i+1]) % 10;
+        box.classList.add(ans === expected ? 'correct' : 'incorrect');
+      }
+      inputRow.appendChild(box);
+    });
+
+    wrapper.appendChild(numRow);
+    wrapper.appendChild(inputRow);
+    container.appendChild(wrapper);
+  }
+
+  renderMessage(msg) {
+    document.getElementById('displayInputPairContainer').innerHTML = `<p style="text-align:center; color:#64748b; font-size: 1.2em; padding: 20px;">${msg}</p>`;
+  }
+
+  showResults() {
+    if (this.scores.length === 0) return; // データがない場合は表示しない
+    document.getElementById('resultArea').classList.remove('hidden');
+    this.renderTraits();
+    this.renderChart();
+  }
+
+  renderTraits() {
+    const avgScore = this.scores.reduce((a, b) => a + b, 0) / this.scores.length;
+    const variance = this.calculateVariance();
+    const traitGrid = document.getElementById('traitGrid');
+    
+    const analysis = [
+      { name: "⚡ 処理速度 (平均正答数)", value: `${avgScore.toFixed(1)} 問/行` },
+      { name: "🎯 安定性 (ムラの少なさ)", value: variance < 2 ? "極めて安定" : variance < 5 ? "標準的" : "変動が大きい" },
+      { name: "📈 作業曲線 (意欲の推移)", value: this.scores.length > 1 && this.scores[0] < this.scores[this.scores.length-1] ? "後半に伸びるタイプ" : "初速特化タイプ" }
+    ];
+
+    traitGrid.innerHTML = analysis.map(t => `
+      <div class="trait-card">
+        <strong>${t.name}</strong>
+        <p>${t.value}</p>
+      </div>
+    `).join('');
+  }
+
+  calculateVariance() {
+    if (this.scores.length <= 1) return 0;
+    const mean = this.scores.reduce((a, b) => a + b, 0) / this.scores.length;
+    return this.scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / this.scores.length;
+  }
+
+  renderChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(15, 32, 39, 0.6)');
+    gradient.addColorStop(1, 'rgba(15, 32, 39, 0)');
+
+    if (this.chart) this.chart.destroy();
+
+    this.chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: this.scores.map((_, i) => `${i + 1}行目`),
+        datasets: [{
+          label: '正答数',
+          data: this.scores,
+          borderColor: '#0f2027',
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#e11d48',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            max: this.questionsPerLine,
+            grid: { color: '#e2e8f0' },
+            title: { display: true, text: '正答数' }
+          },
+          x: { 
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 32, 39, 0.9)',
+            titleFont: { size: 14 },
+            bodyFont: { size: 16 }
+          }
+        }
+      }
+    });
+  }
+}
+
+const app = new KraepelinApp();
+</script>
+
+</body>
+</html>
