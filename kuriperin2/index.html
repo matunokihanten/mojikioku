@@ -79,18 +79,32 @@
 
     /* キーパッド */
     .number-pad {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-      max-width: 320px; margin: 30px auto 20px;
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 12px;
+      max-width: 380px; 
+      margin: 30px auto 20px;
     }
     .num-btn {
-      padding: 18px; font-size: 1.5em; border: none; background: #f8fafc;
-      border-radius: 12px; cursor: pointer; transition: all 0.15s;
-      font-family: 'Roboto Mono', monospace; font-weight: bold; color: #334155;
+      padding: 10px; 
+      min-height: 75px; 
+      font-size: 2em; 
+      border: none; 
+      background: #f8fafc;
+      border-radius: 12px; 
+      cursor: pointer; 
+      transition: all 0.15s;
+      font-family: 'Roboto Mono', monospace; 
+      font-weight: bold; 
+      color: #334155;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      display: flex; 
+      justify-content: center;
+      align-items: center;
     }
     .num-btn:hover { background: #e2e8f0; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
     .num-btn:active { background: #cbd5e1; transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .num-btn.action { background: #e2e8f0; font-size: 1.2em; }
+    .num-btn.action { background: #e2e8f0; font-size: 1.5em; }
 
     /* コントロール */
     .controls { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
@@ -117,15 +131,40 @@
 
     .hidden { display: none !important; }
 
-    /* モバイル最適化 */
+    /* ★ モバイル最適化: ここからが1画面に収めるための強力な調整です ★ */
     @media (max-width: 768px) {
-      .line-display-row { gap: 8px; font-size: 1.8em; flex-wrap: wrap; }
-      .input-grid-row { gap: 8px; flex-wrap: wrap; }
-      .line-number { width: 32px; }
-      .input-box { width: 36px; height: 36px; font-size: 1.1em; }
-      .container { padding: 20px 15px; }
-      .number-pad { gap: 8px; }
-      .num-btn { padding: 12px; font-size: 1.3em; }
+      /* 全体の余白を削減 */
+      body { padding: 5px; }
+      .container { padding: 15px 10px; border-radius: 12px; }
+      
+      /* ヘッダーを小さくし、サブタイトルを非表示にして高さを稼ぐ */
+      .header { margin-bottom: 10px; }
+      .header h1 { font-size: 1.4em; }
+      .header p { display: none; }
+      
+      /* ステータスバーの余白と文字サイズを縮小 */
+      .status-bar { padding: 8px; margin-bottom: 10px; gap: 5px; }
+      .status-item span { font-size: 0.7em; margin-bottom: 2px; }
+      .status-item strong { font-size: 1.1em; }
+
+      /* テストエリアの隙間を詰める */
+      .test-area { min-height: 100px; }
+      .line-display-row { gap: 6px; font-size: 1.5em; margin-bottom: 8px; flex-wrap: nowrap; }
+      .input-grid-row { gap: 6px; flex-wrap: nowrap; }
+      .line-number { width: 25px; }
+      .input-box { width: 30px; height: 30px; font-size: 1.1em; border-width: 2px; border-radius: 6px; }
+
+      /* キーパッドを指で押せるギリギリのコンパクトサイズに */
+      .number-pad { gap: 6px; margin: 10px auto; max-width: 100%; }
+      .num-btn { min-height: 48px; font-size: 1.5em; border-radius: 8px; padding: 5px; }
+      .num-btn.action { font-size: 1.2em; }
+
+      /* コントロールボタンもスリムに */
+      .controls { margin-top: 10px; gap: 10px; }
+      .btn { padding: 10px 20px; font-size: 1em; }
+
+      /* テスト開始前のメッセージも小さく */
+      #displayInputPairContainer p { font-size: 1em !important; padding: 10px !important; }
     }
   </style>
 </head>
@@ -150,16 +189,20 @@
   </div>
 
   <div id="inputSection" class="hidden">
+    <!-- 電卓配列のキーパッド -->
     <div class="number-pad">
-      <button class="num-btn" onclick="app.input(1)">1</button>
-      <button class="num-btn" onclick="app.input(2)">2</button>
-      <button class="num-btn" onclick="app.input(3)">3</button>
-      <button class="num-btn" onclick="app.input(4)">4</button>
-      <button class="num-btn" onclick="app.input(5)">5</button>
-      <button class="num-btn" onclick="app.input(6)">6</button>
       <button class="num-btn" onclick="app.input(7)">7</button>
       <button class="num-btn" onclick="app.input(8)">8</button>
       <button class="num-btn" onclick="app.input(9)">9</button>
+      
+      <button class="num-btn" onclick="app.input(4)">4</button>
+      <button class="num-btn" onclick="app.input(5)">5</button>
+      <button class="num-btn" onclick="app.input(6)">6</button>
+      
+      <button class="num-btn" onclick="app.input(1)">1</button>
+      <button class="num-btn" onclick="app.input(2)">2</button>
+      <button class="num-btn" onclick="app.input(3)">3</button>
+      
       <button class="num-btn action" onclick="app.input('back')">←</button>
       <button class="num-btn" onclick="app.input(0)">0</button>
       <button class="num-btn action" onclick="app.input('next')">→</button>
@@ -350,7 +393,6 @@ class KraepelinApp {
     document.getElementById('accuracyDisplay').textContent = `${accuracy}%`;
   }
 
-  // 現在の行のデータを配列に保存するメソッド（共通化）
   recordCurrentLineData() {
     let lineCorrect = 0;
     this.answers.forEach((ans, i) => {
