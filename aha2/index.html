@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>脳覚醒！アハ体験 40秒じっくり集中版</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #05060b;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+            overflow: hidden;
+        }
+        h1 {
+            color: #00e5ff;
+            margin: 10px 0 5px 0;
+            text-shadow: 0 0 15px rgba(0,229,255,0.4);
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+        .description {
+            font-size: 0.85rem;
+            color: #8a8d9f;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 550px;
+            line-height: 1.5;
+        }
+        /* 3x3のグリッドステージ */
+        #stage-container {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            margin-bottom: 25px;
+        }
+        #stage {
+            width: 100%;
+            height: 100%;
+            background: #0f101a;
+            border: 2px solid #00e5ff;
+            border-radius: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(0,229,255,0.15);
+            box-sizing: border-box;
+        }
+        .box-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 図形スタイル */
+        .box {
+            width: 75px;
+            height: 75px;
+            background-color: #00e5ff; /* 基本色: rgb(0, 229, 255) */
+            border-radius: 8px;
+            transition: all 0.05s linear;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        .box.disabled {
+            cursor: default;
+        }
+        /* コントロール */
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            border: none;
+            padding: 14px 45px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #00e5ff 0%, #0077ff 100%);
+            color: #05060b;
+            box-shadow: 0 4px 15px rgba(0,229,255,0.3);
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,229,255,0.5);
+            background: #ffffff;
+            color: #05060b;
+        }
+        .btn:disabled {
+            background: #1a1c24 !important;
+            color: #4a4d5e;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #status-display {
+            font-size: 0.95rem;
+            color: #00e5ff;
+            height: 24px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        #result {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 60px;
+            color: #ffffff;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+        .time-highlight {
+            color: #ffea00;
+            font-size: 1.7rem;
+            text-shadow: 0 0 10px rgba(255,234,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <h1>アハ体験：40秒集中トレーニング 色</h1>
+    <p class="description">
+        9つのうち毎回異なる1つが<b>40秒間</b>かけて<br>
+        超スローで別の色に変化します。変化に気づいた時点でその図形をタッチしてください。
+    </p>
+
+    <div id="status-display"></div>
+    <div id="stage-container">
+        <div id="stage">
+            <div class="box-wrapper"><div id="box0" class="box disabled" onclick="clickBox(0)"></div></div>
+            <div class="box-wrapper"><div id="box1" class="box disabled" onclick="clickBox(1)"></div></div>
+            <div class="box-wrapper"><div id="box2" class="box disabled" onclick="clickBox(2)"></div></div>
+            <div class="box-wrapper"><div id="box3" class="box disabled" onclick="clickBox(3)"></div></div>
+            <div class="box-wrapper"><div id="box4" class="box disabled" onclick="clickBox(4)"></div></div>
+            <div class="box-wrapper"><div id="box5" class="box disabled" onclick="clickBox(5)"></div></div>
+            <div class="box-wrapper"><div id="box6" class="box disabled" onclick="clickBox(6)"></div></div>
+            <div class="box-wrapper"><div id="box7" class="box disabled" onclick="clickBox(7)"></div></div>
+            <div class="box-wrapper"><div id="box8" class="box disabled" onclick="clickBox(8)"></div></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="start-btn" class="btn" onclick="prepareGame()">トレーニング開始</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const resultDiv = document.getElementById('result');
+        const statusDisplay = document.getElementById('status-display');
+
+        let startTime;
+        let animationInterval;
+        let delayTimeout;
+        let duration = 40000; // 40秒
+        let isPlaying = false;
+        let isWaiting = false;
+        let targetIndex = 0;
+        let targetColor = {}; 
+
+        // 基本色 (シアン)
+        const baseColor = { r: 0, g: 229, b: 255 };
+
+        // 変化後の目標色バリエーション
+        const colorTargets = [
+            { name: 'ピンク', r: 255, g: 105, b: 180 },
+            { name: '紫色', r: 180, g: 80, b: 255 },
+            { name: '黄色', r: 255, g: 234, b: 0 },
+            { name: '緑色', r: 0, g: 255, b: 120 }
+        ];
+
+        function resetStage() {
+            for(let i=0; i<9; i++) {
+                let box = document.getElementById(`box${i}`);
+                box.classList.add('disabled');
+                box.style.backgroundColor = `rgb(${baseColor.r}, ${baseColor.g}, ${baseColor.b})`;
+                box.style.opacity = '1';
+                box.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+            }
+        }
+
+        function prepareGame() {
+            if (isPlaying || isWaiting) return;
+            isWaiting = true;
+
+            resetStage();
+            resultDiv.innerHTML = '';
+            startBtn.disabled = true;
+            statusDisplay.innerHTML = 'ステージ構築中...';
+
+            delayTimeout = setTimeout(startGame, 1500);
+        }
+
+        function startGame() {
+            isWaiting = false;
+            isPlaying = true;
+            statusDisplay.innerHTML = '🔍 色の変化を感知してタッチしてください 🔍';
+            
+            for(let i=0; i<9; i++) {
+                document.getElementById(`box${i}`).classList.remove('disabled');
+            }
+
+            targetIndex = Math.floor(Math.random() * 9);
+            targetColor = colorTargets[Math.floor(Math.random() * colorTargets.length)];
+
+            startTime = performance.now();
+
+            animationInterval = setInterval(() => {
+                let elapsed = performance.now() - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+
+                let targetBox = document.getElementById(`box${targetIndex}`);
+
+                // RGBをそれぞれ徐々に変化させる
+                let currentR = baseColor.r + (targetColor.r - baseColor.r) * progress;
+                let currentG = baseColor.g + (targetColor.g - baseColor.g) * progress;
+                let currentB = baseColor.b + (targetColor.b - baseColor.b) * progress;
+                
+                targetBox.style.backgroundColor = `rgb(${Math.round(currentR)}, ${Math.round(currentG)}, ${Math.round(currentB)})`;
+
+                if (progress >= 1) {
+                    endGame(false, -1);
+                }
+            }, 50);
+        }
+
+        function clickBox(clickedIndex) {
+            if (!isPlaying) return;
+            
+            if (clickedIndex === targetIndex) {
+                endGame(true, clickedIndex);
+            } else {
+                endGame(false, clickedIndex);
+            }
+        }
+
+        function endGame(success, clickedIndex) {
+            clearInterval(animationInterval);
+            isPlaying = false;
+            startBtn.disabled = false;
+            statusDisplay.innerHTML = '';
+
+            for(let i=0; i<9; i++) {
+                document.getElementById(`box${i}`).classList.add('disabled');
+            }
+
+            for(let i=0; i<9; i++) {
+                if(i === targetIndex) {
+                    document.getElementById(`box${i}`).style.opacity = '1';
+                    document.getElementById(`box${i}`).style.boxShadow = '0 0 25px #00ff33';
+                } else {
+                    document.getElementById(`box${i}`).style.opacity = '0.05';
+                }
+            }
+
+            let typeJa = `色（${targetColor.name}）`;
+            let posText = typeMapIndex(targetIndex);
+
+            if (success) {
+                let elapsedSeconds = ((performance.now() - startTime) / 1000).toFixed(2);
+                
+                resultDiv.innerHTML = `
+                    <span style="color:#00ff33; font-size: 1.4rem;">【 正 解 】</span><br>
+                    変化に気づくまでの時間: <span class="time-highlight">${elapsedSeconds}</span> 秒<br>
+                    素晴らしい！40秒の超スローな「${typeJa}」の変化を捉えました！🧠💥
+                `;
+            } else {
+                if (clickedIndex === -1) {
+                    resultDiv.innerHTML = `
+                        <span style="color:#ff3333; font-size: 1.4rem;">【 タイムアップ（40秒経過） 】</span><br>
+                        40秒間で見つけることができませんでした。<br>
+                        正解は <b>${posText}</b> の 【${typeJa}】 でした。🔍
+                    `;
+                } else {
+                    let wrongPosText = typeMapIndex(clickedIndex);
+                    resultDiv.innerHTML = `
+                        <span style="color:#ff3333; font-size: 1.4rem;">【 不正解（お手つき） 】</span><br>
+                        そこは変化していません（タッチした場所: ${wrongPosText}）<br>
+                        正解は <b>${posText}</b> の 【${typeJa}】 でした。
+                    `;
+                }
+            }
+        }
+
+        function typeMapIndex(idx) {
+            const rows = ["上段", "中段", "下段"];
+            const cols = ["左", "中央", "右"];
+            return rows[Math.floor(idx / 3)] + "・" + cols[idx % 3];
+        }
+    </script>
+</body>
+</html>
