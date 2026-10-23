@@ -469,17 +469,42 @@
                 dotSize *= count > 50 ? 0.8 : 1.0;
 
                 const localPlaced = [];
+                // グリッド用の計算
+                let cols, rows, cellW, cellH;
+                if (config.layoutPattern === 'grid') {
+                    const aspect = width / canvas.clientHeight;
+                    cols = Math.ceil(Math.sqrt(count * aspect));
+                    rows = Math.ceil(count / cols);
+                    cellW = (width - padding * 2) / cols;
+                    cellH = (canvas.clientHeight - padding * 2) / rows;
+                    // セル内に収まるように玉のサイズを自動調整
+                    dotSize = Math.min(dotSize, cellW * 0.8, cellH * 0.8);
+                }
+
                 for (let i = 0; i < count; i++) {
-                    let x, y, z, overlap, attempts = 0;
-                    do {
-                        overlap = false;
-                        x = xOffset + Math.random() * (width - dotSize - padding * 2) + padding;
-                        y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
+                    let x, y, z = 0;
+                    
+                    if (config.layoutPattern === 'grid') {
+                        // グリッド配置の座標計算
+                        const c = i % cols;
+                        const r = Math.floor(i / cols);
+                        x = xOffset + padding + c * cellW + (cellW - dotSize) / 2;
+                        y = padding + r * cellH + (cellH - dotSize) / 2;
+                        // 3Dモード時はZ軸のみランダムにして立体感を維持
                         z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
-                        for (const dot of localPlaced) { if (Math.sqrt((dot.x - x)**2 + (dot.y - y)**2) < (dotSize + gap)) { overlap = true; break; } }
-                        attempts++;
-                    } while (overlap && attempts < 1000);
-                    if (attempts >= 1000) continue;
+                    } else {
+                        // ランダム配置の座標計算
+                        let overlap, attempts = 0;
+                        do {
+                            overlap = false;
+                            x = xOffset + Math.random() * (width - dotSize - padding * 2) + padding;
+                            y = Math.random() * (canvas.clientHeight - dotSize - padding * 2) + padding;
+                            z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
+                            for (const dot of localPlaced) { if (Math.sqrt((dot.x - x)**2 + (dot.y - y)**2) < (dotSize + gap)) { overlap = true; break; } }
+                            attempts++;
+                        } while (overlap && attempts < 1000);
+                        if (attempts >= 1000) continue;
+                    }
                     
                     localPlaced.push({x, y, z});
                     const dot = document.createElement("div"); dot.className = "dot";
