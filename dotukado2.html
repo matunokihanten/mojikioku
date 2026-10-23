@@ -27,10 +27,11 @@
         }
         .hidden { display: none !important; }
 
-        /* 設定画面のコンパクト化 */
+        /* 設定画面のコンパクト化 (スクロール対応) */
         #setup-screen {
-            justify-content: center;
+            justify-content: flex-start;
             padding: 2px;
+            overflow-y: auto;
         }
         .setup-card {
             background: rgba(255, 255, 255, 0.05);
@@ -42,6 +43,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            margin-bottom: 20px;
         }
         .setup-card h2 {
             font-size: 1.1rem;
@@ -170,7 +172,7 @@
         #target-info {
             font-size: 0.85rem;
             color: #ADD8E6;
-            height: 1rem;
+            height: 1.2rem;
             text-align: center;
             font-weight: bold;
         }
@@ -278,6 +280,14 @@
                 </select>
             </div>
             <div class="setup-group">
+                <label>ディストラクター</label>
+                <select id="distractorMode">
+                    <option value="off" selected>OFF</option>
+                    <option value="color">色違い (無視)</option>
+                    <option value="shape">形違い (無視)</option>
+                </select>
+            </div>
+            <div class="setup-group">
                 <label>マスキング</label>
                 <select id="visualMaskMode">
                     <option value="off" selected>OFF</option>
@@ -351,7 +361,7 @@
 
     <script>
         let correctCount = 0;
-        let nBackHistory = []; // N-Backの履歴保持用
+        let nBackHistory = [];
         let combo = 0;
         let isWaitingAnswer = false;
         let isTransitioning = false;
@@ -366,6 +376,7 @@
                 afterimage: document.getElementById('afterimageMode').value === 'on',
                 nBack: parseInt(document.getElementById('nBackMode').value),
                 stroop: document.getElementById('stroopMode').value === 'on',
+                distractor: document.getElementById('distractorMode').value,
                 visualMask: document.getElementById('visualMaskMode').value === 'on',
                 dimension: document.getElementById('dimensionMode').value,
                 flashTime: parseFloat(document.getElementById('flashTime').value),
@@ -446,27 +457,36 @@
 
             let currentTarget = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
 
+            // ターゲット指示文の作成
+            let targetInstruction = "";
+            if (config.distractor === 'color') {
+                targetInstruction = `<span style="color:hsl(${baseColorH}, 100%, 60%); text-shadow: 0 0 3px #000, 0 0 1px #fff;">●(この色)</span>を数えろ: `;
+            } else if (config.distractor === 'shape') {
+                targetInstruction = `●(丸)を数えろ(■は無視): `;
+            }
+
             // N-Backのロジック
             if (config.nBack > 0) {
                 nBackHistory.push(currentTarget);
                 if (nBackHistory.length <= config.nBack) {
                     correctCount = null; 
-                    targetInfo.textContent = `【記憶フェーズ ${nBackHistory.length}/${config.nBack}：次へ】`; 
+                    targetInfo.innerHTML = targetInstruction + `【記憶フェーズ ${nBackHistory.length}/${config.nBack}：次へ】`; 
                     isWaitingAnswer = false;
                 } else {
                     correctCount = nBackHistory.shift(); 
-                    targetInfo.textContent = config.compare ? `【${config.nBack}-Back：${config.nBack}つ前は？】` : `【${config.nBack}-Back：${config.nBack}つ前を答えろ】`; 
+                    targetInfo.innerHTML = targetInstruction + (config.compare ? `【${config.nBack}-Back：${config.nBack}つ前は？】` : `【${config.nBack}-Back：${config.nBack}つ前を答えろ】`); 
                     isWaitingAnswer = true;
                 }
             } else {
                 correctCount = currentTarget;
-                if (config.compare) { targetInfo.textContent = "【大小比較：どちらが多い？】"; }
-                else { targetInfo.textContent = config.mode === 'levelup' ? "【LvUp挑戦中】" : ""; }
+                if (config.compare) { targetInfo.innerHTML = targetInstruction + "【大小比較：どちらが多い？】"; }
+                else { targetInfo.innerHTML = targetInstruction + (config.mode === 'levelup' ? "【LvUp挑戦中】" : "【玉の数】"); }
                 isWaitingAnswer = true;
             }
 
             createAnswerUI();
 
+            // ストループノイズ
             if (config.stroop && !config.compare) {
                 const stroopDiv = document.createElement("div"); stroopDiv.id = "stroop-noise";
                 let noiseVal; do { noiseVal = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots; } while (noiseVal === currentDotsToShow);
@@ -474,22 +494,34 @@
             }
 
             const padding = 15, gap = 2;
-            const drawSet = (count, xOffset, width) => {
-                let dotSize = config.sizeMode === 'dynamic' ? (count <= 1 ? 60 : (count >= 100 ? 12 : 60 - (count - 1) * (48 / 99))) : (count > 30 ? 20 : (count > 10 ? 35 : 50));
-                dotSize *= count > 50 ? 0.8 : 1.0;
+            const drawSet = (targetCount, xOffset, width) => {
+                // ディストラクター（妨害要素）の数を決定（最大設定値の0〜80%程度）
+                let distCount = config.distractor !== 'off' ? Math.floor(Math.random() * (config.maxDots * 0.8)) + 1 : 0;
+                let totalCount = targetCount + distCount;
+
+                let dotSize = config.sizeMode === 'dynamic' ? (totalCount <= 1 ? 60 : (totalCount >= 100 ? 12 : 60 - (totalCount - 1) * (48 / 99))) : (totalCount > 30 ? 20 : (totalCount > 10 ? 35 : 50));
+                dotSize *= totalCount > 50 ? 0.8 : 1.0;
 
                 const localPlaced = [];
                 let cols, rows, cellW, cellH;
                 if (config.layoutPattern === 'grid') {
                     const aspect = width / canvas.clientHeight;
-                    cols = Math.ceil(Math.sqrt(count * aspect));
-                    rows = Math.ceil(count / cols);
+                    cols = Math.ceil(Math.sqrt(totalCount * aspect));
+                    rows = Math.ceil(totalCount / cols);
                     cellW = (width - padding * 2) / cols;
                     cellH = (canvas.clientHeight - padding * 2) / rows;
                     dotSize = Math.min(dotSize, cellW * 0.8, cellH * 0.8);
                 }
 
-                for (let i = 0; i < count; i++) {
+                // ターゲットとディストラクターの配列を作成してシャッフル
+                let items = Array(targetCount).fill('target').concat(Array(distCount).fill('distractor'));
+                for (let i = items.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [items[i], items[j]] = [items[j], items[i]];
+                }
+
+                for (let i = 0; i < totalCount; i++) {
+                    const type = items[i];
                     let x, y, z = 0;
                     
                     if (config.layoutPattern === 'grid') {
@@ -520,13 +552,33 @@
                     dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
                     dot.style.left = `${x}px`; dot.style.top = `${y}px`;
 
-                    if (config.gabor) {
+                    // ディストラクターの色/形の適用
+                    let currentHue = baseColorH;
+                    if (type === 'distractor') {
+                        if (config.distractor === 'color') currentHue = (baseColorH + 180) % 360; // 補色
+                        if (config.distractor === 'shape') {
+                            dot.style.borderRadius = "15%"; // 四角形(少し角丸)に変更
+                            if (config.gabor) {
+                                dot.style.webkitMaskImage = "none";
+                                dot.style.maskImage = "none";
+                                dot.style.boxShadow = "inset 0 0 10px rgba(0,0,0,0.8)";
+                            }
+                        }
+                    }
+
+                    if (config.gabor && !(type === 'distractor' && config.distractor === 'shape')) {
                         const angle = Math.floor(Math.random() * 180);
-                        const stripeColor = `hsl(${baseColorH}, 100%, ${50 * brightness}%)`;
-                        const bgColor = `hsl(${baseColorH}, 100%, ${10 * brightness}%)`;
+                        const stripeColor = `hsl(${currentHue}, 100%, ${50 * brightness}%)`;
+                        const bgColor = `hsl(${currentHue}, 100%, ${10 * brightness}%)`;
+                        dot.style.background = `repeating-linear-gradient(${angle}deg, ${stripeColor}, ${stripeColor} 2px, ${bgColor} 2px, ${bgColor} 4px)`;
+                    } else if (config.gabor && type === 'distractor' && config.distractor === 'shape') {
+                        // ガボールパッチで四角形の場合（マスクなしの縞模様）
+                        const angle = Math.floor(Math.random() * 180);
+                        const stripeColor = `hsl(${currentHue}, 100%, ${50 * brightness}%)`;
+                        const bgColor = `hsl(${currentHue}, 100%, ${10 * brightness}%)`;
                         dot.style.background = `repeating-linear-gradient(${angle}deg, ${stripeColor}, ${stripeColor} 2px, ${bgColor} 2px, ${bgColor} 4px)`;
                     } else {
-                        dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${baseColorH},100%,${50*brightness+20}%), hsl(${baseColorH},100%,${50*brightness}%), hsl(${baseColorH},100%,${50*brightness-20}%))`;
+                        dot.style.background = `radial-gradient(circle at 30% 30%, hsl(${currentHue},100%,${50*brightness+20}%), hsl(${currentHue},100%,${50*brightness}%), hsl(${currentHue},100%,${50*brightness-20}%))`;
                     }
                     if (config.dimension === '3d') dot.style.transform = `translateZ(${z}px)`;
                     canvas.appendChild(dot);
@@ -600,7 +652,6 @@
                 combo = 0; updateStats();
                 msg.textContent = config.compare ? `ハズレ！` : `正解は ${correctCount}`; msg.style.color = "#FF4500"; currentInput = "";
                 if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
-                // 間違えたらN-Backの記憶キューをリセットする
                 if (config.nBack > 0) {
                     nBackHistory = [];
                     setTimeout(() => { alert("不正解のため、記憶をリセットして最初からやり直します。"); }, 100);
