@@ -262,10 +262,12 @@
                 </select>
             </div>
             <div class="setup-group">
-                <label>N-Back</label>
+                <label>N-Back (記憶)</label>
                 <select id="nBackMode">
-                    <option value="off" selected>OFF</option>
-                    <option value="on">ON (1つ前を回答)</option>
+                    <option value="0" selected>OFF</option>
+                    <option value="1">1-Back (1つ前)</option>
+                    <option value="2">2-Back (2つ前)</option>
+                    <option value="3">3-Back (3つ前)</option>
                 </select>
             </div>
             <div class="setup-group">
@@ -349,7 +351,7 @@
 
     <script>
         let correctCount = 0;
-        let lastShownCount = null;
+        let nBackHistory = []; // N-Backの履歴保持用
         let combo = 0;
         let isWaitingAnswer = false;
         let isTransitioning = false;
@@ -362,7 +364,7 @@
                 gabor: document.getElementById('gaborMode').value === 'on',
                 compare: document.getElementById('compareMode').value === 'on',
                 afterimage: document.getElementById('afterimageMode').value === 'on',
-                nBack: document.getElementById('nBackMode').value === 'on',
+                nBack: parseInt(document.getElementById('nBackMode').value),
                 stroop: document.getElementById('stroopMode').value === 'on',
                 visualMask: document.getElementById('visualMaskMode').value === 'on',
                 dimension: document.getElementById('dimensionMode').value,
@@ -375,7 +377,7 @@
             };
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            combo = 0; lastShownCount = null; updateStats(); generateNewProblem();
+            combo = 0; nBackHistory = []; updateStats(); generateNewProblem();
         }
 
         function showSetup() {
@@ -442,16 +444,24 @@
                 currentDotsToShow = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots;
             }
 
-            if (config.nBack) {
-                if (lastShownCount === null) {
-                    correctCount = null; targetInfo.textContent = "【記憶フェーズ：次へ】"; isWaitingAnswer = false;
+            let currentTarget = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
+
+            // N-Backのロジック
+            if (config.nBack > 0) {
+                nBackHistory.push(currentTarget);
+                if (nBackHistory.length <= config.nBack) {
+                    correctCount = null; 
+                    targetInfo.textContent = `【記憶フェーズ ${nBackHistory.length}/${config.nBack}：次へ】`; 
+                    isWaitingAnswer = false;
                 } else {
-                    correctCount = lastShownCount; targetInfo.textContent = config.compare ? "【N-Back：1つ前は？】" : "【N-Back：1つ前を答えろ】"; isWaitingAnswer = true;
+                    correctCount = nBackHistory.shift(); 
+                    targetInfo.textContent = config.compare ? `【${config.nBack}-Back：${config.nBack}つ前は？】` : `【${config.nBack}-Back：${config.nBack}つ前を答えろ】`; 
+                    isWaitingAnswer = true;
                 }
-                lastShownCount = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
             } else {
-                if (config.compare) { correctCount = currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT'; targetInfo.textContent = "【大小比較：どちらが多い？】"; }
-                else { correctCount = currentDotsToShow; targetInfo.textContent = config.mode === 'levelup' ? "【LvUp挑戦中】" : ""; }
+                correctCount = currentTarget;
+                if (config.compare) { targetInfo.textContent = "【大小比較：どちらが多い？】"; }
+                else { targetInfo.textContent = config.mode === 'levelup' ? "【LvUp挑戦中】" : ""; }
                 isWaitingAnswer = true;
             }
 
@@ -469,7 +479,6 @@
                 dotSize *= count > 50 ? 0.8 : 1.0;
 
                 const localPlaced = [];
-                // グリッド用の計算
                 let cols, rows, cellW, cellH;
                 if (config.layoutPattern === 'grid') {
                     const aspect = width / canvas.clientHeight;
@@ -477,7 +486,6 @@
                     rows = Math.ceil(count / cols);
                     cellW = (width - padding * 2) / cols;
                     cellH = (canvas.clientHeight - padding * 2) / rows;
-                    // セル内に収まるように玉のサイズを自動調整
                     dotSize = Math.min(dotSize, cellW * 0.8, cellH * 0.8);
                 }
 
@@ -485,15 +493,12 @@
                     let x, y, z = 0;
                     
                     if (config.layoutPattern === 'grid') {
-                        // グリッド配置の座標計算
                         const c = i % cols;
                         const r = Math.floor(i / cols);
                         x = xOffset + padding + c * cellW + (cellW - dotSize) / 2;
                         y = padding + r * cellH + (cellH - dotSize) / 2;
-                        // 3Dモード時はZ軸のみランダムにして立体感を維持
                         z = config.dimension === '3d' ? Math.random() * 400 - 200 : 0;
                     } else {
-                        // ランダム配置の座標計算
                         let overlap, attempts = 0;
                         do {
                             overlap = false;
@@ -595,6 +600,11 @@
                 combo = 0; updateStats();
                 msg.textContent = config.compare ? `ハズレ！` : `正解は ${correctCount}`; msg.style.color = "#FF4500"; currentInput = "";
                 if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
+                // 間違えたらN-Backの記憶キューをリセットする
+                if (config.nBack > 0) {
+                    nBackHistory = [];
+                    setTimeout(() => { alert("不正解のため、記憶をリセットして最初からやり直します。"); }, 100);
+                }
             }
         }
         function updateStats() { document.getElementById("stats").textContent = `Combo: ${combo}`; }
