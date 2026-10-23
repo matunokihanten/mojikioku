@@ -27,7 +27,6 @@
         }
         .hidden { display: none !important; }
 
-        /* 設定画面のコンパクト化 (スクロール対応) */
         #setup-screen {
             justify-content: flex-start;
             padding: 2px;
@@ -457,7 +456,6 @@
 
             let currentTarget = config.compare ? (currentDotsToShow.left > currentDotsToShow.right ? 'LEFT' : 'RIGHT') : currentDotsToShow;
 
-            // ターゲット指示文の作成
             let targetInstruction = "";
             if (config.distractor === 'color') {
                 targetInstruction = `<span style="color:hsl(${baseColorH}, 100%, 60%); text-shadow: 0 0 3px #000, 0 0 1px #fff;">●(この色)</span>を数えろ: `;
@@ -465,7 +463,6 @@
                 targetInstruction = `●(丸)を数えろ(■は無視): `;
             }
 
-            // N-Backのロジック
             if (config.nBack > 0) {
                 nBackHistory.push(currentTarget);
                 if (nBackHistory.length <= config.nBack) {
@@ -486,7 +483,6 @@
 
             createAnswerUI();
 
-            // ストループノイズ
             if (config.stroop && !config.compare) {
                 const stroopDiv = document.createElement("div"); stroopDiv.id = "stroop-noise";
                 let noiseVal; do { noiseVal = Math.floor(Math.random() * (config.maxDots - config.minDots + 1)) + config.minDots; } while (noiseVal === currentDotsToShow);
@@ -495,7 +491,6 @@
 
             const padding = 15, gap = 2;
             const drawSet = (targetCount, xOffset, width) => {
-                // ディストラクター（妨害要素）の数を決定（最大設定値の0〜80%程度）
                 let distCount = config.distractor !== 'off' ? Math.floor(Math.random() * (config.maxDots * 0.8)) + 1 : 0;
                 let totalCount = targetCount + distCount;
 
@@ -513,7 +508,6 @@
                     dotSize = Math.min(dotSize, cellW * 0.8, cellH * 0.8);
                 }
 
-                // ターゲットとディストラクターの配列を作成してシャッフル
                 let items = Array(targetCount).fill('target').concat(Array(distCount).fill('distractor'));
                 for (let i = items.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -552,12 +546,11 @@
                     dot.style.width = dot.style.height = `${dotSize * depthScale}px`;
                     dot.style.left = `${x}px`; dot.style.top = `${y}px`;
 
-                    // ディストラクターの色/形の適用
                     let currentHue = baseColorH;
                     if (type === 'distractor') {
-                        if (config.distractor === 'color') currentHue = (baseColorH + 180) % 360; // 補色
+                        if (config.distractor === 'color') currentHue = (baseColorH + 180) % 360; 
                         if (config.distractor === 'shape') {
-                            dot.style.borderRadius = "15%"; // 四角形(少し角丸)に変更
+                            dot.style.borderRadius = "15%"; 
                             if (config.gabor) {
                                 dot.style.webkitMaskImage = "none";
                                 dot.style.maskImage = "none";
@@ -572,7 +565,6 @@
                         const bgColor = `hsl(${currentHue}, 100%, ${10 * brightness}%)`;
                         dot.style.background = `repeating-linear-gradient(${angle}deg, ${stripeColor}, ${stripeColor} 2px, ${bgColor} 2px, ${bgColor} 4px)`;
                     } else if (config.gabor && type === 'distractor' && config.distractor === 'shape') {
-                        // ガボールパッチで四角形の場合（マスクなしの縞模様）
                         const angle = Math.floor(Math.random() * 180);
                         const stripeColor = `hsl(${currentHue}, 100%, ${50 * brightness}%)`;
                         const bgColor = `hsl(${currentHue}, 100%, ${10 * brightness}%)`;
@@ -652,10 +644,6 @@
                 combo = 0; updateStats();
                 msg.textContent = config.compare ? `ハズレ！` : `正解は ${correctCount}`; msg.style.color = "#FF4500"; currentInput = "";
                 if (document.getElementById("displayFieldValue")) document.getElementById("displayFieldValue").textContent = "-";
-                if (config.nBack > 0) {
-                    nBackHistory = [];
-                    setTimeout(() => { alert("不正解のため、記憶をリセットして最初からやり直します。"); }, 100);
-                }
             }
         }
         function updateStats() { document.getElementById("stats").textContent = `Combo: ${combo}`; }
